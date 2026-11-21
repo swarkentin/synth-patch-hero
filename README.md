@@ -1,5 +1,7 @@
 # Synth Patch Hero
 
+<p align="center"><a href="https://swarkentin.github.io/synth-patch-hero/"><b>▶&nbsp;&nbsp;PLAY NOW: swarkentin.github.io/synth-patch-hero</b></a><br><sub>Runs in your browser on desktop or phone. Headphones recommended.</sub></p>
+
 **A puzzle game about building synth patches.** You're a broke musician taking gigs from artists who want very specific sounds. Each gig hands you a reference sound and a rack. Patch oscillators, filters, envelopes and LFOs together until your sound matches theirs. Every gig teaches one new piece of synthesis.
 
 ![Desktop: brief on the left, slot board in the middle, compare panel with oscilloscope on the right](docs/screenshots/desktop.png)
@@ -8,7 +10,7 @@
 
 ## Play
 
-- **Hosted:** GitHub Pages, deployed from `main` by [`.github/workflows/pages.yml`](.github/workflows/pages.yml). To turn it on: Settings → Pages → Source: *GitHub Actions*.
+- **Online:** **https://swarkentin.github.io/synth-patch-hero/**, deployed from `main` by [`.github/workflows/pages.yml`](.github/workflows/pages.yml) whenever the tests pass.
 - **Locally:** `npm start`, then open http://localhost:8080. Opening `index.html` directly also works.
 
 There's no build step and there are no dependencies: it's plain HTML, CSS and JavaScript using the Web Audio API. Use headphones.
