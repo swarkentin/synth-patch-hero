@@ -86,3 +86,7 @@ Tests need Node 22+ and Chrome or Chromium on the PATH (or set `CHROME_PATH`). C
 **Adding a gig:** add an entry to `LEVELS` in `js/data.js` with a brief, a manual page, a palette, and a `target` patch (plus optional `start` presets and `startCables`). `npm test` checks that it fits the board and that its reference patch scores 100%. If you change the scoring, keep the bands in `tests/run.mjs` passing, or update them on purpose.
 
 See [`docs/design.md`](docs/design.md) for the design decisions behind the layout, slot board, scoring and touch controls.
+
+## License
+
+[MIT](LICENSE)
