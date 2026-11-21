@@ -357,3 +357,34 @@ body.focus .work{flex:1}
   body.focus .plots .plotBox[data-p=scope],body.focus .plots .plotBox[data-p=env]{display:block}
   body.focus .plots .plotBox[data-p=spec]{display:none}
 }
+
+/* ---------- help ---------- */
+#btnHelp{flex:none}
+#btnHelp.pulse{border-color:var(--amber);color:var(--amber);animation:blink 1.2s ease-in-out infinite}
+#helpCard{position:absolute;left:10px;bottom:10px;z-index:8;width:min(400px,calc(100% - 20px));max-height:calc(100% - 60px);overflow:auto;background:var(--panel);border:1px solid var(--amber);border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,.6);font-size:13px;line-height:1.5}
+.hcHead{display:flex;align-items:center;gap:8px;padding:8px 10px 0 14px}
+.hcHead b{font-family:var(--head);letter-spacing:.16em;font-size:11px;color:var(--amber)}
+.hcHead span{flex:1;font-family:var(--mono);font-size:10px;color:var(--faint)}
+.hcX{background:none;border:0;color:var(--faint);font-size:18px;line-height:1;padding:0 4px}
+.hcBody{padding:2px 14px}
+.hcBody p{margin:6px 0}
+.hcBody ul{margin:6px 0;padding-left:18px}
+.hcBody li{margin-bottom:4px}
+.hcSoft{color:var(--dim)}
+.hcBtns{display:flex;gap:6px;padding:6px 14px 12px;flex-wrap:wrap}
+.hcBtns:empty{display:none}
+.knob.locked,.choice.locked{position:relative;cursor:help}
+.knob.locked svg{opacity:.55}
+.knob.locked::after{content:'LOCKED';position:absolute;top:0;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:7.5px;letter-spacing:.08em;color:#1a130b;background:var(--amber);border-radius:3px;padding:0 3px}
+.knob.locked .kv{color:var(--amber)}
+.choice.locked button{cursor:help}
+.choice.locked button.on{border-style:dashed}
+.knob.flash,.choice.flash{animation:kflash .6s ease-in-out 4}
+@keyframes kflash{50%{background:rgba(242,165,65,.25);border-radius:8px}}
+.lockWhy{margin:4px 2px 10px;font-size:14px;line-height:1.5}
+.lockWhy.dim{color:var(--dim);font-size:13px}
+@media (min-width:761px){ #btnSubmit{flex:1 1 60%} }
+@media (max-width:760px){ #btnHelp{padding:9px 9px} #helpCard{left:6px;bottom:6px;width:calc(100% - 12px);font-size:13px} }
+.shKeys{margin-top:10px;text-align:center;font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+@media (hover:none){ .shKeys{display:none} }
+@media (min-width:761px){ #sheet{align-items:center} .sheetCard{border-radius:14px;border-bottom:1px solid var(--line2);padding-bottom:16px} }

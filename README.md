@@ -20,19 +20,20 @@ There's no build step and there are no dependencies: it's plain HTML, CSS and Ja
 1. **Pick a gig.** Read the client's brief and the manual page for that lesson.
 2. **Fill the board.** OUTPUT sits in the top-right slot, and some gigs start with **preset** modules already wired. Tap an empty slot (or a palette button) to add a module. The **Parts** chips (`FILTER 0/1`) tell you what's still missing.
 3. **Patch.** Drag from jack to jack, or tap one jack and then another. Yellow cables carry audio, blue cables carry control signals. Click a cable to unplug it.
-4. **Tune.** Drag knobs up and down (Shift for fine control, double-click to reset). On touch screens, tap a knob for a big slider.
+4. **Tune.** Drag knobs up and down (Shift for fine control), or **click a knob** for a precise editor with fine −/+ steps and arrow keys.
 5. **Compare.** ▶ Target vs ▶ Yours, plus an oscilloscope, loudness and spectrum overlays and hints, are always on screen. Press **⛶ Focus** (or Shift+F) for a full-screen board with a compact compare bar.
-6. **Send** at a 90% match or better. Then come back and beat par on cost.
+6. **Stuck?** Press **Help**. It first points out missing modules or cables (and can patch them for you), then names the knob that matters most and explains it. Press again and it can **lock** that knob at the client's value. Tap a locked knob to see why, or to unlock it.
+7. **Send** at a 90% match or better. Then come back and beat par on cost.
 
 **Keyboards:** open **♪ Keys** for an on-screen keyboard that shows the client's note to find. USB/MIDI keyboards work in Chrome, Edge, Opera and Firefox on desktop, and Chrome on Android (velocity and sustain pedal included). Computer keys `A`–`K` play too, `Z`/`X` shift the octave, `Space` plays yours and `Shift+T` plays the target. The board zooms with `+` `-` `0`, Ctrl+scroll or pinch.
 
 ## Curriculum
 
-**Basics** is a six-lesson tutorial, one building block each. Finishing it opens six **themes**, which you can play in any order. Each theme teaches its style through several lessons and ends with a **challenge**: no parts list, just the brief, the sound and how many modules the patch uses.
+**Basics** is a seven-lesson tutorial on the building blocks. Finishing it opens six **themes**, which you can play in any order. Each theme teaches its style through several lessons and ends with a **challenge**: no parts list, just the brief, the sound and how many modules the patch uses.
 
 | Chapter | Gigs (★ = challenge) |
 |---|---|
-| **Basics** | Dial Tone (oscillator, pitch, cables) · Shape of Sound (waveforms) · Pixel Knight (intervals) · Thin Walls (low-pass) · Pluck (VCA + ADSR) · Vibrato (LFO, modulation) |
+| **Basics** | Dial Tone (oscillator, pitch, cables) · Shape of Sound (waveforms) · Pixel Knight (intervals) · Thin Walls (low-pass) · Curtain Call (VCA + envelope) · Pluck (attack & decay) · Vibrato (LFO, modulation) |
 | **Filter Lab** | Squelch (resonance) · Payphone (filter types) · Thin Air (high-pass) · Talk Box (formants) · ★ Acid Test |
 | **Bass** | Sub Club (sub bass) · Wow Bass (filter envelope) · Pluck Bass · Wobble (LFO → filter) · ★ Reese |
 | **Pads** | Slow Bloom (pad envelopes) · Glass Pad (layering) · Breathing Pad (slow LFO) · ★ String Section |
@@ -64,6 +65,7 @@ js/analysis.js      offline render, FFT, match score, hints
 js/ui-core.js       shared UI state and helpers
 js/keys.js          on-screen keyboard, computer keys, Web MIDI, play-the-note prompt
 js/ui.js            gig board, slot board, zoom/pan, knobs, cables, compare panel
+js/help.js          Help ladder: wiring hints, key-knob hints, knob locking, stuck detection
 js/selftest.js      scoring calibration run (index.html#selftest)
 tests/              headless-Chrome tests (npm test)
 scripts/            dev server, screenshot generator

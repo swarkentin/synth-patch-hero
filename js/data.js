@@ -102,15 +102,28 @@ const LEVELS = [
   <div class="tip">On the spectrum plot, watch the right side of the curve drop as you lower the cutoff. Line yours up with the target's slope.</div>`,
   target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:480}}], cables:['o.out>f.in','f.out>out.in']},
   reply:`Exactly like our neighbour, Gary. Love that for us. Track's going on the "rainy window" playlist.`},
+{ id:'gate', ch:'basics', title:'Curtain Call', concept:'VCA + envelope', client:'Dot Marlowe', role:'Community theatre, sound booth',
+  unlock:['vca','env'], palette:{osc:1,filter:1,vca:1,env:1}, note:57, gate:1.0, dur:2.2,
+  start:[{id:'p1',type:'osc',slot:0,locked:1,p:{wave:'square'}},{id:'p2',type:'vca',slot:1,locked:1,p:{level:0.8}}],
+  startCables:['p1.out>p2.in','p2.out>out.in'],
+  presetNote:`Preset on your rack: OSC → VCA → OUTPUT. With nothing in its CV jack, the VCA just passes sound through at its LEVEL, so it drones forever. Add an <b>ENV</b> and patch it into the VCA's <b>CV</b> jack.`,
+  brief:`Our cue beep is stuck on: it drones until somebody pulls the plug. I need it to start the moment the button is pressed, stay steady while it's held, and fade out gently after it's let go.`,
+  manual:`<h4>The VCA and the envelope</h4>
+  <p>A <b>VCA</b> (voltage-controlled amplifier) is a volume control that another module can turn.</p>
+  <ul><li><b>Nothing in CV:</b> the VCA passes the sound through at its LEVEL, all the time.</li><li><b>Something in CV:</b> the VCA is silent until that signal opens it. LEVEL becomes the most it can open.</li></ul>
+  <p>An <b>envelope</b> (ENV) is the classic thing to plug in. Each note, it rises, holds, and falls. This gig only needs two of its knobs:</p>
+  <ul><li><b>Sustain</b>: how open the VCA stays while the key is held. All the way up means "fully on".</li><li><b>Release</b>: how long the sound takes to fade after the key is let go.</li></ul>
+  <div class="tip">Watch the loudness graph: the dotted line marks when the key is let go. Match the fade after it with RELEASE.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'square'}},{id:'v',type:'vca',p:{level:0.8}},{id:'e',type:'env',p:{a:0.01,d:0.1,s:1,r:0.5}}], cables:['o.out>v.in','v.out>out.in','e.out>v.gain']},
+  reply:`On, off, and a lovely little fade. The actors stopped flinching. Thank you!`},
 { id:'pluck', ch:'basics', tol:1.5, title:'Pluck', concept:'VCA + ADSR', client:'Juniper Vale', role:'Folktronica songwriter',
-  unlock:['vca','env'], palette:{osc:1,filter:1,vca:1,env:1}, note:57, gate:1.0, dur:1.6,
+  unlock:[], palette:{osc:1,filter:1,vca:1,env:1}, note:57, gate:1.0, dur:1.6,
   brief:`Every sound you've made so far just… sits there, droning. I want a plucked string, like a kalimba. A quick "plink" that fades away by itself. Soft tone.`,
-  manual:`<h4>Shaping volume over time</h4>
-  <p>A <b>VCA</b> (voltage-controlled amplifier) is a volume knob that other modules can turn. Plug a control signal into its <b>CV</b> jack and it opens and closes with that signal.</p>
-  <p>An <b>envelope</b> (ENV) is a control signal that plays once per note in four stages:</p>
+  manual:`<h4>All four envelope stages</h4>
+  <p>In Curtain Call you used SUSTAIN and RELEASE. A pluck needs the other two. Here are all four stages an envelope plays each note:</p>
   <ul><li><b>Attack</b>: how long to rise to full when the key goes down.</li><li><b>Decay</b>: how long to fall to the sustain level.</li><li><b>Sustain</b>: the level held while the key stays down (a level, not a time).</li><li><b>Release</b>: how long to fade out after the key is let go.</li></ul>
-  <p>Patch <code>OSC → VCA → OUTPUT</code>, then <code>ENV → VCA CV</code>. Blue cables carry control signals; yellow cables carry audio.</p>
-  <div class="tip">The loudness plot shows the envelope shape. A pluck: near-instant attack, a decay to silence, zero sustain.</div>`,
+  <p>This time you build the whole thing: <code>OSC → VCA → OUTPUT</code>, then <code>ENV → VCA CV</code>. Remember, once the envelope is in CV, the VCA is silent unless the envelope opens it.</p>
+  <div class="tip">A pluck has a near-instant ATTACK, a DECAY that falls all the way, and SUSTAIN at zero, so it dies away even while the key is held. Stuck? Press <b>Help</b>.</div>`,
   target:{mods:[{id:'o',type:'osc',p:{wave:'triangle'}},{id:'v',type:'vca',p:{level:0.8}},{id:'e',type:'env',p:{a:0.003,d:0.35,s:0,r:0.25}}], cables:['o.out>v.in','v.out>out.in','e.out>v.gain']},
   reply:`Plink! Oh that's lovely. I wrote half a song just listening to it.`},
 { id:'vibrato', ch:'basics', tol:3, title:'Vibrato', concept:'LFO → pitch', client:'Rosa Belcanto', role:'Cabaret singer',
@@ -405,7 +418,7 @@ const LEVELS = [
 
 /* Chapters: Basics is a linear tutorial; every theme opens once Basics is done. */
 const CHAPTERS = [
-  {id:'basics', title:'Basics', short:'BASICS', blurb:'Your first week in the basement. Six lessons, six building blocks. Finish them to open the themes.'},
+  {id:'basics', title:'Basics', short:'BASICS', blurb:'Your first week in the basement. Seven short lessons on the building blocks. Finish them to open the themes.'},
   {id:'filters', title:'Filter Lab', short:'FILTERS', blurb:'Carve, shape and squelch. Make a synth talk.'},
   {id:'bass', title:'Bass', short:'BASS', blurb:'From clean sub bass to growling engines.'},
   {id:'pads', title:'Pads', short:'PADS', blurb:'Slow, wide, atmospheric beds of sound.'},

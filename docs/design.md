@@ -24,13 +24,28 @@ Feedback that drove it: too much scrolling between panels; you must always be ab
 - Adding: tap an empty slot (picker) or a palette button (first empty slot). Moving: drag a module's header to another slot (swaps with unlocked modules).
 - **Zoom/pan:** − / + / Fit buttons, Ctrl/⌘+scroll or trackpad pinch, two-finger pinch on touch, drag empty space to pan, keys `+ - 0`. The board auto-fits when a level opens and on resize, until the player zooms by hand.
 
+## Help ladder (js/help.js)
+Feedback that drove it: difficulty rises fast (especially the VCA lesson); players need hints and helpers, such as locking knobs with an explanation of what they do and why.
+- **Help button** (next to Send). Each press goes one step further, and nothing changes without the player confirming:
+  1. **Wiring first.** Help pairs the player's modules with the reference patch (by type, wiring and knob similarity; the pairing is kept stable once chosen). It names the first missing module, missing cable or extra cable, and says why it matters. **Patch it for me** adds the missing modules and cables and unplugs extra ones; knob settings are kept.
+  2. **Most important knob.** Help tries each visible knob at the client's value behind the scenes (offline renders) and picks the one that raises the score most. It names the knob, says which way it's off ("fades out too slowly"), and explains what the knob does, without giving the value.
+  3. **Lock it for me** sets that knob to the client's value and locks it. A locked knob shows a LOCKED tag; tapping it explains what it does, what the player had, the client's value, and why it was locked, with an **Unlock** button.
+- **Stuck detection:** after 60s on a gig, 10+ changes, and no score gain of 2+ points for 40s, the Help button pulses and a one-time toast offers it.
+- Gigs finished with help show "helped" on the board (`progress.helped`). The pay is the same.
+- Test: from an untouched rack, repeatedly applying Help passes every gig within 16 steps (most gigs take 2–11).
+
+## Knob controls
+- **Drag** up/down (mouse 0.35%/px, Shift 0.07%/px; touch 0.22%/px).
+- **Click/tap without dragging** opens the precise editor: big slider, − / + (about 0.25% of the range, or one step on stepped knobs) and −− / ++ (3%), ←/→ keys (Shift for bigger steps), Reset, ▶ Yours.
+- **Wheel/trackpad** follows the scroll distance (0.06% per pixel, Shift 0.015%). Coarse stepped knobs (OCT, SEMI, FINE) move one step per ~40px. This fixes trackpads sending dozens of events per swipe, which previously moved 1% per event.
+
 ## Modules (cost)
 OSC 2¢ (wave, oct, semi, fine, pitch mod amt) · NOISE 1¢ · FILTER 3¢ (LP/HP/BP, cutoff, res, cutoff mod amt in octaves) · VCA 1¢ (level, CV in) · ENV 2¢ (ADSR, linear segments) · LFO 2¢ (wave, rate).
 Yellow cables = audio, blue = control. Modulation depth lives on the destination (MOD AMT knobs). Knobs and jacks unlock per lesson.
 
-## Curriculum (33 gigs in 7 chapters + Free Jam)
-Structure: **Basics** is a linear tutorial (6 gigs). Finishing it opens all six **themes** at once; within a theme, gigs unlock in order. Each theme ends in exactly one **challenge** gig (`challenge:true`). A challenge hides the parts list and the missing-part names, showing only "N/M modules", and its manual gives guiding questions instead of steps.
-- **Basics:** Dial Tone (oscillator, pitch, cables) · Shape of Sound (waveforms) · Pixel Knight (intervals) · Thin Walls (low-pass) · Pluck (VCA + ADSR) · Vibrato (LFO, modulation)
+## Curriculum (34 gigs in 7 chapters + Free Jam)
+Structure: **Basics** is a linear tutorial (7 gigs). Finishing it opens all six **themes** at once; within a theme, gigs unlock in order. Each theme ends in exactly one **challenge** gig (`challenge:true`). A challenge hides the parts list and the missing-part names, showing only "N/M modules", and its manual gives guiding questions instead of steps.
+- **Basics:** Dial Tone (oscillator, pitch, cables) · Shape of Sound (waveforms) · Pixel Knight (intervals) · Thin Walls (low-pass) · Curtain Call (VCA + envelope: sustain & release, with OSC → VCA → OUT pre-wired) · Pluck (all four ADSR stages, built from scratch) · Vibrato (LFO, modulation)
 - **Filter Lab:** Squelch (resonance) · Payphone (filter types) · Thin Air (high-pass) · Talk Box (formants) · ★ Acid Test
 - **Bass:** Sub Club (sub bass) · Wow Bass (filter envelope, presets) · Pluck Bass · Wobble (LFO → filter) · ★ Reese
 - **Pads:** Slow Bloom · Glass Pad (layering) · Breathing Pad (slow LFO) · ★ String Section

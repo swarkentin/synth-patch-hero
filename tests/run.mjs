@@ -99,6 +99,23 @@ try {
   for (const r of solved) ok(r.fits && r.presetsOk && r.score >= 99.9 && r.missing === 0 && r.fresh < 80,
     `${r.id.padEnd(13)} fits the board, presets valid, reference scores ${r.score.toFixed(1)}%, untouched rack scores ${r.fresh.toFixed(0)}%`);
 
+  console.log('\nHelp can rescue every gig from an untouched rack');
+  await page.open(URL, { width: 1280, height: 800 });
+  await page.waitFor("document.querySelector('.gig')");
+  const rescued = await page.evaluate(`(async()=>{
+    progress.unlockAll=true; const out=[];
+    for(let i=0;i<LEVELS.length;i++){
+      store.del('draft2.'+LEVELS[i].id); openLevel(i); const L=S.L;
+      const need={}; L.target.mods.forEach(m=>need[m.type]=(need[m.type]||0)+1);
+      const paletteOk=Object.entries(need).every(([t,n])=>(L.palette[t]||0)>=n);
+      if(!L._tA) L._tA=analyze(await renderPatch(targetPatch(L),L));
+      let steps=0, score=0;
+      for(;steps<25;steps++){ score=levelCompare(L,L._tA,analyze(await renderPatch(S.patch,L))).overall; if(score>=PASS) break; if(!(await autoHelp())) break; }
+      out.push({id:L.id,paletteOk,steps,score});
+    }
+    LEVELS.forEach(L=>store.del('draft2.'+L.id)); progress.helped={}; showBoard(); return out; })()`);
+  for (const r of rescued) ok(r.paletteOk && r.score >= 90 && r.steps <= 16, `${r.id.padEnd(13)} palette has the parts; passes after ${r.steps} help step(s) (${r.score.toFixed(0)}%)`);
+
   console.log('\nCurriculum structure');
   const cur = await page.evaluate(`(()=>{
     const ids=LEVELS.map(l=>l.id), uniq=new Set(ids).size===ids.length;

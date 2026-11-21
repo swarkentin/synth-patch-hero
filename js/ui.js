@@ -26,7 +26,7 @@ function showBoard(){
       b.disabled=!open;
       b.innerHTML=`<div class="num">${c.short} ${k+1}${L.challenge?' · <span class="chal">CHALLENGE</span>':''}</div><div class="title">${L.title}</div>
         <div class="client">${open?L.client+' · '+L.role:locked?'Opens after Basics':'Finish the previous gig'}</div>
-        <div class="concept"><span class="tag">${L.concept}</span>${sv?`<span class="stamp">PAID · ${sv.cost}¢ · ${Math.round(sv.match)}%${progress.played&&progress.played[L.id]?' · ♪':''}</span>`:open?'<span style="color:var(--amber)">NEW</span>':''}</div>`;
+        <div class="concept"><span class="tag">${L.concept}</span>${sv?`<span class="stamp">PAID · ${sv.cost}¢ · ${Math.round(sv.match)}%${progress.played&&progress.played[L.id]?' · ♪':''}${progress.helped&&progress.helped[L.id]?' · helped':''}</span>`:open?'<span style="color:var(--amber)">NEW</span>':''}</div>`;
       grid.appendChild(b);
     });
     sec.appendChild(grid); g.appendChild(sec);
@@ -82,6 +82,7 @@ function openLevel(i){
   S.userZoom=false;
   requestAnimationFrame(()=>{ fitView(); drawCables(); });
   if(!draft&&MQ2.matches) openSide(); else closeSide();
+  resetStuck();
   scheduleAnalyze();
 }
 function validDraft(d){
@@ -289,29 +290,38 @@ function knobSVG(n,color){
 function makeKnob(m,d){
   const color=MT[m.type].color.replace('var(','').replace(')','');
   const col=getComputedStyle(document.documentElement).getPropertyValue(color).trim()||'#f2a541';
-  const k=el('div',{class:'knob',title:`${d.label} · drag up/down (Shift = fine) · double-click to reset`});
+  const locked=!!(m.locks&&m.locks[d.id]);
+  const k=el('div',{class:'knob'+(locked?' locked':''),'data-param':d.id,title:locked?`${d.label} is locked by Help. Tap to see why, or to unlock it.`:`${d.label} · drag up/down (Shift = fine) · click for precise control`});
   const draw=()=>{ k.innerHTML=knobSVG(toN(d,m.params[d.id]),col)+`<div class="kl">${d.label}</div><div class="kv">${d.fmt(m.params[d.id])}</div>`; };
   draw();
   const set=v=>{ if(v===m.params[d.id]) return; m.params[d.id]=v; draw(); scheduleAnalyze(); };
   k._set=set;
+  if(locked){ k.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); }); k.addEventListener('click',()=>showLockInfo(m,d)); return k; }
   k.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); try{k.setPointerCapture(e.pointerId);}catch(_){}
     const touch=e.pointerType!=='mouse'; let y0=e.clientY, n0=toN(d,m.params[d.id]), moved=false;
     const mv=ev=>{ if(S.pinching) return; if(!moved&&Math.abs(y0-ev.clientY)<(touch?6:2)) return; if(!moved){ moved=true; y0=ev.clientY; }
-      const sens=ev.shiftKey?0.0012:(touch?0.0022:0.006); set(fromN(d,n0+(y0-ev.clientY)*sens)); };
+      const sens=ev.shiftKey?(touch?0.0008:0.0007):(touch?0.0022:0.0035); set(fromN(d,n0+(y0-ev.clientY)*sens)); };
     const up=ev=>{ k.removeEventListener('pointermove',mv); k.removeEventListener('pointerup',up); k.removeEventListener('pointercancel',up);
-      if(!moved&&ev.type==='pointerup'&&(touch||S.mobile)) openSheet(m,d,k); };
+      if(!moved&&ev.type==='pointerup') openSheet(m,d,k); };
     k.addEventListener('pointermove',mv); k.addEventListener('pointerup',up); k.addEventListener('pointercancel',up); });
-  k.addEventListener('dblclick',()=>set(d.def));
-  k.addEventListener('wheel',e=>{ e.preventDefault(); e.stopPropagation(); const st=d.step?d.step/(d.max-d.min):0.01; const n=toN(d,m.params[d.id])+(e.deltaY<0?1:-1)*Math.max(st,e.shiftKey?0.002:0.01); set(fromN(d,n)); },{passive:false});
+  // Wheel / trackpad: follow the real scroll distance. Coarse stepped knobs (OCT, SEMI…) move one step per ~40px of scroll.
+  let wn=null, acc=0;
+  k.addEventListener('wheel',e=>{ e.preventDefault(); e.stopPropagation();
+    const px=(e.deltaMode===1?16:e.deltaMode===2?400:1)*(Math.abs(e.deltaY)>=Math.abs(e.deltaX)?e.deltaY:-e.deltaX);
+    const steps=d.step?(d.max-d.min)/d.step:0;
+    if(steps&&steps<=60){ acc+=px; while(Math.abs(acc)>=40){ const dir=acc>0?-1:1; acc-=Math.sign(acc)*40; set(fromN(d,toN(d,m.params[d.id])+dir/steps)); } return; }
+    const cur=toN(d,m.params[d.id]); if(wn==null||Math.abs(wn-cur)>0.02) wn=cur;
+    wn=Math.min(1,Math.max(0,wn-px*(e.shiftKey?0.00015:0.0006))); set(fromN(d,wn)); },{passive:false});
   return k;
 }
 function makeChoice(m,d){
-  const w=el('div',{class:'choice'}); w.style.setProperty('--sel',MT[m.type].color);
+  const locked=!!(m.locks&&m.locks[d.id]);
+  const w=el('div',{class:'choice'+(locked?' locked':''),'data-param':d.id}); w.style.setProperty('--sel',MT[m.type].color);
   const draw=()=>{ w.innerHTML=''; d.options.forEach((o,i)=>{
     const b=el('button',{class:m.params[d.id]===o?'on':'',title:o},
       WAVE_PATH[o]?`<svg width="28" height="18" viewBox="0 0 28 18"><path d="${WAVE_PATH[o]}" stroke="#a09482" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg>`:(d.labels?d.labels[i]:o));
     b.addEventListener('pointerdown',e=>e.stopPropagation());
-    b.addEventListener('click',()=>{ m.params[d.id]=o; draw(); scheduleAnalyze(); });
+    b.addEventListener('click',()=>{ if(locked){ showLockInfo(m,d); return; } m.params[d.id]=o; draw(); scheduleAnalyze(); });
     w.appendChild(b); }); };
   draw(); return w;
 }
@@ -365,21 +375,29 @@ function showPatchbar(){
 function openSheet(m,d,knobEl){
   const sh=$('#sheet'); sh.hidden=false; sh.style.setProperty('--sel',MT[m.type].color);
   const steps=d.step?Math.round((d.max-d.min)/d.step):0;
-  const small=steps?1/steps:0.004, big=steps?Math.max(1,Math.round(steps/12))/steps:0.04;
+  const fineSteps=steps&&steps<=60;
+  const small=fineSteps?1/steps:steps?Math.max(1/steps,0.0025):0.0025, big=fineSteps?Math.max(1,Math.round(steps/12))/steps:0.03;
   sh.innerHTML=`<div class="sheetCard"><div class="shHead"><span class="shTitle">${MT[m.type].name} · ${d.label}</span><button class="btn primary" id="shDone">Done</button></div>
     <div class="shVal" id="shVal"></div><input class="shRange" id="shR" type="range" min="0" max="1000" step="1" aria-label="${d.label}">
     <div class="shBtns"><button data-d="${-big}">−−</button><button data-d="${-small}">−</button><button data-d="${small}">+</button><button data-d="${big}">++</button></div>
-    <div class="shRow"><button id="shReset">Reset</button><button id="shPlay">▶ Yours</button></div></div>`;
+    <div class="shRow"><button id="shReset">Reset</button><button id="shPlay">▶ Yours</button></div>
+    <div class="shKeys">← → nudge · Shift+← → bigger steps · Space plays yours · Esc closes</div></div>`;
   const R=$('#shR');
   const sync=()=>{ $('#shVal').textContent=d.fmt(m.params[d.id]); R.value=Math.round(toN(d,m.params[d.id])*1000); };
   const set=v=>{ knobEl._set(v); sync(); };
   sync();
   R.addEventListener('input',()=>set(fromN(d,R.value/1000)));
-  sh.querySelectorAll('.shBtns button').forEach(b=>b.addEventListener('click',()=>{ let v=m.params[d.id], n=toN(d,v)+parseFloat(b.dataset.d), nv=fromN(d,n);
-    if(nv===v&&!steps){ nv=fromN(d,toN(d,v)+2*parseFloat(b.dataset.d)); } set(nv); }));
+  sh.querySelectorAll('.shBtns button').forEach(b=>b.addEventListener('click',()=>nudge(parseFloat(b.dataset.d))));
   $('#shReset').onclick=()=>set(d.def);
   $('#shPlay').onclick=()=>playFixed(S.patch,S.L,'mY');
-  const close=()=>{ sh.hidden=true; sh.innerHTML=''; };
+  const nudge=delta=>{ let v=m.params[d.id], nv=fromN(d,toN(d,v)+delta); if(nv===v&&!fineSteps) nv=fromN(d,toN(d,v)+2*delta); set(nv); };
+  const onKey=e=>{ if(sh.hidden) return;
+    if(e.key==='ArrowRight'||e.key==='ArrowUp'){ e.preventDefault(); nudge(e.shiftKey?big:small); }
+    else if(e.key==='ArrowLeft'||e.key==='ArrowDown'){ e.preventDefault(); nudge(-(e.shiftKey?big:small)); }
+    else if(e.key===' '){ e.preventDefault(); playFixed(S.patch,S.L,'pY'); }
+    else if(e.key==='Enter'){ e.preventDefault(); close(); } };
+  window.addEventListener('keydown',onKey);
+  const close=()=>{ sh.hidden=true; sh.innerHTML=''; window.removeEventListener('keydown',onKey); };
   $('#shDone').onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); };
 }
 
@@ -435,7 +453,7 @@ function startCable(ev,portEl){
 function renderCompare(){
   const c=$('#compare'), sb=S.sandbox; c.classList.remove('expanded');
   c.innerHTML=`<div class="cmpTop">${sb?'':'<button class="playBtn t" id="pT"><span class="dot"></span>▶ TARGET</button>'}<button class="playBtn y" id="pY"><span class="dot"></span>▶ ${sb?'PLAY':'YOURS'}</button>
-    ${sb?'<div class="pctBox"><small>FREE JAM</small></div>':`<div class="pctBox"><b id="pct">–</b><small id="pctSub">need ${PASS}%</small></div><button class="btn primary" id="btnSubmit" disabled>Send</button>`}</div>
+    ${sb?'<div class="pctBox"><small>FREE JAM</small></div>':`<div class="pctBox"><b id="pct">–</b><small id="pctSub">need ${PASS}%</small></div><button class="btn primary" id="btnSubmit" disabled>Send</button><button class="btn" id="btnHelp" title="Stuck? Get a hint, or let Help patch a module or lock a knob">Help</button>`}</div>
     ${sb?'':`<div class="bar"><i id="barAll"></i><span class="thr" style="left:${PASS}%"></span></div>`}
     <div class="cmpBody">
       ${sb?'':`<div class="subs"><div class="sub"><span>Spectrogram</span><div class="bar"><i id="barSpec"></i></div><span id="vSpec"></span></div>
@@ -451,7 +469,7 @@ function renderCompare(){
       </div>
       <div class="stats" id="stats"></div>
     </div>`;
-  if(!sb){ $('#pT').onclick=()=>playFixed(targetPatch(S.L),S.L,'pT'); $('#btnSubmit').onclick=submit;
+  if(!sb){ $('#pT').onclick=()=>playFixed(targetPatch(S.L),S.L,'pT'); $('#btnSubmit').onclick=submit; $('#btnHelp').onclick=requestHelp;
     $('#hints').addEventListener('click',()=>{ if(S.mobile) toggleExpanded(); }); }
   $('#pY').onclick=()=>playFixed(S.patch,S.L,'pY');
   c.querySelectorAll('.plotTabs button').forEach(b=>b.addEventListener('click',()=>{
@@ -465,7 +483,7 @@ function paintPlotTabs(){ document.querySelectorAll('.plotTabs button').forEach(
 function flashPlay(id,dur){ const b=document.getElementById(id); if(!b) return; b.classList.add('lit'); setTimeout(()=>b.classList.remove('lit'),dur*1000); }
 
 let aTimer=null, aSeq=0;
-function scheduleAnalyze(){ clearTimeout(aTimer); aTimer=setTimeout(runAnalyze,S.mobile?220:120); saveDraft(); }
+function scheduleAnalyze(){ if(S.stuck) S.stuck.changes++; clearTimeout(aTimer); aTimer=setTimeout(runAnalyze,S.mobile?220:120); saveDraft(); }
 function saveDraft(){ if(S.L&&S.patch) store.set('draft2.'+S.L.id,S.patch); }
 async function runAnalyze(){
   if(!S.L) return; const seq=++aSeq, L=S.L;
@@ -473,7 +491,7 @@ async function runAnalyze(){
   const xm=await renderPatch(S.patch,L), mine=analyze(xm);
   if(!S.sandbox&&!L._tX){ const xt=await renderPatch(targetPatch(L),L); L._tX=xt; L._tA=analyze(xt); }
   if(seq!==aSeq||S.L!==L) return;
-  S.mineX=xm; S.mine=mine; S.cmp=S.sandbox?null:levelCompare(L,L._tA,mine);
+  S.mineX=xm; S.mine=mine; S.cmp=S.sandbox?null:levelCompare(L,L._tA,mine); if(S.cmp) noteScore(S.cmp.overall);
   updateCompare();
 }
 function updateCompare(){
