@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synth Patch Hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#13100e; --panel:#1d1916; --panel2:#26211d; --line:#3a322b; --line2:#4d433a;
+  --text:#efe6d8; --dim:#a09482; --faint:#6d6356;
+  --amber:#f2a541; --teal:#4fb3a9; --red:#e0604f; --violet:#a58be8; --green:#8cc152; --grey:#b5ada3; --cream:#efe6d8;
+  --audio:#f2c14e; --mod:#7fb2f0; --good:#8cc152; --bad:#e0604f;
+  --mono:'IBM Plex Mono',ui-monospace,monospace; --head:'Chakra Petch',system-ui,sans-serif; --sans:'IBM Plex Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px}
+button{font:inherit;color:inherit;cursor:pointer}
+[hidden]{display:none!important}
+.topbar{height:48px;display:flex;align-items:center;gap:16px;padding:0 16px;border-bottom:1px solid var(--line);background:linear-gradient(#1f1a16,#191512)}
+.brand{font-family:var(--head);font-weight:700;letter-spacing:.14em;font-size:15px;color:var(--amber)}
+.brand span{color:var(--text)}
+.crumbs{color:var(--dim);font-family:var(--mono);font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:6px 12px;font-family:var(--head);font-weight:600;letter-spacing:.06em;font-size:12px;text-transform:uppercase}
+.btn:hover{border-color:var(--amber)}
+.btn.primary{background:var(--amber);color:#1a130b;border-color:var(--amber)}
+.btn.primary:disabled{background:var(--panel2);color:var(--faint);border-color:var(--line);cursor:not-allowed}
+.btn.ghost{background:transparent}
+
+/* ---------- Board ---------- */
+#screenBoard{height:calc(100% - 48px);overflow:auto}
+.boardInner{max-width:1080px;margin:0 auto;padding:28px 20px 60px}
+.intro{display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start;margin-bottom:28px}
+.intro h1{font-family:var(--head);font-size:34px;line-height:1.05;margin:0 0 10px;letter-spacing:.02em}
+.intro h1 em{font-style:normal;color:var(--amber)}
+.intro p{color:var(--dim);line-height:1.6;margin:0 0 10px;max-width:62ch}
+.ledger{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:12px}
+.ledger .row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--line)}
+.ledger .row:last-child{border:0}
+.ledger b{color:var(--amber);font-weight:600}
+.sectionLabel{font-family:var(--head);letter-spacing:.16em;font-size:12px;color:var(--faint);text-transform:uppercase;margin:22px 0 10px}
+.gigs{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.gig{position:relative;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 14px 12px;min-height:128px;display:flex;flex-direction:column;gap:6px;transition:transform .12s,border-color .12s}
+.gig:hover:not(:disabled){border-color:var(--amber);transform:translateY(-2px)}
+.gig:disabled{opacity:.42;cursor:not-allowed}
+.gig .num{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.gig .title{font-family:var(--head);font-weight:700;font-size:18px;letter-spacing:.02em}
+.gig .client{color:var(--dim);font-size:12.5px}
+.gig .concept{margin-top:auto;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px}
+.tag{padding:2px 7px;border-radius:4px;border:1px solid var(--line2);color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+.stamp{color:var(--good);font-weight:600}
+.gig.solved{border-color:#3d4a2c}
+.gig.jam{border-style:dashed}
+.boardFoot{margin-top:30px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--faint);font-size:12px}
+
+/* ---------- Level ---------- */
+#screenLevel{height:calc(100% - 48px);display:grid;grid-template-columns:300px 1fr 330px;min-height:0}
+.col{min-height:0;overflow:auto;border-right:1px solid var(--line);background:var(--panel)}
+.col.right{border-right:0;border-left:1px solid var(--line)}
+.card{padding:16px;border-bottom:1px solid var(--line)}
+.card h3{font-family:var(--head);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin:0 0 10px;font-weight:600}
+.brief .who{font-family:var(--head);font-weight:700;font-size:16px;margin-bottom:2px}
+.brief .role{color:var(--dim);font-size:12px;margin-bottom:10px}
+.brief blockquote{margin:0;padding:10px 12px;background:var(--panel2);border-left:3px solid var(--amber);border-radius:0 6px 6px 0;line-height:1.55;font-size:13.5px}
+.brief .specs{margin-top:10px;font-family:var(--mono);font-size:11.5px;color:var(--dim);display:flex;gap:12px;flex-wrap:wrap}
+.manual{line-height:1.6;font-size:13.5px}
+.manual h4{font-family:var(--head);font-size:17px;margin:0 0 8px;color:var(--amber)}
+.manual p{margin:0 0 10px;color:#ddd3c4}
+.manual ul{margin:0 0 10px;padding-left:18px;color:#ddd3c4}
+.manual li{margin-bottom:4px}
+.manual b{color:var(--text)}
+.manual .tip{background:#1b2321;border:1px solid #2d413d;border-radius:6px;padding:8px 10px;font-size:12.5px;color:#cfe4df}
+.manual code{font-family:var(--mono);font-size:12px;background:var(--panel2);padding:1px 5px;border-radius:3px}
+
+.center{display:flex;flex-direction:column;min-width:0;min-height:0;background:
+  radial-gradient(circle at 1px 1px,#2a241f 1px,transparent 1.5px) 0 0/22px 22px, #161210}
+.palette{display:flex;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap;align-items:center}
+.palette .lbl{font-family:var(--head);font-size:11px;letter-spacing:.16em;color:var(--faint);margin-right:4px}
+.palBtn{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:5px 10px 5px 6px;font-size:12px}
+.palBtn:hover:not(:disabled){border-color:var(--text)}
+.palBtn:disabled{opacity:.35;cursor:not-allowed}
+.palBtn .sw{width:10px;height:22px;border-radius:3px}
+.palBtn b{font-family:var(--head);letter-spacing:.06em}
+.palBtn small{font-family:var(--mono);color:var(--dim);font-size:10.5px}
+.palette .spacer{flex:1}
+.palette .keys{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.rackScroll{flex:1;overflow:auto;position:relative;min-height:0}
+#rack{position:relative;width:1180px;height:680px}
+#cables{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3;overflow:visible}
+#cables .hit{pointer-events:stroke;cursor:pointer}
+#cables g:hover .main{stroke-width:6}
+#mods{position:absolute;inset:0;z-index:2}
+
+.module{position:absolute;width:212px;background:linear-gradient(#2b2520,#231e1a);border:1px solid var(--line2);border-radius:8px;box-shadow:0 8px 22px rgba(0,0,0,.45);user-select:none;touch-action:none}
+.module .mhead{display:flex;align-items:center;gap:8px;padding:6px 8px;border-bottom:1px solid var(--line);cursor:grab;border-radius:8px 8px 0 0}
+.module .mhead .stripe{width:4px;height:16px;border-radius:2px}
+.module .mhead .name{font-family:var(--head);font-weight:700;letter-spacing:.1em;font-size:12px;flex:1}
+.module .mhead .cost{font-family:var(--mono);font-size:10px;color:var(--dim)}
+.module .mhead .del{background:none;border:0;color:var(--faint);font-size:15px;line-height:1;padding:0 2px}
+.module .mhead .del:hover{color:var(--red)}
+.module .mbody{display:flex;padding:8px 0;min-height:56px}
+.module .ins,.module .outs{display:flex;flex-direction:column;gap:10px;justify-content:center;width:34px;flex:none}
+.module .params{flex:1;display:flex;flex-wrap:wrap;gap:6px 4px;justify-content:center;align-content:center}
+.port{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:crosshair;touch-action:none}
+.port .jack{width:18px;height:18px;border-radius:50%;background:#0d0b0a;border:3px solid #5a4f45;box-shadow:inset 0 0 0 3px #1a1613}
+.port.audio .jack{border-color:#8a7232}
+.port.mod .jack{border-color:#4d6a91}
+.port:hover .jack,.port.hot .jack{border-color:var(--text)}
+.port label{font-family:var(--mono);font-size:8.5px;color:var(--dim);letter-spacing:.04em;pointer-events:none}
+.port.out .jack{background:#2b2520}
+
+.knob{width:52px;display:flex;flex-direction:column;align-items:center;cursor:ns-resize;touch-action:none}
+.knob svg{display:block}
+.knob .kl{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:.06em;margin-top:-2px}
+.knob .kv{font-family:var(--mono);font-size:10px;color:var(--text);white-space:nowrap}
+.choice{width:100%;display:flex;justify-content:center;gap:3px;padding:0 4px 2px}
+.choice button{flex:1;max-width:38px;height:24px;background:#16120f;border:1px solid var(--line2);border-radius:4px;padding:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9.5px;color:var(--dim)}
+.choice button.on{border-color:var(--sel,var(--amber));color:var(--text);background:#2f2822}
+.choice button svg{display:block}
+.choice button.on svg path{stroke:var(--sel,var(--amber))}
+.outBox{padding:6px 4px;text-align:center;color:var(--dim);font-size:11px;line-height:1.3}
+.outBox .spk{width:46px;height:46px;margin:0 auto 4px;border-radius:50%;background:repeating-radial-gradient(circle,#2f2822 0 2px,#16120f 2px 5px);border:2px solid var(--line2)}
+
+/* ---------- Right panel ---------- */
+.playRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.playBtn{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);font-family:var(--head);font-weight:700;letter-spacing:.08em;font-size:12px}
+.playBtn .dot{width:10px;height:10px;border-radius:50%}
+.playBtn:hover{border-color:var(--text)}
+.playBtn.t .dot{background:var(--cream)}
+.playBtn.y .dot{background:var(--amber)}
+.matchBig{display:flex;align-items:baseline;gap:10px;margin:2px 0 6px}
+.matchBig .pct{font-family:var(--mono);font-weight:600;font-size:44px;line-height:1;color:var(--amber);font-variant-numeric:tabular-nums}
+.matchBig .pct.ok{color:var(--good)}
+.matchBig .lab{color:var(--dim);font-size:12px}
+.bar{position:relative;height:8px;background:#0f0c0a;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--amber);transition:width .2s}
+.bar.big{height:12px;margin-bottom:12px}
+.bar .thr{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--text);opacity:.6}
+.sub{display:grid;grid-template-columns:70px 1fr 38px;gap:8px;align-items:center;font-size:12px;margin-bottom:6px}
+.sub span:first-child{color:var(--dim)}
+.sub span:last-child{font-family:var(--mono);text-align:right;font-size:11px}
+.hints{list-style:none;padding:0;margin:10px 0 0;font-size:12.5px;line-height:1.5}
+.hints li{padding:5px 0 5px 20px;position:relative;border-top:1px dashed var(--line)}
+.hints li::before{content:'›';position:absolute;left:6px;color:var(--amber);font-weight:700}
+.hints li.ok::before{content:'✓';color:var(--good)}
+.plot{width:100%;display:block;background:#0f0c0a;border:1px solid var(--line);border-radius:6px}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--dim);margin:6px 0 4px;font-family:var(--mono)}
+.legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
+.plotLbl{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin:10px 0 4px;letter-spacing:.05em}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.stat b{display:block;font-family:var(--mono);font-size:18px}
+.stat span{font-size:10.5px;color:var(--dim);letter-spacing:.04em;text-transform:uppercase}
+
+/* ---------- Modal ---------- */
+#modal{position:fixed;inset:0;background:rgba(8,6,5,.72);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+.modalCard{width:min(520px,100%);background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.modalCard h2{font-family:var(--head);margin:0 0 4px;font-size:24px;color:var(--good)}
+.modalCard .lead{color:var(--dim);margin:0 0 16px}
+.modalCard blockquote{margin:0 0 16px;padding:10px 12px;background:var(--panel2);border-left:3px solid var(--good);border-radius:0 6px 6px 0;line-height:1.55}
+.resGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.res{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center}
+.res b{display:block;font-family:var(--mono);font-size:20px}
+.res span{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.res em{display:block;font-style:normal;font-size:10.5px;color:var(--faint);font-family:var(--mono);margin-top:2px}
+.modalBtns{display:flex;gap:8px;justify-content:flex-end}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line2);padding:8px 14px;border-radius:8px;font-size:13px;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+
+@media (max-width:1100px){
+  #screenLevel{grid-template-columns:1fr;grid-template-rows:auto;height:auto;overflow:auto}
+  #screenLevel .col{border:0;border-bottom:1px solid var(--line);overflow:visible}
+  .center{height:70vh}
+  .intro{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">SYNTH PATCH <span>HERO</span></div>
+  <div class="crumbs" id="crumbs">Gig board</div>
+  <button class="btn ghost" id="btnHome" hidden>← Gig board</button>
+</div>
+
+<section id="screenBoard">
+  <div class="boardInner">
+    <div class="intro">
+      <div>
+        <h1>Rent's due. You have a <em>modular synth</em> and a phone that won't stop ringing.</h1>
+        <p>Your band broke up, your day job let you go, and all you kept was a dusty patch rack in your aunt's basement. Word got around that you can "make sounds." Now artists keep calling with oddly specific requests.</p>
+        <p>Each gig comes with a reference sound. Patch modules together, twist the knobs, and match it by ear (and by graph). Every gig teaches you one new piece of synthesis. Hit a <b>90% match</b> to get paid, then come back and do it cheaper.</p>
+      </div>
+      <div class="ledger" id="ledger"></div>
+    </div>
+    <div class="sectionLabel">Gig board</div>
+    <div class="gigs" id="gigs"></div>
+    <div class="boardFoot">
+      <button class="btn ghost" id="btnUnlock">Studio key: unlock all gigs</button>
+      <button class="btn ghost" id="btnReset">Wipe progress</button>
+      <span>Use headphones. Best in Chrome, Edge, Safari or Firefox on desktop.</span>
+    </div>
+  </div>
+</section>
+
+<section id="screenLevel" hidden>
+  <aside class="col left">
+    <div class="card brief" id="brief"></div>
+    <div class="card manual" id="manual"></div>
+  </aside>
+  <main class="center">
+    <div class="palette" id="palette"></div>
+    <div class="rackScroll" id="rackScroll">
+      <div id="rack"><svg id="cables"></svg><div id="mods"></div></div>
+    </div>
+  </main>
+  <aside class="col right" id="right"></aside>
+</section>
+
+<div id="modal" hidden></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   DATA: module types
+   ===================================================================== */
+const WAVES = ['sine','triangle','square','sawtooth'];
+const WAVE_PATH = {
+  sine:'M2 9 C6 1, 10 1, 14 9 S22 17, 26 9',
+  triangle:'M2 9 L8 2 L20 16 L26 9',
+  square:'M2 15 L2 3 L14 3 L14 15 L26 15 L26 3',
+  sawtooth:'M2 15 L14 3 L14 15 L26 3 L26 15'
+};
+const fmtHz = v => v >= 1000 ? (v/1000).toFixed(v>=10000?1:2)+'k' : Math.round(v)+'';
+const fmtT = v => v < 1 ? Math.round(v*1000)+'ms' : v.toFixed(2)+'s';
+const fmtSigned = v => (v>0?'+':'')+v;
+const fmtPct = v => Math.round(v*100)+'%';
+
+const MT = {
+  osc: {name:'OSC', long:'Oscillator', color:'var(--amber)', cost:2,
+    ins:[{id:'pitch',kind:'mod',label:'PITCH',req:'mod'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
+    params:[
+      {id:'wave',type:'choice',options:WAVES,def:'sine',req:'wave'},
+      {id:'oct',label:'OCT',min:-3,max:3,step:1,def:0,fmt:fmtSigned},
+      {id:'semi',label:'SEMI',min:-12,max:12,step:1,def:0,fmt:fmtSigned},
+      {id:'fine',label:'FINE',min:-50,max:50,step:1,def:0,fmt:v=>fmtSigned(v)+'ct',req:'fine'},
+      {id:'pitchAmt',label:'MOD AMT',min:0,max:4800,step:5,def:0,fmt:v=>(v/100).toFixed(v<1000?2:1)+'st',req:'mod'},
+    ]},
+  noise: {name:'NOISE', long:'Noise source', color:'var(--grey)', cost:1, ins:[], outs:[{id:'out',kind:'audio',label:'OUT'}], params:[]},
+  filter: {name:'FILTER', long:'Filter', color:'var(--teal)', cost:3,
+    ins:[{id:'in',kind:'audio',label:'IN'},{id:'cut',kind:'mod',label:'CUT',req:'mod'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
+    params:[
+      {id:'type',type:'choice',options:['lowpass','highpass','bandpass'],labels:['LP','HP','BP'],def:'lowpass',req:'ftype'},
+      {id:'cutoff',label:'CUTOFF',min:40,max:12000,scale:'log',def:2000,fmt:fmtHz},
+      {id:'res',label:'RES',min:0,max:1,step:0.01,def:0.1,fmt:fmtPct,req:'res'},
+      {id:'cutAmt',label:'MOD AMT',min:0,max:7200,step:10,def:0,fmt:v=>(v/1200).toFixed(2)+'oct',req:'mod'},
+    ]},
+  vca: {name:'VCA', long:'Amplifier', color:'var(--red)', cost:1,
+    ins:[{id:'in',kind:'audio',label:'IN'},{id:'gain',kind:'mod',label:'CV'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
+    params:[{id:'level',label:'LEVEL',min:0,max:1,step:0.01,def:0.8,fmt:fmtPct}]},
+  env: {name:'ENV', long:'ADSR envelope', color:'var(--violet)', cost:2, ins:[], outs:[{id:'out',kind:'mod',label:'ENV'}],
+    params:[
+      {id:'a',label:'ATTACK',min:0.001,max:3,scale:'log',def:0.01,fmt:fmtT},
+      {id:'d',label:'DECAY',min:0.005,max:3,scale:'log',def:0.3,fmt:fmtT},
+      {id:'s',label:'SUSTAIN',min:0,max:1,step:0.01,def:0.7,fmt:fmtPct},
+      {id:'r',label:'RELEASE',min:0.005,max:4,scale:'log',def:0.3,fmt:fmtT},
+    ]},
+  lfo: {name:'LFO', long:'Low-frequency oscillator', color:'var(--green)', cost:2, ins:[], outs:[{id:'out',kind:'mod',label:'LFO'}],
+    params:[
+      {id:'wave',type:'choice',options:WAVES,def:'sine'},
+      {id:'rate',label:'RATE',min:0.1,max:20,scale:'log',def:2,fmt:v=>v.toFixed(v<10?2:1)+'Hz'},
+    ]},
+  out: {name:'OUTPUT', long:'Speaker', color:'var(--cream)', cost:0, ins:[{id:'in',kind:'audio',label:'IN'}], outs:[], params:[]},
+};
+const ALL_FEATURES = ['osc','wave','filter','res','ftype','vca','env','mod','lfo','fine','noise'];
+
+/* =====================================================================
+   DATA: levels
+   ===================================================================== */
+const NOTE_NAMES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const noteName = m => NOTE_NAMES[m%12]+(Math.floor(m/12)-1);
+const mtof = m => 440*Math.pow(2,(m-69)/12);
+
+const LEVELS = [
+{ id:'dial-tone', title:'Dial Tone', concept:'Oscillator', client:'Marlene Okafor', role:'Owner, Suds & Spins Laundromat',
+  unlock:['osc'], palette:{osc:1}, note:57, gate:1.2, dur:1.4,
+  start:[{type:'osc',x:250,y:200}],
+  brief:`Our "cycle done" beeper died. It was a smooth, pure tone, kind of soothing. Higher than whatever that box of yours is making right now, I'll tell you that much. Twenty bucks if you can match it.`,
+  manual:`<h4>The oscillator</h4>
+  <p>Every synth sound starts with an <b>oscillator</b>: a circuit that wiggles a voltage back and forth very fast. How fast it wiggles is the <b>frequency</b>, which you hear as <b>pitch</b>.</p>
+  <ul><li><b>OCT</b> jumps a whole octave. One octave up = twice the frequency.</li><li><b>SEMI</b> moves in semitones (piano keys). 12 semitones = 1 octave.</li></ul>
+  <p>Sound only reaches the speaker if it's <b>patched</b>. Drag from the OSC's <b>OUT</b> jack to the OUTPUT's <b>IN</b> jack. Click a cable to remove it.</p>
+  <div class="tip">Press <b>▶ Target</b> and <b>▶ Yours</b> back and forth. The graphs on the right show where your sound differs. Keys <code>A</code>–<code>K</code> play your patch like a keyboard.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{oct:1}}], cables:['o.out>out.in']},
+  reply:`That's the one! The whole laundromat sighed in relief. Here's your twenty, and I'm telling my nephew about you.`},
+
+{ id:'shape', title:'Shape of Sound', concept:'Waveforms', client:'DJ Kettle', role:'Basement rave curator',
+  unlock:['wave'], palette:{osc:1}, note:45, gate:1.2, dur:1.4,
+  brief:`I need a raw tone. Buzzy. Nasty. Like a bee trapped in a soda can. Same note as the reference, I just need that edge on it.`,
+  manual:`<h4>Waveforms and harmonics</h4>
+  <p>The <b>shape</b> of the wiggle sets the tone color, or <b>timbre</b>. Any shape other than a sine adds <b>harmonics</b>: quieter copies of the note at 2×, 3×, 4×… the frequency.</p>
+  <ul><li><b>Sine</b>: the fundamental only. Pure and soft.</li><li><b>Triangle</b>: a few odd harmonics, fading fast. Mellow, flute-like.</li><li><b>Square</b>: strong odd harmonics. Hollow, reedy, "8-bit."</li><li><b>Saw</b>: every harmonic. Bright and buzzy, the classic synth raw material.</li></ul>
+  <div class="tip">Watch the <b>spectrum</b> plot: each spike is a harmonic. Count the spikes and compare their spacing to pick the right shape.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}}], cables:['o.out>out.in']},
+  reply:`BZZZZT. Perfect. The crowd is going to hate it in the best way.`},
+
+{ id:'pixel-knight', title:'Pixel Knight', concept:'Pitch practice', client:'Bitcrush Bros.', role:'Two-person indie game studio',
+  unlock:[], palette:{osc:1}, note:57, gate:1.2, dur:1.4,
+  brief:`Our hero's jump sound needs a chiptune "bloop." Hollow, retro, way up high. We lost the original file and only have this recording. Help.`,
+  manual:`<h4>Intervals</h4>
+  <p>Musicians count pitch distance in <b>semitones</b>. A few you'll hear constantly:</p>
+  <ul><li><b>+12</b>: an octave. Same note, higher.</li><li><b>+7</b>: a <b>perfect fifth</b>. Bright and stable (think power chords).</li><li><b>+5</b>: a fourth. <b>+4</b>: a major third. <b>+3</b>: a minor third.</li></ul>
+  <p>OCT and SEMI add together, so +1 OCT and +7 SEMI is 19 semitones up.</p>
+  <div class="tip">Get the shape right first, then sweep pitch. The hint list tells you how many semitones off you are.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'square',oct:1,semi:7}}], cables:['o.out>out.in']},
+  reply:`Our knight jumps with dignity again. Paying you in cash AND a credit in the game.`},
+
+{ id:'thin-walls', title:'Thin Walls', concept:'Low-pass filter', client:'Lo & Behold', role:'Lo-fi duo, bedroom label',
+  unlock:['filter'], palette:{osc:1,filter:1}, note:45, gate:1.2, dur:1.4,
+  brief:`We want this buzzy note to sound like it's coming through the wall from the neighbour's apartment. Muffled, warm, distant. Same buzz underneath, just… dulled.`,
+  manual:`<h4>Subtractive synthesis</h4>
+  <p>Start with a harmonic-rich wave, then <b>carve harmonics away</b> with a <b>filter</b>. This is how most classic analog synths work.</p>
+  <p>A <b>low-pass filter</b> lets low frequencies through and removes highs above its <b>CUTOFF</b>. Lower cutoff = darker, more muffled sound.</p>
+  <p>Patch it <i>between</i> the oscillator and the output: <code>OSC → FILTER → OUTPUT</code>.</p>
+  <div class="tip">On the spectrum plot, watch the right side of the curve drop as you lower the cutoff. Line yours up with the target's slope.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:480}}], cables:['o.out>f.in','f.out>out.in']},
+  reply:`Exactly like our neighbour, Gary. Love that for us. Track's going on the "rainy window" playlist.`},
+
+{ id:'squelch', title:'Squelch', concept:'Resonance', client:'Acid Annie', role:'303 devotee, warehouse DJ',
+  unlock:['res'], palette:{osc:1,filter:1}, note:45, gate:1.2, dur:1.4,
+  brief:`Darling, a plain filter is so polite. I need it to sing. That rubbery, wet, whistling peak right at the cutoff. Make it squelch.`,
+  manual:`<h4>Resonance</h4>
+  <p><b>Resonance</b> (also called <b>Q</b> or emphasis) feeds some of the filter's output back into itself, which <b>boosts the frequencies right at the cutoff</b>.</p>
+  <ul><li>Low resonance: a smooth roll-off.</li><li>High resonance: a sharp peak that whistles. Sweeping it is the "acid" sound.</li></ul>
+  <div class="tip">A resonant peak shows up as a bump on the spectrum plot. Its <b>position</b> is the cutoff, its <b>height</b> is the resonance. Match position first.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:900,res:0.78}}], cables:['o.out>f.in','f.out>out.in']},
+  reply:`Mmm, squelchy. You've got good ears, sweetie. I'll be back.`},
+
+{ id:'payphone', title:'Payphone', concept:'Filter types', client:'The Payphones', role:'Garage band, three chords',
+  unlock:['ftype'], palette:{osc:1,filter:1}, note:57, gate:1.2, dur:1.4,
+  brief:`Our intro is supposed to sound like it's coming down an old telephone line. Thin and nasal: no deep bass, no fizzy top. Just the honky middle.`,
+  manual:`<h4>Filter types</h4>
+  <ul><li><b>LP (low-pass)</b>: keeps lows, cuts highs. Warm, dark.</li><li><b>HP (high-pass)</b>: keeps highs, cuts lows. Thin, airy.</li><li><b>BP (band-pass)</b>: keeps a band around the cutoff and cuts both sides. Nasal, telephone, radio.</li></ul>
+  <p>On a band-pass, <b>RES</b> controls how narrow the band is. Narrower = more nasal.</p>
+  <div class="tip">Look at the target spectrum: is it a ramp, a slope up, or a hill? That tells you the filter type.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{type:'bandpass',cutoff:1300,res:0.3}}], cables:['o.out>f.in','f.out>out.in']},
+  reply:`Hello? Is it me you're looking for? (Yes. It's you. That's perfect.)`},
+
+{ id:'pluck', tol:1.5, title:'Pluck', concept:'VCA + ADSR', client:'Juniper Vale', role:'Folktronica songwriter',
+  unlock:['vca','env'], palette:{osc:1,filter:1,vca:1,env:1}, note:57, gate:1.0, dur:1.6,
+  brief:`Every sound you've made so far just… sits there, droning. I want a plucked string, like a kalimba. A quick "plink" that fades away by itself. Soft tone.`,
+  manual:`<h4>Shaping volume over time</h4>
+  <p>A <b>VCA</b> (voltage-controlled amplifier) is a volume knob that other modules can turn. Plug a control signal into its <b>CV</b> jack and it opens and closes with that signal.</p>
+  <p>An <b>envelope</b> (ENV) is a control signal that plays once per note in four stages:</p>
+  <ul><li><b>Attack</b>: how long to rise to full when the key goes down.</li><li><b>Decay</b>: how long to fall to the sustain level.</li><li><b>Sustain</b>: the level held while the key stays down (a level, not a time).</li><li><b>Release</b>: how long to fade out after the key is let go.</li></ul>
+  <p>Patch <code>OSC → VCA → OUTPUT</code>, then <code>ENV → VCA CV</code>. Blue cables carry control signals; yellow cables carry audio.</p>
+  <div class="tip">The loudness plot shows the envelope shape. A pluck: near-instant attack, a decay to silence, zero sustain.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'triangle'}},{id:'v',type:'vca',p:{level:0.8}},{id:'e',type:'env',p:{a:0.003,d:0.35,s:0,r:0.25}}], cables:['o.out>v.in','v.out>out.in','e.out>v.gain']},
+  reply:`Plink! Oh that's lovely. I wrote half a song just listening to it.`},
+
+{ id:'slow-bloom', title:'Slow Bloom', concept:'Pad envelopes', client:'Mira Glass', role:'Ambient composer',
+  unlock:[], palette:{osc:1,filter:1,vca:1,env:1}, note:45, gate:1.6, dur:3.2,
+  brief:`I score films about fog. I need a warm pad that swells in slowly, like a breath, holds, and then lingers after the note ends. Not too bright.`,
+  manual:`<h4>Pads</h4>
+  <p>A <b>pad</b> is a long, soft, sustained sound that fills space behind a song. The envelope does most of the work:</p>
+  <ul><li><b>Slow attack</b> so it fades in instead of starting abruptly.</li><li><b>High sustain</b> so it holds while the key is down.</li><li><b>Long release</b> so it trails off after.</li></ul>
+  <p>You'll need a filter too: pads are usually darker than a raw saw.</p>
+  <div class="tip">Build the signal chain <code>OSC → FILTER → VCA → OUTPUT</code>. Get the tone right with the filter first, then shape loudness with the envelope.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:1100,res:0.15}},{id:'v',type:'vca',p:{level:0.8}},{id:'e',type:'env',p:{a:0.85,d:0.5,s:0.7,r:1.2}}], cables:['o.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain']},
+  reply:`It breathes. It actually breathes. The fog thanks you.`},
+
+{ id:'wow-bass', title:'Wow Bass', concept:'Filter envelope', client:'The Lowkey Ladies', role:'Funk band, Thursday residency',
+  unlock:['mod'], palette:{osc:1,filter:1,vca:1,env:2}, note:33, gate:0.9, dur:1.4,
+  brief:`We need a bass that goes "WOW." Starts bright and snappy, then the tone closes down while the note keeps going. Low and fat. You know the one.`,
+  manual:`<h4>Modulation</h4>
+  <p>An envelope can control <b>anything</b>, not just volume. Plug one into the filter's <b>CUT</b> jack and the cutoff rises and falls with each note.</p>
+  <p>The filter's <b>MOD AMT</b> knob sets how far the envelope pushes the cutoff, in octaves above the CUTOFF knob. CUTOFF is where the envelope starts and ends.</p>
+  <ul><li>Envelope #1 → VCA: shapes <b>loudness</b>.</li><li>Envelope #2 → FILTER CUT: shapes <b>brightness</b>.</li></ul>
+  <div class="tip">"Wow" = a low cutoff, a strong mod amount, and a filter envelope that decays to a low sustain. Resonance makes the sweep vocal.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:180,res:0.55,cutAmt:3600}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.004,d:0.5,s:0.75,r:0.15}},{id:'e2',type:'env',p:{a:0.01,d:0.32,s:0.1,r:0.15}}],
+    cables:['o.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain','e2.out>f.cut']},
+  reply:`WOW. Okay, the bassist just did a full spin. You're on the guest list forever.`},
+
+{ id:'vibrato', tol:3, title:'Vibrato', concept:'LFO → pitch', client:'Rosa Belcanto', role:'Cabaret singer',
+  unlock:['lfo'], palette:{osc:1,filter:1,vca:1,env:2,lfo:1}, note:57, gate:1.8, dur:2.0,
+  brief:`My accompanist quit. I need a little voice to sing with me: a sweet, soft tone with a gentle wobble in its pitch, the way a singer holds a long note.`,
+  manual:`<h4>The LFO</h4>
+  <p>An <b>LFO</b> (low-frequency oscillator) is an oscillator too slow to hear as a note. Instead of using it as sound, you use it to <b>move</b> other knobs in a repeating cycle.</p>
+  <ul><li><b>RATE</b>: cycles per second. Vibrato is usually 4–7 Hz.</li><li>The <b>MOD AMT</b> on the destination sets the depth. For vibrato, a fraction of a semitone.</li></ul>
+  <p>Patch <code>LFO → OSC PITCH</code> to make <b>vibrato</b>.</p>
+  <div class="tip">Count the wobbles in the target per second to find the rate. Small depth goes a long way.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'triangle',oct:1,pitchAmt:40}},{id:'l',type:'lfo',p:{rate:5.5}}], cables:['o.out>out.in','l.out>o.pitch']},
+  reply:`Bravissimo! We open Friday. Wear something sparkly.`},
+
+{ id:'wobble', tol:3, title:'Wobble', concept:'LFO → filter', client:'BRÖSTEP', role:'Producer, umlaut mandatory',
+  unlock:[], palette:{osc:1,filter:1,vca:1,env:2,lfo:1}, note:33, gate:1.8, dur:2.0,
+  brief:`YO. I need the WUB. Low, filthy bass where the filter opens and closes in rhythm. WUB WUB WUB. Same tempo as the reference. Don't let me down.`,
+  manual:`<h4>Filter wobble</h4>
+  <p>Point the LFO at the <b>filter cutoff</b> instead of pitch and the tone opens and closes rhythmically. That's the wobble bass.</p>
+  <ul><li><b>LFO RATE</b>: how many wubs per second.</li><li><b>Filter MOD AMT</b>: how far it opens.</li><li><b>CUTOFF</b>: the centre point it swings around.</li><li><b>Resonance</b>: makes it talk.</li></ul>
+  <div class="tip">Get the rate first. If yours drifts in and out of time with the target, the rate is close but not exact.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:420,res:0.6,cutAmt:2400}},{id:'l',type:'lfo',p:{rate:3,wave:'sine'}}], cables:['o.out>f.in','f.out>out.in','l.out>f.cut']},
+  reply:`WUB. WUB. WUUUUB. You're a legend. I'm naming a track after you.`},
+
+{ id:'supersaw', tol:3, title:'Neon Avenue', concept:'Detune', client:'Neon Avenue', role:'Synthwave duo, sunglasses indoors',
+  unlock:['fine'], palette:{osc:2,filter:1,vca:1,env:2,lfo:1}, note:45, gate:1.8, dur:2.0,
+  brief:`Our lead needs to be BIG. Wide, shimmering, like two synths playing at once. One oscillator sounds thin next to the reference.`,
+  manual:`<h4>Detuning</h4>
+  <p>Two oscillators on the same note sound like one louder oscillator. Pull them slightly apart with <b>FINE</b> tuning (in cents, 1/100 of a semitone) and they drift in and out of phase. You hear a slow shimmer called <b>beating</b>.</p>
+  <ul><li>A few cents apart: gentle chorus.</li><li>10–20 cents apart: thick and wide, the "supersaw."</li><li>Way more: sounds out of tune.</li></ul>
+  <p>Patch both oscillators into the same input. Signals patched into one jack get <b>mixed</b> together.</p>
+  <div class="tip">The speed of the beating tells you the total detune. Detune one oscillator up and the other down by the same amount.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth',fine:9}},{id:'o2',type:'osc',p:{wave:'sawtooth',fine:-9}},{id:'f',type:'filter',p:{cutoff:2600,res:0.1}}], cables:['o.out>f.in','o2.out>f.in','f.out>out.in']},
+  reply:`We put on our sunglasses. Then we put on another pair. Incredible.`},
+
+{ id:'kick', tol:1.5, title:'Kick It', concept:'Pitch envelope', client:'MC Thump', role:'Rapper, needs drums yesterday',
+  unlock:[], palette:{osc:2,filter:1,vca:1,env:2,lfo:1}, note:33, gate:0.4, dur:0.9,
+  brief:`My drum machine got stolen. I need a kick drum. Deep boom, with that punchy "dooom" drop at the start. Can a synth even do drums?`,
+  manual:`<h4>Drums from scratch</h4>
+  <p>A kick drum is mostly a <b>sine wave whose pitch drops fast</b>. Point an envelope at the oscillator's <b>PITCH</b> jack:</p>
+  <ul><li>The OSC's <b>MOD AMT</b> sets how high the pitch starts (in semitones above the note).</li><li>A very short <b>decay</b> with zero sustain makes the pitch fall quickly to the base note.</li><li>A second envelope on a VCA gives the boom a short, punchy fade.</li></ul>
+  <div class="tip">Synth drums are all envelopes. Fast attack, no sustain, and the decay times do the work.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sine',pitchAmt:3000}},{id:'v',type:'vca',p:{level:1}},{id:'e',type:'env',p:{a:0.001,d:0.42,s:0,r:0.1}},{id:'e2',type:'env',p:{a:0.001,d:0.07,s:0,r:0.05}}],
+    cables:['o.out>v.in','v.out>out.in','e.out>v.gain','e2.out>o.pitch']},
+  reply:`BOOM. Okay. Okay okay okay. Synth drums are real. I owe you a verse.`},
+
+{ id:'snare', tol:1.5, title:'Snare Crack', concept:'Noise', client:'Rimshot Rita', role:'Session drummer, broken wrist',
+  unlock:['noise'], palette:{osc:2,noise:1,filter:1,vca:1,env:2,lfo:1}, note:50, gate:0.3, dur:0.7,
+  brief:`I can't play for six weeks and I've got a session Monday. I need a snare: a tight, bright crack of hiss with a little body tone underneath. Short!`,
+  manual:`<h4>Noise</h4>
+  <p>A <b>noise</b> source outputs random values: every frequency at once, no pitch. It's the raw material for snares, hi-hats, wind, breath and static.</p>
+  <ul><li>Filter noise to shape it: <b>high-pass</b> for crisp hats and snare sizzle, <b>low-pass</b> for rumble.</li><li>Mix in a short <b>tone</b> for the drum's body.</li><li>One envelope on one VCA can shape both at once if you patch them both into the VCA.</li></ul>
+  <div class="tip">Final exam: combine everything. The spectrum shows the tone as a spike and the noise as a wide plateau.</div>`,
+  target:{mods:[{id:'n',type:'noise',p:{}},{id:'f',type:'filter',p:{type:'highpass',cutoff:1400,res:0.1}},{id:'o',type:'osc',p:{wave:'triangle'}},{id:'v',type:'vca',p:{level:0.9}},{id:'e',type:'env',p:{a:0.001,d:0.16,s:0,r:0.08}}],
+    cables:['n.out>f.in','f.out>v.in','o.out>v.in','v.out>out.in','e.out>v.gain']},
+  reply:`CRACK. That'll fool the producer for sure. Studio's yours whenever you want it. You're not struggling anymore, kid. You're a sound designer.`},
+];
+
+/* =====================================================================
+   PROGRESS (per-viewer, best-effort)
+   ===================================================================== */
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem('sph.'+k); return v==null?d:JSON.parse(v);}catch(e){return d;} },
+  set(k,v){ try{ localStorage.setItem('sph.'+k,JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem('sph.'+k);}catch(e){} }
+};
+let progress = store.get('progress',{solved:{},unlockAll:false});
+const saveProgress = ()=>store.set('progress',progress);
+const isUnlocked = i => progress.unlockAll || i===0 || !!progress.solved[LEVELS[i-1].id];
+function featuresFor(i){ const f=new Set(); for(let j=0;j<=i;j++) LEVELS[j].unlock.forEach(x=>f.add(x)); return f; }
+
+/* =====================================================================
+   PATCH helpers
+   ===================================================================== */
+function defaultParams(type){ const p={}; MT[type].params.forEach(d=>p[d.id]=d.def); return p; }
+function parseCable(s){ const [a,b]=s.split('>'); const [am,ap]=a.split('.'); const [bm,bp]=b.split('.'); return {from:{m:am,p:ap},to:{m:bm,p:bp}}; }
+function targetPatch(L){
+  return { modules:[...L.target.mods.map(m=>({id:m.id,type:m.type,params:Object.assign(defaultParams(m.type),m.p)})),{id:'out',type:'out',params:{}}],
+           cables:L.target.cables.map(parseCable) };
+}
+function patchCost(p){ return p.modules.reduce((s,m)=>s+MT[m.type].cost,0); }
+
+/* =====================================================================
+   AUDIO ENGINE
+   ===================================================================== */
+const MASTER = 0.22;
+const noiseCache = new WeakMap();
+function noiseBuffer(ctx){
+  let b=noiseCache.get(ctx); if(b) return b;
+  b=ctx.createBuffer(1,Math.floor(ctx.sampleRate*2),ctx.sampleRate);
+  const d=b.getChannelData(0); let s=1234567;
+  for(let i=0;i<d.length;i++){ s^=s<<13; s^=s>>>17; s^=s<<5; d[i]=((s>>>0)/4294967296)*2-1; }
+  noiseCache.set(ctx,b); return b;
+}
+function envPoints(p,gate){
+  const {a,d,s,r}=p;
+  if(gate<=a) return [[0,0],[gate,gate/a],[gate+r,0]];
+  if(gate<=a+d) return [[0,0],[a,1],[gate,1-(1-s)*(gate-a)/d],[gate+r,0]];
+  return [[0,0],[a,1],[a+d,s],[gate,s],[gate+r,0]];
+}
+function envAt(p,t){ if(t<p.a) return t/p.a; if(t<p.a+p.d) return 1-(1-p.s)*(t-p.a)/p.d; return p.s; }
+
+/* Build one note of a patch. gate: seconds, or null for a held note (call release()). */
+function buildVoice(ctx, patch, dest, t0, note, gate){
+  const N={}, sources=[], envs=[];
+  const incoming=(id,port)=>patch.cables.some(c=>c.to.m===id&&c.to.p===port);
+  let maxR=0.02;
+  for(const m of patch.modules){
+    const P=m.params, n={ins:{},outs:{}}; N[m.id]=n;
+    switch(m.type){
+      case 'osc': {
+        const o=ctx.createOscillator(); o.type=P.wave;
+        o.frequency.value=mtof(note)*Math.pow(2,P.oct+P.semi/12); o.detune.value=P.fine;
+        const mg=ctx.createGain(); mg.gain.value=P.pitchAmt; mg.connect(o.detune);
+        n.ins.pitch=mg; n.outs.out=o; sources.push(o); break; }
+      case 'noise': {
+        const s=ctx.createBufferSource(); s.buffer=noiseBuffer(ctx); s.loop=true; n.outs.out=s; sources.push(s); break; }
+      case 'filter': {
+        const f=ctx.createBiquadFilter(); f.type=P.type; f.frequency.value=P.cutoff;
+        f.Q.value = P.type==='bandpass' ? 0.6+P.res*14 : -3+P.res*28;
+        const mg=ctx.createGain(); mg.gain.value=P.cutAmt; mg.connect(f.detune);
+        n.ins.in=f; n.ins.cut=mg; n.outs.out=f; break; }
+      case 'vca': {
+        const g=ctx.createGain(); const cv=incoming(m.id,'gain'); g.gain.value=cv?0:P.level;
+        const mg=ctx.createGain(); mg.gain.value=P.level; mg.connect(g.gain);
+        n.ins.in=g; n.ins.gain=mg; n.outs.out=g; break; }
+      case 'env': {
+        const c=ctx.createConstantSource(); c.offset.value=0; n.outs.out=c; sources.push(c);
+        envs.push({param:c.offset,p:P}); maxR=Math.max(maxR,P.r); break; }
+      case 'lfo': {
+        const o=ctx.createOscillator(); o.type=P.wave; o.frequency.value=P.rate; n.outs.out=o; sources.push(o); break; }
+      case 'out': n.ins.in=dest; break;
+    }
+  }
+  for(const c of patch.cables){
+    const a=N[c.from.m], b=N[c.to.m]; if(!a||!b) continue;
+    const src=a.outs[c.from.p], dst=b.ins[c.to.p]; if(src&&dst) src.connect(dst);
+  }
+  for(const e of envs){
+    const prm=e.param; prm.setValueAtTime(0,t0);
+    const pts = gate!=null ? envPoints(e.p,gate) : [[0,0],[e.p.a,1],[e.p.a+e.p.d,e.p.s]];
+    for(let i=1;i<pts.length;i++) prm.linearRampToValueAtTime(pts[i][1],t0+pts[i][0]);
+  }
+  sources.forEach(s=>s.start(t0));
+  return {
+    maxR,
+    release(t){
+      for(const e of envs){
+        const prm=e.param, v=envAt(e.p,t-t0);
+        if(prm.cancelAndHoldAtTime){ prm.cancelAndHoldAtTime(t); }
+        else { prm.cancelScheduledValues(t0); prm.setValueAtTime(0,t0); const pts=[[0,0],[e.p.a,1],[e.p.a+e.p.d,e.p.s]].filter(q=>q[0]<t-t0); pts.slice(1).forEach(q=>prm.linearRampToValueAtTime(q[1],t0+q[0])); prm.linearRampToValueAtTime(v,t); }
+        prm.linearRampToValueAtTime(0,t+e.p.r);
+      }
+    },
+    stop(t){ sources.forEach(s=>{try{s.stop(t);}catch(_){}}); }
+  };
+}
+/* Output chain: declick gain -> master -> dest. Returns input node + gate controls. */
+function outChain(ctx,dest,t0){
+  const dc=ctx.createGain(); dc.gain.setValueAtTime(0,t0); dc.gain.linearRampToValueAtTime(1,t0+0.004);
+  const mg=ctx.createGain(); mg.gain.value=MASTER; dc.connect(mg); mg.connect(dest);
+  return {node:dc, close(t){ dc.gain.setValueAtTime(1,t-0.025); dc.gain.linearRampToValueAtTime(0,t); }};
+}
+
+/* ---- Live playback ---- */
+let AC=null, liveBus=null;
+function ac(){
+  if(!AC){
+    AC=new (window.AudioContext||window.webkitAudioContext)();
+    const comp=AC.createDynamicsCompressor(); comp.threshold.value=-10; comp.ratio.value=8; comp.connect(AC.destination); liveBus=comp;
+  }
+  if(AC.state==='suspended') AC.resume();
+  return AC;
+}
+let oneShots=[];
+function playFixed(patch,L,which){
+  const ctx=ac(); stopOneShots();
+  const t0=ctx.currentTime+0.03, oc=outChain(ctx,liveBus,t0);
+  const v=buildVoice(ctx,patch,oc.node,t0,L.note,L.gate);
+  oc.close(t0+L.dur); v.stop(t0+L.dur+0.05);
+  oneShots.push({v,oc,end:t0+L.dur});
+  flashPlay(which,L.dur);
+}
+function stopOneShots(){ const ctx=AC; if(!ctx) return; const t=ctx.currentTime+0.03; oneShots.forEach(o=>{ if(o.end>t){ o.oc.close(t); o.v.stop(t+0.05);} }); oneShots=[]; }
+const held={};
+function noteOn(key,note){
+  if(held[key]||!S.patch) return;
+  const ctx=ac(); const t0=ctx.currentTime+0.01; const oc=outChain(ctx,liveBus,t0);
+  const v=buildVoice(ctx,S.patch,oc.node,t0,note,null); held[key]={v,oc};
+}
+function noteOff(key){
+  const h=held[key]; if(!h) return; delete held[key];
+  const t=AC.currentTime+0.005; h.v.release(t); const end=t+h.v.maxR+0.06; h.oc.close(end); h.v.stop(end+0.05);
+}
+function allNotesOff(){ Object.keys(held).forEach(noteOff); }
+
+/* =====================================================================
+   ANALYSIS: offline render + spectral comparison
+   ===================================================================== */
+const SR=22050, FN=2048, HOP=512, EB=256, BPO=36, FMIN=40, FMAX=10000;
+const NB=Math.floor(BPO*Math.log2(FMAX/FMIN))+1;
+const BANDS=(()=>{ const df=SR/FN, out=[]; for(let b=0;b<NB;b++){ const fc=FMIN*Math.pow(2,b/BPO), lo=fc*Math.pow(2,-0.5/BPO), hi=fc*Math.pow(2,0.5/BPO); out.push({fc,kLo:Math.ceil(lo/df),kHi:Math.floor(hi/df),kc:fc/df}); } return out; })();
+const HANN=(()=>{ const w=new Float32Array(FN); for(let i=0;i<FN;i++) w[i]=0.5-0.5*Math.cos(2*Math.PI*i/(FN-1)); return w; })();
+function fft(re,im){
+  const n=re.length;
+  for(let i=1,j=0;i<n;i++){ let bit=n>>1; for(;j&bit;bit>>=1) j^=bit; j^=bit; if(i<j){ let t=re[i];re[i]=re[j];re[j]=t; t=im[i];im[i]=im[j];im[j]=t; } }
+  for(let len=2;len<=n;len<<=1){ const ang=-2*Math.PI/len, wr=Math.cos(ang), wi=Math.sin(ang), h=len>>1;
+    for(let i=0;i<n;i+=len){ let cr=1,ci=0; for(let j=0;j<h;j++){ const a=i+j,b=a+h; const tr=re[b]*cr-im[b]*ci, ti=re[b]*ci+im[b]*cr; re[b]=re[a]-tr; im[b]=im[a]-ti; re[a]+=tr; im[a]+=ti; const t=cr*wr-ci*wi; ci=cr*wi+ci*wr; cr=t; } } }
+}
+async function renderPatch(patch,L){
+  const len=Math.ceil(L.dur*SR);
+  const ctx=new OfflineAudioContext(1,len,SR);
+  const oc=outChain(ctx,ctx.destination,0);
+  const v=buildVoice(ctx,patch,oc.node,0,L.note,L.gate); oc.close(L.dur); v.stop(L.dur);
+  const buf=await ctx.startRendering(); return buf.getChannelData(0);
+}
+const dB = p => 10*Math.log10(p+1e-14);
+function analyze(x){
+  const nF=Math.max(1,Math.floor((x.length-FN)/HOP)+1);
+  const spec=new Float32Array(nF*NB), avgP=new Float64Array(NB);
+  const re=new Float32Array(FN), im=new Float32Array(FN), pw=new Float32Array(FN/2+1);
+  for(let f=0;f<nF;f++){
+    const o=f*HOP; for(let i=0;i<FN;i++){ re[i]=(x[o+i]||0)*HANN[i]; im[i]=0; }
+    fft(re,im); for(let k=0;k<=FN/2;k++) pw[k]=(re[k]*re[k]+im[k]*im[k])/(FN*FN);
+    for(let b=0;b<NB;b++){ const B=BANDS[b]; let p;
+      if(B.kLo<=B.kHi){ p=0; for(let k=B.kLo;k<=B.kHi;k++) if(pw[k]>p) p=pw[k]; }
+      else { const k0=Math.floor(B.kc), fr=B.kc-k0; p=pw[k0]*(1-fr)+pw[Math.min(k0+1,FN/2)]*fr; }
+      spec[f*NB+b]=dB(p); avgP[b]+=p/nF; }
+  }
+  // loudness: RMS over a 1024-sample window (longer than one cycle of a low bass note), hop EB
+  const nE=Math.floor(x.length/EB), env=new Float32Array(nE), EW=1024;
+  for(let e=0;e<nE;e++){ const c=e*EB+EB/2, a=Math.max(0,c-EW/2), b=Math.min(x.length,c+EW/2); let s=0; for(let i=a;i<b;i++) s+=x[i]*x[i]; env[e]=dB(s/(b-a)); }
+  const avg=new Float32Array(NB); for(let b=0;b<NB;b++) avg[b]=dB(avgP[b]);
+  // pitch (normalized square difference) on the loudest steady block
+  let pk=0; for(let e=1;e<nE;e++) if(env[e]>env[pk]) pk=e;
+  const start=Math.min(Math.max(0,pk*EB+Math.floor(0.04*SR)), Math.max(0,x.length-2048));
+  const pitch=estimatePitch(x,start,2048);
+  // spectral centroid in octaves
+  let num=0,den=0; for(let b=0;b<NB;b++){ num+=avgP[b]*b; den+=avgP[b]; }
+  const centroid = den>0 ? num/den/BPO : 0;
+  return {spec,nF,avg,env,nE,pitch,centroid,peak:Math.max(...env),silent:Math.max(...env)<-100};
+}
+function estimatePitch(x,start,W){
+  const minLag=Math.floor(SR/2000), maxLag=Math.floor(SR/30);
+  if(start+W+maxLag>x.length) W=x.length-start-maxLag; if(W<256) return null;
+  let e0=0; for(let i=0;i<W;i++) e0+=x[start+i]*x[start+i]; if(e0<1e-8) return null;
+  const nsdf=new Float32Array(maxLag+1);
+  for(let t=minLag;t<=maxLag;t++){ let ac=0,m=0; for(let i=0;i<W;i++){ const a=x[start+i], b=x[start+i+t]; ac+=a*b; m+=a*a+b*b; } nsdf[t]=m>0?2*ac/m:0; }
+  let t=minLag; while(t<maxLag&&nsdf[t]>0) t++;
+  const peaks=[]; let best=-1;
+  for(;t<maxLag;t++){ if(nsdf[t]>nsdf[t-1]&&nsdf[t]>=nsdf[t+1]&&nsdf[t]>0){ peaks.push(t); if(nsdf[t]>best) best=nsdf[t]; } }
+  if(best<0.6) return null;
+  const tp=peaks.find(p=>nsdf[p]>=0.9*best);
+  const a=nsdf[tp-1], b=nsdf[tp], c=nsdf[tp+1], d=(a-2*b+c); const sh=d!==0?0.5*(a-c)/d:0;
+  return SR/(tp+sh);
+}
+const K_SPEC=8, K_TONE=6, K_SHAPE=26, PASS=90;
+function compare(T,Y,tol=1){
+  // spectrogram: timbre over time. Each frame is normalized to its own peak (loudness is
+  // judged separately by Shape) and weighted by how loud that frame is.
+  let ref=-1e9; for(const A of [T,Y]) for(let i=0;i<A.spec.length;i++) if(A.spec[i]>ref) ref=A.spec[i];
+  let s=0,n=0; const nF=Math.min(T.nF,Y.nF);
+  for(let f=0;f<nF;f++){
+    let mT=-1e9,mY=-1e9; for(let b=0;b<NB;b++){ mT=Math.max(mT,T.spec[f*NB+b]); mY=Math.max(mY,Y.spec[f*NB+b]); }
+    const loud=Math.pow(10,(Math.max(mT,mY)-ref)/40); if(loud<0.1) continue;
+    const silentT=mT<ref-70, silentY=mY<ref-70;
+    for(let b=0;b<NB;b++){
+      const a=silentT?-60:Math.max(T.spec[f*NB+b]-mT,-60), c=silentY?-60:Math.max(Y.spec[f*NB+b]-mY,-60);
+      const w=(Math.max(a,c)+60)/60; if(w<0.01) continue; const ww=w*w*loud;
+      s+=Math.min(Math.abs(a-c)+(silentT!==silentY?40:0),50)*ww; n+=ww; }
+  }
+  const dSpec=n?s/n:0;
+  // tone: average spectrum shapes normalized to own peak
+  const mT=Math.max(...T.avg), mY=Math.max(...Y.avg); s=0;n=0;
+  for(let b=0;b<NB;b++){ const a=Math.max(T.avg[b]-mT,-60), c=Math.max(Y.avg[b]-mY,-60); if(a>-59.5||c>-59.5){ s+=Math.abs(a-c); n++; } }
+  const dTone=Y.silent?60:(n?s/n:0);
+  // shape: loudness over time
+  // shape: loudness over time on a perceptual (amplitude^0.5) scale, 0..100
+  const rE=Math.max(T.peak,Y.peak); s=0;n=0; const LE=Math.min(T.nE,Y.nE);
+  for(let e=0;e<LE;e++){ const a=Math.pow(10,(T.env[e]-rE)/40), c=Math.pow(10,(Y.env[e]-rE)/40); if(a>0.05||c>0.05){ s+=Math.abs(a-c)*100; n++; } }
+  const dShape=n?s/n:0;
+  const sSpec=Math.exp(-dSpec/(K_SPEC*tol)), sTone=Math.exp(-dTone/K_TONE), sShape=Math.exp(-dShape/(K_SHAPE*tol));
+  const overall=Math.pow(sSpec,0.5)*Math.pow(sTone,0.2)*Math.pow(sShape,0.3);
+  return {overall:overall*100,sSpec:sSpec*100,sTone:sTone*100,sShape:sShape*100,dSpec,dTone,dShape,hints:makeHints(T,Y)};
+}
+function envFeatures(A){
+  const pk=A.peak; let att=0; while(att<A.nE&&A.env[att]<pk-3) att++;
+  let last=A.nE-1; while(last>0&&A.env[last]<pk-30) last--;
+  return {attack:att*EB/SR, length:last*EB/SR};
+}
+function makeHints(T,Y){
+  const h=[];
+  if(Y.silent){ h.push({t:'Silence. Patch an audio cable all the way to the OUTPUT.'}); return h; }
+  if(T.pitch&&Y.pitch){
+    const st=12*Math.log2(Y.pitch/T.pitch), r=Math.round(st);
+    if(Math.abs(st)<0.35) h.push({ok:1,t:'Pitch is on the note.'});
+    else if(Math.abs(r)>=1) h.push({t:`Pitch: yours is ${Math.abs(r)} semitone${Math.abs(r)>1?'s':''} ${r>0?'higher':'lower'}${Math.abs(r)%12===0?' ('+Math.abs(r)/12+' oct)':''}.`});
+    else h.push({t:`Pitch: yours is a little ${st>0?'sharp':'flat'}.`});
+  }
+  const dc=Y.centroid-T.centroid;
+  if(Math.abs(dc)>0.25) h.push({t:`Tone: yours is ${dc>0?'brighter':'darker'} than the target.`}); else h.push({ok:1,t:'Brightness is close.'});
+  const fT=envFeatures(T), fY=envFeatures(Y);
+  const da=fY.attack-fT.attack;
+  if(Math.abs(da)>0.03&&Math.abs(da)>0.35*Math.max(fT.attack,0.02)) h.push({t:`Attack: yours ${da>0?'fades in slower':'starts faster'}.`});
+  const dl=fY.length-fT.length;
+  if(Math.abs(dl)>0.08&&Math.abs(dl)>0.12*fT.length) h.push({t:`Length: yours ${dl>0?'rings longer':'dies away sooner'}.`});
+  return h;
+}
+
+/* =====================================================================
+   UI STATE
+   ===================================================================== */
+const S={li:-1, L:null, patch:null, feats:null, palette:null, mine:null, cmp:null, sandbox:false};
+let idc=1;
+const $=s=>document.querySelector(s);
+const el=(tag,attrs={},html)=>{ const e=document.createElement(tag); for(const k in attrs){ if(k==='class') e.className=attrs[k]; else if(k.startsWith('on')) e.addEventListener(k.slice(2),attrs[k]); else e.setAttribute(k,attrs[k]); } if(html!=null) e.innerHTML=html; return e; };
+const SANDBOX={id:'jam',title:'Free Jam',concept:'Sandbox',client:'You',role:'After hours, no clients',note:45,gate:1.2,dur:2.0,
+  palette:{osc:4,noise:2,filter:3,vca:3,env:4,lfo:3},
+  brief:`The studio's empty. No client, no reference, no rent check riding on it. Just you and the rack. Make something weird.`,
+  manual:`<h4>Free jam</h4><p>Every module and every knob is unlocked. Play with the keys <code>A</code>–<code>K</code> (white and black keys on <code>W E T Y U</code>), and <code>Z</code>/<code>X</code> to shift octave.</p><div class="tip">The graphs on the right show your sound's loudness and spectrum. Use them to learn what each knob does.</div>`};
+
+/* =====================================================================
+   BOARD
+   ===================================================================== */
+function showBoard(){
+  allNotesOff(); stopOneShots();
+  S.li=-1; S.L=null; S.patch=null;
+  $('#screenLevel').hidden=true; $('#screenBoard').hidden=false; $('#btnHome').hidden=true;
+  $('#crumbs').textContent='Gig board';
+  const solved=Object.keys(progress.solved).length;
+  const earn = Object.values(progress.solved).length*85;
+  $('#ledger').innerHTML=`<div class="row"><span>Gigs done</span><b>${solved} / ${LEVELS.length}</b></div>
+    <div class="row"><span>Earned</span><b>$${earn}</b></div><div class="row"><span>Rent due</span><b>$${Math.max(0,1100-earn)}</b></div>
+    <div class="row"><span>Next lesson</span><b>${(LEVELS.find(l=>!progress.solved[l.id])||{concept:'Mastery'}).concept}</b></div>`;
+  const g=$('#gigs'); g.innerHTML='';
+  LEVELS.forEach((L,i)=>{
+    const sv=progress.solved[L.id], open=isUnlocked(i);
+    const b=el('button',{class:'gig'+(sv?' solved':''),onclick:()=>openLevel(i)});
+    b.disabled=!open;
+    b.innerHTML=`<div class="num">GIG ${String(i+1).padStart(2,'0')}</div><div class="title">${open?L.title:'???'}</div>
+      <div class="client">${open?L.client+' · '+L.role:'Finish the previous gig'}</div>
+      <div class="concept"><span class="tag">${L.concept}</span>${sv?`<span class="stamp">PAID · ${sv.cost}¢ · ${Math.round(sv.match)}%</span>`:open?'<span style="color:var(--amber)">NEW</span>':''}</div>`;
+    g.appendChild(b);
+  });
+  const j=el('button',{class:'gig jam',onclick:()=>openLevel(-1)});
+  j.innerHTML=`<div class="num">AFTER HOURS</div><div class="title">Free Jam</div><div class="client">All modules, no target. Play it like an instrument.</div><div class="concept"><span class="tag">Sandbox</span></div>`;
+  g.appendChild(j);
+}
+
+/* =====================================================================
+   LEVEL
+   ===================================================================== */
+function openLevel(i){
+  S.sandbox = i<0; S.li=i; S.L = S.sandbox?SANDBOX:LEVELS[i];
+  S.feats = S.sandbox? new Set(ALL_FEATURES) : featuresFor(i);
+  S.palette = S.L.palette; S.mine=null; S.cmp=null; S.L._tA=S.L._tA||null;
+  const draft=store.get('draft.'+S.L.id,null);
+  if(draft&&draft.modules&&draft.modules.some(m=>m.type==='out')){ S.patch=draft; }
+  else freshPatch();
+  idc = 1+Math.max(0,...S.patch.modules.map(m=>parseInt(String(m.id).replace(/\D/g,''))||0));
+  $('#screenBoard').hidden=true; $('#screenLevel').hidden=false; $('#btnHome').hidden=false;
+  $('#crumbs').textContent = S.sandbox? 'After hours · Free Jam' : `Gig ${String(i+1).padStart(2,'0')} · ${S.L.title} · Lesson: ${S.L.concept}`;
+  renderBrief(); renderPalette(); renderRack(); renderRight(); scheduleAnalyze();
+  $('#rackScroll').scrollTo(0,0);
+}
+function freshPatch(){
+  S.patch={modules:[{id:'out',type:'out',x:540,y:260,params:{}}],cables:[]};
+  (S.L.start||[]).forEach(s=>S.patch.modules.push({id:'m'+(idc++),type:s.type,x:s.x,y:s.y,params:defaultParams(s.type)}));
+}
+function renderBrief(){
+  const L=S.L;
+  $('#brief').innerHTML=`<h3>${S.sandbox?'Session':'The client'}</h3><div class="who">${L.client}</div><div class="role">${L.role}</div>
+   <blockquote>${L.brief}</blockquote>
+   <div class="specs"><span>NOTE ${noteName(L.note)}</span><span>HOLD ${L.gate}s</span>${S.sandbox?'':`<span>PASS ≥ ${PASS}%</span>`}</div>`;
+  $('#manual').innerHTML=`<h3>Manual · ${L.concept}</h3>`+L.manual;
+}
+function countType(t){ return S.patch.modules.filter(m=>m.type===t).length; }
+function renderPalette(){
+  const p=$('#palette'); p.innerHTML='<span class="lbl">ADD</span>';
+  Object.entries(S.palette).forEach(([t,max])=>{
+    const left=max-countType(t);
+    const b=el('button',{class:'palBtn',title:MT[t].long,onclick:()=>addModule(t)},`<span class="sw" style="background:${MT[t].color}"></span><b>${MT[t].name}</b><small>${MT[t].cost}¢ · ${left} left</small>`);
+    b.disabled=left<=0; p.appendChild(b);
+  });
+  p.appendChild(el('span',{class:'spacer'}));
+  p.appendChild(el('span',{class:'keys'},'Keys A–K play · Space = yours · Shift+T = target'));
+  p.appendChild(el('button',{class:'btn ghost',onclick:()=>{ if(S.patch.modules.length>1||S.patch.cables.length){ freshPatch(); renderPalette(); renderRack(); scheduleAnalyze(); toast('Rack cleared'); } }},'Clear rack'));
+}
+function addModule(t){
+  if(countType(t)>=S.palette[t]) return;
+  const sc=$('#rackScroll'); const taken=S.patch.modules;
+  let x=40+sc.scrollLeft, y=30+sc.scrollTop, tries=0;
+  while(taken.some(m=>Math.abs(m.x-x)<180&&Math.abs(m.y-y)<120)&&tries<40){ x+=225; if(x>480+sc.scrollLeft){ x=40+sc.scrollLeft; y+=150; } tries++; }
+  S.patch.modules.push({id:'m'+(idc++),type:t,x,y,params:defaultParams(t)});
+  renderPalette(); renderRack(); scheduleAnalyze();
+}
+function removeModule(id){
+  S.patch.modules=S.patch.modules.filter(m=>m.id!==id);
+  S.patch.cables=S.patch.cables.filter(c=>c.from.m!==id&&c.to.m!==id);
+  renderPalette(); renderRack(); scheduleAnalyze();
+}
+
+/* ---------- knobs ---------- */
+const toN=(d,v)=>d.scale==='log'?Math.log(v/d.min)/Math.log(d.max/d.min):(v-d.min)/(d.max-d.min);
+function fromN(d,n){ n=Math.min(1,Math.max(0,n)); let v=d.scale==='log'?d.min*Math.pow(d.max/d.min,n):d.min+n*(d.max-d.min);
+  if(d.step) v=Math.round(v/d.step)*d.step; else if(d.scale==='log') v=+v.toPrecision(3); return +v.toFixed(6); }
+function arc(cx,cy,r,a0,a1){ const p=a=>[cx+r*Math.cos(a),cy+r*Math.sin(a)]; const [x0,y0]=p(a0),[x1,y1]=p(a1); return `M${x0} ${y0} A${r} ${r} 0 ${a1-a0>Math.PI?1:0} 1 ${x1} ${y1}`; }
+function knobSVG(n,color){
+  const A0=Math.PI*0.75, A1=Math.PI*2.25, a=A0+(A1-A0)*n;
+  return `<svg width="40" height="36" viewBox="0 0 40 36"><path d="${arc(20,19,15,A0,A1)}" stroke="#3a322b" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  ${n>0.002?`<path d="${arc(20,19,15,A0,Math.max(A0+0.01,a))}" stroke="${color}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`:''}
+  <circle cx="20" cy="19" r="10" fill="#16120f" stroke="#4d433a"/><line x1="20" y1="19" x2="${20+9*Math.cos(a)}" y2="${19+9*Math.sin(a)}" stroke="#efe6d8" stroke-width="2" stroke-linecap="round"/></svg>`;
+}
+function makeKnob(m,d){
+  const color=MT[m.type].color.replace('var(','').replace(')','');
+  const col=getComputedStyle(document.documentElement).getPropertyValue(color).trim()||'#f2a541';
+  const k=el('div',{class:'knob',title:`${d.label} · drag up/down (Shift = fine) · double-click to reset`});
+  const draw=()=>{ k.innerHTML=knobSVG(toN(d,m.params[d.id]),col)+`<div class="kl">${d.label}</div><div class="kv">${d.fmt(m.params[d.id])}</div>`; };
+  draw();
+  const set=v=>{ if(v===m.params[d.id]) return; m.params[d.id]=v; draw(); scheduleAnalyze(); };
+  k.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); try{k.setPointerCapture(e.pointerId);}catch(_){}
+    let y0=e.clientY, n0=toN(d,m.params[d.id]);
+    const mv=ev=>{ const sens=ev.shiftKey?0.0012:0.006; const n=n0+(y0-ev.clientY)*sens; set(fromN(d,n)); };
+    const up=()=>{ k.removeEventListener('pointermove',mv); k.removeEventListener('pointerup',up); k.removeEventListener('pointercancel',up); };
+    k.addEventListener('pointermove',mv); k.addEventListener('pointerup',up); k.addEventListener('pointercancel',up); });
+  k.addEventListener('dblclick',()=>set(d.def));
+  k.addEventListener('wheel',e=>{ e.preventDefault(); const st=d.step?d.step/(d.max-d.min):0.01; const n=toN(d,m.params[d.id])+(e.deltaY<0?1:-1)*Math.max(st,e.shiftKey?0.002:0.01); set(fromN(d,n)); },{passive:false});
+  return k;
+}
+function makeChoice(m,d){
+  const w=el('div',{class:'choice'}); w.style.setProperty('--sel',MT[m.type].color);
+  const draw=()=>{ w.innerHTML=''; d.options.forEach((o,i)=>{
+    const b=el('button',{class:m.params[d.id]===o?'on':'',title:o},
+      WAVE_PATH[o]?`<svg width="28" height="18" viewBox="0 0 28 18"><path d="${WAVE_PATH[o]}" stroke="#a09482" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg>`:(d.labels?d.labels[i]:o));
+    b.addEventListener('pointerdown',e=>e.stopPropagation());
+    b.addEventListener('click',()=>{ m.params[d.id]=o; draw(); scheduleAnalyze(); });
+    w.appendChild(b); }); };
+  draw(); return w;
+}
+
+/* ---------- rack ---------- */
+function renderRack(){
+  const box=$('#mods'); box.innerHTML='';
+  for(const m of S.patch.modules){
+    const T=MT[m.type];
+    const d=el('div',{class:'module','data-id':m.id}); d.style.left=m.x+'px'; d.style.top=m.y+'px';
+    const head=el('div',{class:'mhead'},`<span class="stripe" style="background:${T.color}"></span><span class="name">${T.name}</span><span class="cost">${T.cost?T.cost+'¢':''}</span>`);
+    if(m.type!=='out'){ const x=el('button',{class:'del',title:'Remove module'},'×'); x.addEventListener('pointerdown',e=>e.stopPropagation()); x.addEventListener('click',()=>removeModule(m.id)); head.appendChild(x); }
+    d.appendChild(head);
+    const body=el('div',{class:'mbody'}); const ins=el('div',{class:'ins'}), prm=el('div',{class:'params'}), outs=el('div',{class:'outs'});
+    T.ins.filter(p=>!p.req||S.feats.has(p.req)).forEach(p=>ins.appendChild(makePort(m,p,'in')));
+    T.outs.forEach(p=>outs.appendChild(makePort(m,p,'out')));
+    T.params.filter(p=>!p.req||S.feats.has(p.req)).forEach(p=>prm.appendChild(p.type==='choice'?makeChoice(m,p):makeKnob(m,p)));
+    if(m.type==='out') prm.innerHTML='<div class="outBox"><div class="spk"></div>to speakers</div>';
+    if(m.type==='noise') prm.innerHTML='<div class="outBox" style="font-family:var(--mono)">∿∿ white ∿∿</div>';
+    body.append(ins,prm,outs); d.appendChild(body); box.appendChild(d);
+    dragModule(head,m,d);
+  }
+  requestAnimationFrame(()=>drawCables());
+}
+function makePort(m,p,dir){
+  const e=el('div',{class:`port ${p.kind} ${dir}`,'data-mod':m.id,'data-port':p.id,'data-dir':dir,'data-kind':p.kind,
+    title:`${MT[m.type].name} ${p.label} (${p.kind==='audio'?'audio':'control'} ${dir==='in'?'input':'output'}). Drag to patch.`},
+    `<span class="jack"></span><label>${p.label}</label>`);
+  e.addEventListener('pointerdown',ev=>startCable(ev,e));
+  return e;
+}
+function dragModule(handle,m,d){
+  handle.addEventListener('pointerdown',e=>{
+    e.preventDefault(); try{handle.setPointerCapture(e.pointerId);}catch(_){} handle.style.cursor='grabbing';
+    const x0=e.clientX, y0=e.clientY, mx=m.x, my=m.y;
+    const mv=ev=>{ m.x=Math.max(0,Math.min(1180-214,mx+ev.clientX-x0)); m.y=Math.max(0,Math.min(680-80,my+ev.clientY-y0)); d.style.left=m.x+'px'; d.style.top=m.y+'px'; drawCables(); };
+    const up=()=>{ handle.style.cursor=''; handle.removeEventListener('pointermove',mv); handle.removeEventListener('pointerup',up); saveDraft(); };
+    handle.addEventListener('pointermove',mv); handle.addEventListener('pointerup',up);
+  });
+}
+function jackXY(mid,pid,dir){
+  const j=document.querySelector(`.port[data-mod="${mid}"][data-port="${pid}"][data-dir="${dir}"] .jack`); if(!j) return null;
+  const r=j.getBoundingClientRect(), R=$('#rack').getBoundingClientRect(); return [r.left+r.width/2-R.left, r.top+r.height/2-R.top];
+}
+function cablePath(a,b){
+  const dx=Math.max(40,Math.abs(b[0]-a[0])*0.45), dist=Math.hypot(b[0]-a[0],b[1]-a[1]), sag=20+dist*0.18;
+  return `M${a[0]} ${a[1]} C${a[0]+dx} ${a[1]+sag}, ${b[0]-dx} ${b[1]+sag}, ${b[0]} ${b[1]}`;
+}
+function drawCables(temp){
+  const svg=$('#cables'); let h='';
+  S.patch.cables.forEach((c,i)=>{
+    const a=jackXY(c.from.m,c.from.p,'out'), b=jackXY(c.to.m,c.to.p,'in'); if(!a||!b) return;
+    const kind=MT[S.patch.modules.find(m=>m.id===c.from.m).type].outs.find(o=>o.id===c.from.p).kind;
+    const col=kind==='audio'?'var(--audio)':'var(--mod)', d=cablePath(a,b);
+    h+=`<g data-i="${i}"><path d="${d}" stroke="rgba(0,0,0,.45)" stroke-width="7" fill="none" transform="translate(0 3)"/>
+      <path class="main" d="${d}" stroke="${col}" stroke-width="4.5" fill="none" stroke-linecap="round" opacity=".92"/>
+      <circle cx="${a[0]}" cy="${a[1]}" r="5" fill="${col}"/><circle cx="${b[0]}" cy="${b[1]}" r="5" fill="${col}"/>
+      <path class="hit" d="${d}" stroke="transparent" stroke-width="16" fill="none"><title>Click to unplug</title></path></g>`;
+  });
+  if(temp) h+=`<path d="${cablePath(temp.a,temp.b)}" stroke="${temp.kind==='audio'?'var(--audio)':'var(--mod)'}" stroke-width="4" fill="none" stroke-dasharray="6 5" opacity=".9"/>`;
+  svg.innerHTML=h;
+  svg.querySelectorAll('g').forEach(g=>g.querySelector('.hit').addEventListener('click',()=>{ S.patch.cables.splice(+g.dataset.i,1); drawCables(); scheduleAnalyze(); }));
+}
+function reaches(fromM,toM){ // does a signal path already go from fromM to toM?
+  const seen=new Set([fromM]), q=[fromM];
+  while(q.length){ const x=q.shift(); if(x===toM) return true; S.patch.cables.filter(c=>c.from.m===x).forEach(c=>{ if(!seen.has(c.to.m)){ seen.add(c.to.m); q.push(c.to.m);} }); }
+  return false;
+}
+function startCable(ev,portEl){
+  ev.preventDefault(); ev.stopPropagation();
+  const R=$('#rack').getBoundingClientRect();
+  const dir=portEl.dataset.dir, kind=portEl.dataset.kind, mid=portEl.dataset.mod, pid=portEl.dataset.port;
+  const anchor=jackXY(mid,pid,dir);
+  document.querySelectorAll(`.port.${dir==='out'?'in':'out'}.${kind}`).forEach(p=>{ if(p.dataset.mod!==mid) p.classList.add('hot'); });
+  const mv=e=>{ const pt=[e.clientX-R.left,e.clientY-R.top]; drawCables(dir==='out'?{a:anchor,b:pt,kind}:{a:pt,b:anchor,kind}); };
+  const up=e=>{
+    window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up);
+    document.querySelectorAll('.port.hot').forEach(p=>p.classList.remove('hot'));
+    const t=document.elementFromPoint(e.clientX,e.clientY); const tp=t&&t.closest('.port');
+    if(tp&&tp.dataset.dir!==dir){
+      if(tp.dataset.kind!==kind){ toast(kind==='audio'?'Audio (yellow) jacks only connect to audio inputs.':'Control (blue) jacks only connect to control inputs.'); }
+      else {
+        const from=dir==='out'?{m:mid,p:pid}:{m:tp.dataset.mod,p:tp.dataset.port}, to=dir==='out'?{m:tp.dataset.mod,p:tp.dataset.port}:{m:mid,p:pid};
+        if(from.m===to.m) toast('A module can\'t patch into itself.');
+        else if(S.patch.cables.some(c=>c.from.m===from.m&&c.from.p===from.p&&c.to.m===to.m&&c.to.p===to.p)) toast('Already patched.');
+        else if(reaches(to.m,from.m)) toast('That would make a feedback loop.');
+        else { S.patch.cables.push({from,to}); scheduleAnalyze(); }
+      }
+    }
+    drawCables();
+  };
+  window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
+}
+
+/* ---------- right panel ---------- */
+function renderRight(){
+  const r=$('#right');
+  if(S.sandbox){
+    r.innerHTML=`<div class="card"><h3>Listen</h3><div class="playRow"><button class="playBtn y" style="grid-column:span 2" id="pY"><span class="dot"></span>▶ PLAY PATCH</button></div></div>
+    <div class="card"><h3>Your sound</h3><div class="stats" id="stats"></div>
+     <div class="plotLbl">LOUDNESS OVER TIME</div><canvas class="plot" id="cEnv" height="90"></canvas>
+     <div class="plotLbl">SPECTRUM (40 Hz – 10 kHz)</div><canvas class="plot" id="cSpec" height="120"></canvas></div>`;
+  } else {
+    r.innerHTML=`<div class="card"><h3>Listen</h3><div class="playRow"><button class="playBtn t" id="pT"><span class="dot"></span>▶ TARGET</button><button class="playBtn y" id="pY"><span class="dot"></span>▶ YOURS</button></div></div>
+    <div class="card"><h3>Match</h3>
+      <div class="matchBig"><span class="pct" id="pct">–</span><span class="lab">match · need ${PASS}%</span></div>
+      <div class="bar big"><i id="barAll"></i><span class="thr" style="left:${PASS}%"></span></div>
+      <div class="sub"><span>Spectrogram</span><div class="bar"><i id="barSpec"></i></div><span id="vSpec"></span></div>
+      <div class="sub"><span>Tone</span><div class="bar"><i id="barTone"></i></div><span id="vTone"></span></div>
+      <div class="sub"><span>Shape</span><div class="bar"><i id="barShape"></i></div><span id="vShape"></span></div>
+      <ul class="hints" id="hints"></ul></div>
+    <div class="card"><h3>Compare</h3>
+      <div class="legend"><span><i style="background:var(--cream)"></i>target</span><span><i style="background:var(--amber)"></i>yours</span></div>
+      <div class="plotLbl">LOUDNESS OVER TIME</div><canvas class="plot" id="cEnv" height="90"></canvas>
+      <div class="plotLbl">SPECTRUM (40 Hz – 10 kHz)</div><canvas class="plot" id="cSpec" height="120"></canvas></div>
+    <div class="card"><div class="stats" id="stats"></div><button class="btn primary" id="btnSubmit" style="width:100%;padding:12px" disabled>Send to client</button></div>`;
+    $('#pT').onclick=()=>playFixed(targetPatch(S.L),S.L,'pT');
+    $('#btnSubmit').onclick=submit;
+  }
+  $('#pY').onclick=()=>playFixed(S.patch,S.L,'pY');
+}
+function flashPlay(id,dur){ const b=document.getElementById(id); if(!b) return; b.style.borderColor='var(--text)'; setTimeout(()=>b.style.borderColor='',dur*1000); }
+
+let aTimer=null, aSeq=0;
+function scheduleAnalyze(){ clearTimeout(aTimer); aTimer=setTimeout(runAnalyze,120); saveDraft(); }
+function saveDraft(){ if(S.L&&S.patch) store.set('draft.'+S.L.id,S.patch); }
+async function runAnalyze(){
+  if(!S.L) return; const seq=++aSeq, L=S.L;
+  if(typeof OfflineAudioContext==='undefined'){ const h=$('#hints'); if(h) h.innerHTML='<li>This browser can\'t render audio offline, so matching is unavailable.</li>'; return; }
+  const mine=analyze(await renderPatch(S.patch,L));
+  if(!S.sandbox&&!L._tA) L._tA=analyze(await renderPatch(targetPatch(L),L));
+  if(seq!==aSeq||S.L!==L) return;
+  S.mine=mine; S.cmp=S.sandbox?null:compare(L._tA,mine,L.tol||1);
+  updateRight();
+}
+function updateRight(){
+  const c=S.cmp, cost=patchCost(S.patch);
+  $('#stats').innerHTML=`<div class="stat"><b>${cost}¢</b><span>Cost</span></div><div class="stat"><b>${S.patch.modules.length-1}</b><span>Modules</span></div><div class="stat"><b>${S.patch.cables.length}</b><span>Cables</span></div>`;
+  if(c){
+    const ok=c.overall>=PASS-1e-9; const pct=$('#pct'); pct.textContent=Math.floor(c.overall)+'%'; pct.classList.toggle('ok',ok);
+    $('#barAll').style.width=c.overall+'%'; $('#barAll').style.background=ok?'var(--good)':'var(--amber)';
+    [['Spec','sSpec'],['Tone','sTone'],['Shape','sShape']].forEach(([k,f])=>{ $('#bar'+k).style.width=c[f]+'%'; $('#v'+k).textContent=Math.floor(c[f]); });
+    $('#hints').innerHTML=c.hints.map(h=>`<li class="${h.ok?'ok':''}">${h.t}</li>`).join('');
+    $('#btnSubmit').disabled=!ok;
+  }
+  drawPlots();
+}
+function setupCanvas(cv){ const dpr=window.devicePixelRatio||1, w=cv.clientWidth, h=+cv.getAttribute('height'); cv.width=w*dpr; cv.height=h*dpr; cv.style.height=h+'px'; const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); return {g,w,h}; }
+function drawPlots(){
+  const T=S.sandbox?null:S.L._tA, Y=S.mine; if(!Y) return;
+  const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const CREAM=css('--cream'), AMB=css('--amber'), GRID='#2a241f';
+  // loudness
+  { const {g,w,h}=setupCanvas($('#cEnv')); const ref=Math.max(Y.peak,T?T.peak:-200), fl=ref-60;
+    g.strokeStyle=GRID; g.lineWidth=1; for(let i=1;i<4;i++){ g.beginPath(); g.moveTo(0,h*i/4); g.lineTo(w,h*i/4); g.stroke(); }
+    const gateX=S.L.gate/S.L.dur*w; g.setLineDash([2,3]); g.strokeStyle='#4d433a'; g.beginPath(); g.moveTo(gateX,0); g.lineTo(gateX,h); g.stroke(); g.setLineDash([]);
+    g.fillStyle='#6d6356'; g.font='9px IBM Plex Mono'; g.fillText('key up',gateX+3,10);
+    const line=(A,col,fill,dash)=>{ g.beginPath(); for(let e=0;e<A.nE;e++){ const x=e/(A.nE-1)*w, v=Math.max(A.env[e],fl), y=h-2-(v-fl)/(ref-fl)*(h-6); e?g.lineTo(x,y):g.moveTo(x,y);}
+      if(fill){ g.lineTo(w,h); g.lineTo(0,h); g.closePath(); g.fillStyle=fill; g.fill(); } else { g.setLineDash(dash||[]); g.strokeStyle=col; g.lineWidth=1.8; g.stroke(); g.setLineDash([]);} };
+    line(Y,AMB,'rgba(242,165,65,.18)'); line(Y,AMB); if(T) line(T,CREAM,null,[4,3]);
+  }
+  // spectrum
+  { const {g,w,h}=setupCanvas($('#cSpec')); const ref=Math.max(...Y.avg,...(T?T.avg:[-200])), fl=ref-70;
+    g.strokeStyle=GRID; g.fillStyle='#6d6356'; g.font='9px IBM Plex Mono';
+    [100,1000,10000].forEach(f=>{ const x=Math.log2(f/FMIN)/Math.log2(FMAX/FMIN)*w; g.beginPath(); g.moveTo(x,0); g.lineTo(x,h); g.stroke(); g.fillText(f>=1000?f/1000+'k':f,x+3,h-4); });
+    const line=(A,col,fill,dash)=>{ g.beginPath(); for(let b=0;b<NB;b++){ const x=b/(NB-1)*w, v=Math.max(A.avg[b],fl), y=h-2-(v-fl)/(ref-fl)*(h-8); b?g.lineTo(x,y):g.moveTo(x,y);}
+      if(fill){ g.lineTo(w,h); g.lineTo(0,h); g.closePath(); g.fillStyle=fill; g.fill(); } else { g.setLineDash(dash||[]); g.strokeStyle=col; g.lineWidth=1.5; g.stroke(); g.setLineDash([]);} };
+    line(Y,AMB,'rgba(242,165,65,.16)'); line(Y,AMB); if(T) line(T,CREAM,null,[4,3]);
+  }
+  if(S.sandbox){ const st=$('#stats'); st.innerHTML+= Y.pitch?`<div class="stat" style="grid-column:span 3"><b>${noteName(Math.round(69+12*Math.log2(Y.pitch/440)))} · ${Y.pitch.toFixed(1)} Hz</b><span>Detected pitch</span></div>`:''; }
+}
+
+/* ---------- submit ---------- */
+function submit(){
+  const c=S.cmp; if(!c||c.overall<PASS) return;
+  const L=S.L, cost=patchCost(S.patch), mods=S.patch.modules.length-1, cab=S.patch.cables.length;
+  const prev=progress.solved[L.id];
+  const best={cost:prev?Math.min(prev.cost,cost):cost, cables:prev?Math.min(prev.cables,cab):cab, match:prev?Math.max(prev.match,c.overall):c.overall};
+  progress.solved[L.id]=best; saveProgress();
+  const par=patchCost(targetPatch(L));
+  const next=S.li+1<LEVELS.length?S.li+1:null;
+  const m=$('#modal'); m.hidden=false;
+  m.innerHTML=`<div class="modalCard"><h2>Patch accepted</h2><p class="lead">${L.client} · ${L.title}</p>
+    <blockquote>${L.reply}</blockquote>
+    <div class="resGrid">
+      <div class="res"><b>${Math.floor(c.overall)}%</b><span>Match</span><em>best ${Math.floor(best.match)}%</em></div>
+      <div class="res"><b>${cost}¢</b><span>Cost</span><em>best ${best.cost}¢ / par ${par}</em></div>
+      <div class="res"><b>${mods}</b><span>Modules</span><em>&nbsp;</em></div>
+      <div class="res"><b>${cab}</b><span>Cables</span><em>best ${best.cables}</em></div>
+    </div>
+    <div class="modalBtns"><button class="btn" id="mStay">Keep tweaking</button><button class="btn" id="mBoard">Gig board</button>${next!=null?'<button class="btn primary" id="mNext">Next gig →</button>':''}</div></div>`;
+  $('#mStay').onclick=()=>m.hidden=true;
+  $('#mBoard').onclick=()=>{ m.hidden=true; showBoard(); };
+  if(next!=null) $('#mNext').onclick=()=>{ m.hidden=true; openLevel(next); };
+}
+let toastT=null;
+function toast(msg){ let t=document.querySelector('.toast'); if(!t){ t=el('div',{class:'toast'}); document.body.appendChild(t); } t.textContent=msg; clearTimeout(toastT); toastT=setTimeout(()=>t.remove(),2200); }
+
+/* ---------- keyboard ---------- */
+const KEYMAP={a:0,w:1,s:2,e:3,d:4,f:5,t:6,g:7,y:8,h:9,u:10,j:11,k:12,o:13,l:14};
+let octShift=0;
+window.addEventListener('keydown',e=>{
+  if(!S.L||e.metaKey||e.ctrlKey||e.altKey||e.repeat) return;
+  if(!$('#modal').hidden) return;
+  const k=e.key.toLowerCase();
+  if(k===' '){ e.preventDefault(); playFixed(S.patch,S.L,'pY'); return; }
+  if(k==='t'&&!S.sandbox&&e.shiftKey){ playFixed(targetPatch(S.L),S.L,'pT'); return; }
+  if(k==='z'){ octShift=Math.max(-3,octShift-1); toast('Keyboard octave '+fmtSigned(octShift)); return; }
+  if(k==='x'){ octShift=Math.min(3,octShift+1); toast('Keyboard octave '+fmtSigned(octShift)); return; }
+  if(k in KEYMAP) noteOn(k,S.L.note+KEYMAP[k]+12*octShift);
+});
+window.addEventListener('keyup',e=>{ const k=e.key.toLowerCase(); if(k in KEYMAP) noteOff(k); });
+window.addEventListener('blur',allNotesOff);
+window.addEventListener('resize',()=>{ if(S.L){ drawCables(); drawPlots(); } });
+
+$('#btnHome').onclick=showBoard;
+$('#btnUnlock').onclick=()=>{ progress.unlockAll=true; saveProgress(); showBoard(); toast('All gigs unlocked'); };
+$('#btnReset').onclick=()=>{ const b=$('#btnReset'); if(b.dataset.armed){ progress={solved:{},unlockAll:false}; saveProgress(); LEVELS.concat([SANDBOX]).forEach(L=>store.del('draft.'+L.id)); b.textContent='Wipe progress'; delete b.dataset.armed; showBoard(); toast('Progress wiped'); } else { b.dataset.armed=1; b.textContent='Click again to confirm'; setTimeout(()=>{ b.textContent='Wipe progress'; delete b.dataset.armed; },3000); } };
+
+/* =====================================================================
+   SELF-TEST (open with #selftest) — calibrates the match score
+   ===================================================================== */
+async function selftest(){
+  const out=[]; const lv=id=>LEVELS.find(l=>l.id===id);
+  const variant=(L,changes)=>{ const p=targetPatch(L); for(const [mid,k,v] of changes){ const m=p.modules.find(x=>x.id===mid); m.params[k]=v; } return p; };
+  const cases=[
+    ['dial-tone',[]],['dial-tone',[['o','oct',0]]],['dial-tone',[['o','semi',1]]],['dial-tone',[['o','wave','triangle']]],
+    ['shape',[['o','wave','square']]],['shape',[['o','wave','triangle']]],['shape',[['o','wave','sine']]],
+    ['pixel-knight',[['o','semi',6]]],['pixel-knight',[['o','semi',5]]],['pixel-knight',[['o','oct',0]]],
+    ['thin-walls',[['f','cutoff',560]]],['thin-walls',[['f','cutoff',640]]],['thin-walls',[['f','cutoff',800]]],['thin-walls',[['f','cutoff',2000]]],
+    ['squelch',[['f','res',0.7]]],['squelch',[['f','res',0.5]]],['squelch',[['f','cutoff',1000]]],['squelch',[['f','cutoff',1200]]],
+    ['payphone',[['f','type','lowpass']]],['payphone',[['f','cutoff',1500]]],['payphone',[['f','res',0.5]]],
+    ['thin-walls',[['f','cutoff',520]]],['pluck',[['e','d',0.32]]],['vibrato',[['l','rate',5.4]]],['vibrato',[['o','pitchAmt',45]]],['wobble',[['l','rate',3.05]]],['wobble',[['l','rate',3.1]]],['supersaw',[['o','fine',8],['o2','fine',-8]]],['supersaw',[['o','fine',0],['o2','fine',-18]]],['wow-bass',[['f','cutAmt',3400]]],
+    ['pluck',[['e','d',0.3]]],['pluck',[['e','d',0.5]]],['pluck',[['e','d',0.2]]],['pluck',[['o','wave','sine']]],['pluck',[['e','a',0.03]]],
+    ['slow-bloom',[['e','a',0.7]]],['slow-bloom',[['e','a',0.5]]],['slow-bloom',[['e','r',0.8]]],['slow-bloom',[['e','s',0.5]]],
+    ['wow-bass',[['f','cutAmt',3000]]],['wow-bass',[['f','cutAmt',2400]]],['wow-bass',[['e2','d',0.25]]],['wow-bass',[['f','cutAmt',0]]],
+    ['vibrato',[['l','rate',5]]],['vibrato',[['l','rate',6.5]]],['vibrato',[['o','pitchAmt',70]]],['vibrato',[['o','pitchAmt',0]]],
+    ['wobble',[['l','rate',3.3]]],['wobble',[['l','rate',4]]],['wobble',[['f','cutAmt',1800]]],
+    ['supersaw',[['o','fine',6],['o2','fine',-6]]],['supersaw',[['o','fine',14],['o2','fine',-14]]],['supersaw',[['o','fine',0],['o2','fine',0]]],
+    ['kick',[['o','pitchAmt',2400]]],['kick',[['e2','d',0.12]]],['kick',[['o','pitchAmt',0]]],
+    ['snare',[['f','cutoff',2500]]],['snare',[['e','d',0.25]]],['snare',[['f','type','lowpass']]],
+  ];
+  for(const [id,ch] of cases){
+    const L=lv(id); if(!L._tA) L._tA=analyze(await renderPatch(targetPatch(L),L));
+    const Y=analyze(await renderPatch(variant(L,ch),L)); const c=compare(L._tA,Y,L.tol||1);
+    out.push(`${id.padEnd(13)} ${(ch.map(x=>x[0]+'.'+x[1]+'='+x[2]).join(',')||'EXACT').padEnd(34)} ${c.overall.toFixed(1).padStart(6)}  spec ${c.dSpec.toFixed(2)} tone ${c.dTone.toFixed(2)} shape ${c.dShape.toFixed(2)} | ${c.hints.filter(h=>!h.ok).map(h=>h.t).join(' ')}`);
+  }
+  // also check default rack (OSC unpatched) vs level 1 and pitch hint accuracy
+  const pre=el('pre',{id:'selftest'}); pre.textContent=out.join('\n'); document.body.innerHTML=''; document.body.appendChild(pre);
+}
+
+if(location.hash==='#selftest') selftest(); else showBoard();
+</script>
+</body>
+</html>
