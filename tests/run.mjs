@@ -23,7 +23,10 @@ const BANDS = {
   'vibrato|o.pitchAmt=45': [90, 100], 'wobble|l.rate=3.05': [90, 100],
   // near misses: close, but should not pass
   'thin-walls|f.cutoff=800': [70, 89.9], 'squelch|f.cutoff=1200': [55, 89.9], 'pluck|e.d=0.5': [35, 80],
-  'vibrato|l.rate=5': [70, 89.9], 'wobble|l.rate=3.3': [60, 89.9], 'supersaw|o.fine=0,o2.fine=0': [60, 89.9],
+  'vibrato|l.rate=5': [70, 89.9],
+  // new chapters
+  'air|f.type=lowpass': [0, 30], 'hat|f.type=lowpass': [0, 30], 'cowbell|o2.semi=0': [0, 45],
+  'breathing|e.a=0.5': [90, 100], 'sub|e.a=0.03': [90, 100], 'ufo|l.rate=7.1': [80, 95], 'wobble|l.rate=3.3': [60, 89.9], 'supersaw|o.fine=0,o2.fine=0': [60, 89.9],
 };
 
 const { page, close } = await launch();
@@ -61,7 +64,7 @@ try {
     console.log(`\nFocus mode · ${vp.name}`);
     await page.open(URL, vp);
     await page.waitFor("document.querySelector('.gig')");
-    const f = await page.evaluate(`(async()=>{ progress.unlockAll=true; store.del('draft2.wow-bass'); openLevel(8); closeSide();
+    const f = await page.evaluate(`(async()=>{ progress.unlockAll=true; store.del('draft2.wow-bass'); openLevel(LEVELS.findIndex(l=>l.id==='wow-bass')); closeSide();
       for(let t=0;t<100&&!S.mine;t++) await new Promise(r=>setTimeout(r,50));
       const area0=S.view.s; setFocus(true); await new Promise(r=>setTimeout(r,400));
       const vis=(sel,w=100,h=30)=>{ const r=document.querySelector(sel).getBoundingClientRect(); return r.width>w&&r.height>h&&r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth; };
@@ -80,18 +83,37 @@ try {
   const solved = await page.evaluate(`(async()=>{
     progress.unlockAll=true; const out=[];
     for(let i=0;i<LEVELS.length;i++){
-      openLevel(i); const L=S.L, t=targetPatch(L);
+      store.del('draft2.'+LEVELS[i].id); openLevel(i); const L=S.L;
+      if(!L._tA) L._tA=analyze(await renderPatch(targetPatch(L),L));
+      const fresh=levelCompare(L,L._tA,analyze(await renderPatch(S.patch,L))).overall;
+      const t=targetPatch(L);
       const fits=t.modules.length-1<=S.slots-1;
       let slot=0; t.modules.forEach(m=>{ m.slot = m.type==='out' ? S.slots-1 : slot++; });
       S.patch=t; renderRack();
       const presetsOk=(L.start||[]).every(s=>Number.isInteger(s.slot)&&s.slot<S.slots-1);
       const xm=await renderPatch(S.patch,L); if(!L._tA) L._tA=analyze(await renderPatch(targetPatch(L),L));
-      const c=compare(L._tA,analyze(xm),L.tol||1);
-      out.push({id:L.id,fits,presetsOk,score:c.overall,missing:missing().length});
+      const c=levelCompare(L,L._tA,analyze(xm));
+      out.push({id:L.id,fits,presetsOk,score:c.overall,missing:missing().length,fresh});
     }
     LEVELS.forEach(L=>store.del('draft2.'+L.id)); showBoard(); return out; })()`);
-  for (const r of solved) ok(r.fits && r.presetsOk && r.score >= 99.9 && r.missing === 0,
-    `${r.id.padEnd(13)} fits the board, presets valid, reference scores ${r.score.toFixed(1)}%`);
+  for (const r of solved) ok(r.fits && r.presetsOk && r.score >= 99.9 && r.missing === 0 && r.fresh < 80,
+    `${r.id.padEnd(13)} fits the board, presets valid, reference scores ${r.score.toFixed(1)}%, untouched rack scores ${r.fresh.toFixed(0)}%`);
+
+  console.log('\nCurriculum structure');
+  const cur = await page.evaluate(`(()=>{
+    const ids=LEVELS.map(l=>l.id), uniq=new Set(ids).size===ids.length;
+    const themesEndInChallenge=CHAPTERS.slice(1).every(c=>LEVELS[c.levels[c.levels.length-1]].challenge&&c.levels.filter(i=>LEVELS[i].challenge).length===1);
+    const every=CHAPTERS.reduce((n,c)=>n+c.levels.length,0)===LEVELS.length;
+    const saved=progress; progress={solved:{},unlockAll:false};
+    const openAtStart=LEVELS.map((l,i)=>isUnlocked(i)?l.id:null).filter(Boolean);
+    CHAPTERS[0].levels.forEach(i=>progress.solved[LEVELS[i].id]={cost:1,cables:1,match:95});
+    const openAfterBasics=CHAPTERS.slice(1).every(c=>isUnlocked(c.levels[0])&&!isUnlocked(c.levels[1]));
+    progress=saved; return {uniq,every,themesEndInChallenge,firstOnly:openAtStart.length===1&&openAtStart[0]===LEVELS[0].id,openAfterBasics,n:LEVELS.length,chapters:CHAPTERS.length};
+  })()`);
+  ok(cur.uniq && cur.every, `${cur.n} gigs in ${cur.chapters} chapters, unique ids`);
+  ok(cur.themesEndInChallenge, 'every theme ends with exactly one challenge');
+  ok(cur.firstOnly, 'a new player can only open the first Basics gig');
+  ok(cur.openAfterBasics, 'finishing Basics opens the first gig of every theme (and only the first)');
 } catch (e) {
   console.error(e); failures++;
 } finally {

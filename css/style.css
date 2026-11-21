@@ -40,11 +40,21 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .gig .num{font-family:var(--mono);font-size:11px;color:var(--faint)}
 .gig .title{font-family:var(--head);font-weight:700;font-size:18px;letter-spacing:.02em}
 .gig .client{color:var(--dim);font-size:12.5px}
-.gig .concept{margin-top:auto;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px}
+.gig .concept{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:6px 8px;flex-wrap:wrap;font-family:var(--mono);font-size:11px}
+.gig .tag{white-space:nowrap}
 .tag{padding:2px 7px;border-radius:4px;border:1px solid var(--line2);color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
 .stamp{color:var(--good);font-weight:600}
 .gig.solved{border-color:#3d4a2c}
 .gig.jam{border-style:dashed}
+.chapter{margin-bottom:26px}
+.chHead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:10px}
+.chHead h2{font-family:var(--head);font-size:20px;margin:0;letter-spacing:.04em}
+.chHead p{margin:2px 0 0;color:var(--dim);font-size:13px}
+.chProg{font-family:var(--mono);font-size:12px;color:var(--amber);white-space:nowrap}
+.chapter.locked .chProg{color:var(--faint)}
+.chapter.locked .gigs{opacity:.75}
+.gig.challenge{border-color:#5a4426}
+.gig .chal{color:var(--amber);letter-spacing:.1em}
 .boardFoot{margin-top:30px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--faint);font-size:12px}
 
 /* ---------- Level layout ---------- */

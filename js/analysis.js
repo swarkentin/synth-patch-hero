@@ -61,7 +61,9 @@ function estimatePitch(x,start,W){
   return SR/(tp+sh);
 }
 const K_SPEC=8, K_TONE=6, K_SHAPE=26, PASS=90;
-function compare(T,Y,tol=1){
+/* tol widens tolerance for movement (spectrogram + shape); tolShape, if given, sets the loudness-shape tolerance separately. */
+const levelCompare=(L,T,Y)=>compare(T,Y,L.tol||1,L.tolShape||L.tol||1);
+function compare(T,Y,tol=1,tolShape=tol){
   // spectrogram: timbre over time. Each frame is normalized to its own peak (loudness is
   // judged separately by Shape) and weighted by how loud that frame is.
   let ref=-1e9; for(const A of [T,Y]) for(let i=0;i<A.spec.length;i++) if(A.spec[i]>ref) ref=A.spec[i];
@@ -85,7 +87,7 @@ function compare(T,Y,tol=1){
   const rE=Math.max(T.peak,Y.peak); s=0;n=0; const LE=Math.min(T.nE,Y.nE);
   for(let e=0;e<LE;e++){ const a=Math.pow(10,(T.env[e]-rE)/40), c=Math.pow(10,(Y.env[e]-rE)/40); if(a>0.05||c>0.05){ s+=Math.abs(a-c)*100; n++; } }
   const dShape=n?s/n:0;
-  const sSpec=Math.exp(-dSpec/(K_SPEC*tol)), sTone=Math.exp(-dTone/K_TONE), sShape=Math.exp(-dShape/(K_SHAPE*tol));
+  const sSpec=Math.exp(-dSpec/(K_SPEC*tol)), sTone=Math.exp(-dTone/K_TONE), sShape=Math.exp(-dShape/(K_SHAPE*tolShape));
   const overall=Math.pow(sSpec,0.5)*Math.pow(sTone,0.2)*Math.pow(sShape,0.3);
   return {overall:overall*100,sSpec:sSpec*100,sTone:sTone*100,sShape:sShape*100,dSpec,dTone,dShape,hints:makeHints(T,Y)};
 }

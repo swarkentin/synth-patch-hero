@@ -21,11 +21,12 @@ async function selftest(){
     ['wobble',[['l','rate',3.3]]],['wobble',[['l','rate',4]]],['wobble',[['f','cutAmt',1800]]],
     ['supersaw',[['o','fine',6],['o2','fine',-6]]],['supersaw',[['o','fine',14],['o2','fine',-14]]],['supersaw',[['o','fine',0],['o2','fine',0]]],
     ['kick',[['o','pitchAmt',2400]]],['kick',[['e2','d',0.12]]],['kick',[['o','pitchAmt',0]]],
-    ['snare',[['f','cutoff',2500]]],['snare',[['e','d',0.25]]],['snare',[['f','type','lowpass']]],
+    ['snare',[['f','cutoff',2500]]],
+    ['air',[['f','type','lowpass']]],['hat',[['f','type','lowpass']]],['breathing',[['e','a',0.5]]],['cowbell',[['o2','semi',0]]],['sub',[['e','a',0.03]]],['ufo',[['l','rate',7.1]]],['snare',[['e','d',0.25]]],['snare',[['f','type','lowpass']]],
   ];
   for(const [id,ch] of cases){
     const L=lv(id); if(!L._tA) L._tA=analyze(await renderPatch(targetPatch(L),L));
-    const Y=analyze(await renderPatch(variant(L,ch),L)); const c=compare(L._tA,Y,L.tol||1);
+    const Y=analyze(await renderPatch(variant(L,ch),L)); const c=levelCompare(L,L._tA,Y);
     const label=ch.map(x=>x[0]+'.'+x[1]+'='+x[2]).join(',')||'EXACT'; res.push({id,change:label,score:c.overall});
     out.push(`${id.padEnd(13)} ${(ch.map(x=>x[0]+'.'+x[1]+'='+x[2]).join(',')||'EXACT').padEnd(34)} ${c.overall.toFixed(1).padStart(6)}  spec ${c.dSpec.toFixed(2)} tone ${c.dTone.toFixed(2)} shape ${c.dShape.toFixed(2)} | ${c.hints.filter(h=>!h.ok).map(h=>h.t).join(' ')}`);
   }

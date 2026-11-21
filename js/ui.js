@@ -12,20 +12,29 @@ function showBoard(){
   const earn = Object.values(progress.solved).length*85;
   $('#ledger').innerHTML=`<div class="row"><span>Gigs done</span><b>${solved} / ${LEVELS.length}</b></div>
     <div class="row"><span>Earned</span><b>$${earn}</b></div><div class="row"><span>Rent due</span><b>$${Math.max(0,1100-earn)}</b></div>
-    <div class="row"><span>Next lesson</span><b>${(LEVELS.find(l=>!progress.solved[l.id])||{concept:'Mastery'}).concept}</b></div>`;
+    <div class="row"><span>Next lesson</span><b>${(LEVELS.find((l,i)=>!progress.solved[l.id]&&isUnlocked(i))||{concept:'Mastery'}).concept}</b></div>`;
   const g=$('#gigs'); g.innerHTML='';
-  LEVELS.forEach((L,i)=>{
-    const sv=progress.solved[L.id], open=isUnlocked(i);
-    const b=el('button',{class:'gig'+(sv?' solved':''),onclick:()=>openLevel(i)});
-    b.disabled=!open;
-    b.innerHTML=`<div class="num">GIG ${String(i+1).padStart(2,'0')}</div><div class="title">${open?L.title:'???'}</div>
-      <div class="client">${open?L.client+' · '+L.role:'Finish the previous gig'}</div>
-      <div class="concept"><span class="tag">${L.concept}</span>${sv?`<span class="stamp">PAID · ${sv.cost}¢ · ${Math.round(sv.match)}%${progress.played&&progress.played[L.id]?' · ♪':''}</span>`:open?'<span style="color:var(--amber)">NEW</span>':''}</div>`;
-    g.appendChild(b);
+  CHAPTERS.forEach(c=>{
+    const done=c.levels.filter(i=>progress.solved[LEVELS[i].id]).length;
+    const locked=c.id!=='basics'&&!basicsDone()&&!progress.unlockAll;
+    const sec=el('section',{class:'chapter'+(locked?' locked':'')});
+    sec.innerHTML=`<div class="chHead"><div><h2>${c.title}</h2><p>${c.blurb}</p></div><span class="chProg">${locked?'Finish Basics to open':done===c.levels.length?'✓ complete':done+' / '+c.levels.length}</span></div>`;
+    const grid=el('div',{class:'gigs'});
+    c.levels.forEach((i,k)=>{
+      const L=LEVELS[i], sv=progress.solved[L.id], open=isUnlocked(i);
+      const b=el('button',{class:'gig'+(sv?' solved':'')+(L.challenge?' challenge':''),onclick:()=>openLevel(i)});
+      b.disabled=!open;
+      b.innerHTML=`<div class="num">${c.short} ${k+1}${L.challenge?' · <span class="chal">CHALLENGE</span>':''}</div><div class="title">${L.title}</div>
+        <div class="client">${open?L.client+' · '+L.role:locked?'Opens after Basics':'Finish the previous gig'}</div>
+        <div class="concept"><span class="tag">${L.concept}</span>${sv?`<span class="stamp">PAID · ${sv.cost}¢ · ${Math.round(sv.match)}%${progress.played&&progress.played[L.id]?' · ♪':''}</span>`:open?'<span style="color:var(--amber)">NEW</span>':''}</div>`;
+      grid.appendChild(b);
+    });
+    sec.appendChild(grid); g.appendChild(sec);
   });
-  const j=el('button',{class:'gig jam',onclick:()=>openLevel(-1)});
-  j.innerHTML=`<div class="num">AFTER HOURS</div><div class="title">Free Jam</div><div class="client">All modules, no target. Play it like an instrument.</div><div class="concept"><span class="tag">Sandbox</span></div>`;
-  g.appendChild(j);
+  const jam=el('section',{class:'chapter'}); jam.innerHTML='<div class="chHead"><div><h2>After hours</h2><p>No clients, no rent. Just you and the rack.</p></div></div>';
+  const jg=el('div',{class:'gigs'}); const j=el('button',{class:'gig jam',onclick:()=>openLevel(-1)});
+  j.innerHTML=`<div class="num">SANDBOX</div><div class="title">Free Jam</div><div class="client">All modules, no target. Play it like an instrument.</div><div class="concept"><span class="tag">Sandbox</span></div>`;
+  jg.appendChild(j); jam.appendChild(jg); g.appendChild(jam);
 }
 
 
@@ -48,6 +57,9 @@ function slotXY(i){ const [c,r]= i===S.slots-1 ? S.grid.outCell : S.grid.cells[i
 const occupant=i=>S.patch.modules.find(m=>m.slot===i);
 function emptySlots(){ const out=[]; for(let i=0;i<S.slots-1;i++) if(!occupant(i)) out.push(i); return out; }
 function needs(){ if(S.sandbox) return {}; const n={}; S.L.target.mods.forEach(m=>n[m.type]=(n[m.type]||0)+1); return n; }
+const isChallenge=()=>!S.sandbox&&!!S.L.challenge;
+const placedCount=()=>S.patch.modules.filter(m=>m.type!=='out').length;
+function needsMore(){ return isChallenge()?placedCount()<S.L.target.mods.length:missing().length>0; }
 function missing(){ const n=needs(), out=[]; for(const t in n){ const h=countType(t); if(h<n[t]) out.push([t,n[t]-h]); } return out; }
 function playerCost(p){ return p.modules.reduce((s,m)=>s+(m.preset?0:MT[m.type].cost),0); }
 function parCost(L){ const pre=(L.start||[]).reduce((s,x)=>s+MT[x.type].cost,0); return patchCost(targetPatch(L))-pre; }
@@ -62,7 +74,8 @@ function openLevel(i){
   idc=1+Math.max(0,...S.patch.modules.map(m=>parseInt(String(m.id).replace(/\D/g,''))||0));
   document.body.classList.add('inLevel');
   $('#screenBoard').hidden=true; $('#screenLevel').hidden=false; $('#btnHome').hidden=false;
-  $('#crumbs').textContent=S.sandbox?'Free Jam':`Gig ${String(i+1).padStart(2,'0')} · ${S.L.title} · ${S.L.concept}`;
+  const ch=S.sandbox?null:chapterOf(i);
+  $('#crumbs').textContent=S.sandbox?'Free Jam':`${ch.title} ${ch.levels.indexOf(i)+1}/${ch.levels.length} · ${S.L.title} · ${S.L.challenge?'Challenge':S.L.concept}`;
   S.pick=null; showPatchbar(); allNotesOff();
   S.kbLo=null; S.kbFb=null; S.promptDone=S.sandbox||!!(progress.played&&progress.played[S.L.id]);
   renderBrief(); renderPalette(); layoutBoard(); renderRack(); renderCompare(); renderPrompt(); renderMidiChip(); setKeysOpen(S.keysOpen);
@@ -84,7 +97,7 @@ function freshPatch(){
 }
 function renderBrief(){
   const L=S.L, n=needs();
-  const parts=Object.keys(n).map(t=>`${n[t]>1?n[t]+'× ':''}${MT[t].name}`).join(', ');
+  const parts=isChallenge()?`${L.target.mods.length} modules (challenge: work out which)`:Object.keys(n).map(t=>`${n[t]>1?n[t]+'× ':''}${MT[t].name}`).join(', ');
   $('#brief').innerHTML=`<h3>${S.sandbox?'Session':'The client'}</h3><div class="who">${L.client}</div><div class="role">${L.role}</div>
    <blockquote>${L.brief}</blockquote>
    ${L.presetNote?`<div class="preset">${L.presetNote}</div>`:''}
@@ -96,7 +109,7 @@ function closeSide(){ $('#side').classList.remove('open'); $('#sideBackdrop').cl
 function countType(t){ return S.patch.modules.filter(m=>m.type===t).length; }
 function renderPalette(){
   const p=$('#palette'); p.innerHTML='';
-  const miss=new Set(missing().map(x=>x[0])), free=emptySlots().length;
+  const miss=new Set(isChallenge()?[]:missing().map(x=>x[0])), free=emptySlots().length;
   Object.entries(S.palette).forEach(([t,max])=>{
     const left=max-countType(t);
     const b=el('button',{class:'palBtn'+(miss.has(t)?' need':''),title:`${MT[t].long}${miss.has(t)?' · this sound needs one':''}`,onclick:()=>addModule(t)},
@@ -107,7 +120,9 @@ function renderPalette(){
 function renderParts(){
   const b=$('#partsBar'); if(S.sandbox){ b.innerHTML=''; return; }
   const n=needs();
-  b.classList.toggle('allok',missing().length===0);
+  b.classList.toggle('allok',!needsMore());
+  if(isChallenge()){ const have=placedCount(), need=S.L.target.mods.length;
+    b.innerHTML=`<span class="lbl">CHALLENGE</span><span class="part ${have>=need?'ok':'miss'}">${have}/${need} modules</span>`; return; }
   b.innerHTML='<span class="lbl">PARTS</span>'+Object.keys(n).map(t=>{ const h=countType(t), ok=h>=n[t];
     return `<span class="part ${ok?'ok':'miss'}">${MT[t].name} ${ok?'✓':h+'/'+n[t]}</span>`; }).join('');
 }
@@ -130,7 +145,7 @@ function refreshRack(){ renderPalette(); renderRack(); if(S.cmp) updateCompare()
 /* ---------- rack render ---------- */
 function renderRack(){
   const slotsEl=$('#slots'), box=$('#mods'); slotsEl.innerHTML=''; box.innerHTML='';
-  const wanted=missing().length>0;
+  const wanted=needsMore();
   for(let i=0;i<S.slots-1;i++){
     const [x,y]=slotXY(i), occ=occupant(i);
     const s=el('div',{class:'slot'+(occ?' filled':' empty'+(wanted?' wanted':'')),'data-slot':i}); s.style.left=x+'px'; s.style.top=y+'px';
@@ -458,7 +473,7 @@ async function runAnalyze(){
   const xm=await renderPatch(S.patch,L), mine=analyze(xm);
   if(!S.sandbox&&!L._tX){ const xt=await renderPatch(targetPatch(L),L); L._tX=xt; L._tA=analyze(xt); }
   if(seq!==aSeq||S.L!==L) return;
-  S.mineX=xm; S.mine=mine; S.cmp=S.sandbox?null:compare(L._tA,mine,L.tol||1);
+  S.mineX=xm; S.mine=mine; S.cmp=S.sandbox?null:levelCompare(L,L._tA,mine);
   updateCompare();
 }
 function updateCompare(){
@@ -471,7 +486,8 @@ function updateCompare(){
     $('#barAll').style.width=c.overall+'%'; $('#barAll').style.background=ok?'var(--good)':'var(--amber)';
     [['Spec','sSpec'],['Tone','sTone'],['Shape','sShape']].forEach(([k,f])=>{ $('#bar'+k).style.width=c[f]+'%'; $('#v'+k).textContent=Math.floor(c[f]); });
     const miss=missing(), hs=[];
-    if(!ok&&miss.length){ const [t,n]=miss[0]; hs.push({part:1,t:`Missing part: this sound needs ${n>1?n+' more':'a'} ${MT[t].name}${n>1?'s':''}. Tap an empty slot to add ${n>1?'them':'one'}.`}); }
+    if(!ok&&isChallenge()){ const have=placedCount(), need=S.L.target.mods.length; if(have<need) hs.push({part:1,t:`Challenge: the reference patch uses ${need} modules. You have ${have}.`}); }
+    else if(!ok&&miss.length){ const [t,n]=miss[0]; hs.push({part:1,t:`Missing part: this sound needs ${n>1?n+' more':'a'} ${MT[t].name}${n>1?'s':''}. Tap an empty slot to add ${n>1?'them':'one'}.`}); }
     const outFed=S.patch.cables.some(x=>x.to.m==='out');
     if(!outFed) hs.push({t:'Nothing reaches the OUTPUT yet. Patch an audio cable into its IN jack.'});
     c.hints.forEach(h=>{ if(!(outFed===false&&/Silence/.test(h.t))) hs.push(h); });
@@ -532,8 +548,10 @@ function submit(){
   const prev=progress.solved[L.id];
   const best={cost:prev?Math.min(prev.cost,cost):cost, cables:prev?Math.min(prev.cables,cab):cab, match:prev?Math.max(prev.match,c.overall):c.overall};
   progress.solved[L.id]=best; saveProgress();
-  const par=parCost(L), next=S.li+1<LEVELS.length?S.li+1:null, m=$('#modal'); m.hidden=false;
-  m.innerHTML=`<div class="modalCard"><h2>Patch accepted</h2><p class="lead">${L.client} · ${L.title}</p>
+  const ch=chapterOf(S.li), k=ch.levels.indexOf(S.li), nextIdx=ch.levels[k+1], next=nextIdx!=null&&isUnlocked(nextIdx)?nextIdx:null;
+  const chDone=ch.levels.every(i=>progress.solved[LEVELS[i].id]), opened=ch.id==='basics'&&chDone;
+  const par=parCost(L), m=$('#modal'); m.hidden=false;
+  m.innerHTML=`<div class="modalCard"><h2>Patch accepted</h2><p class="lead">${L.client} · ${L.title}</p>${chDone&&next==null?`<p class="lead" style="color:var(--good)">${opened?'Basics complete! Every theme on the gig board is now open.':ch.title+' complete!'}</p>`:''}
     <blockquote>${L.reply}</blockquote>
     <div class="resGrid">
       <div class="res"><b>${Math.floor(c.overall)}%</b><span>Match</span><em>best ${Math.floor(best.match)}%</em></div>

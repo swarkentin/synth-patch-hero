@@ -28,22 +28,17 @@ There's no build step and there are no dependencies: it's plain HTML, CSS and Ja
 
 ## Curriculum
 
-| # | Gig | Concept |
-|---|-----|---------|
-| 1 | Dial Tone | Oscillator, pitch, patch cables |
-| 2 | Shape of Sound | Waveforms and harmonics |
-| 3 | Pixel Knight | Intervals (octaves, fifths) |
-| 4 | Thin Walls | Low-pass filter, cutoff |
-| 5 | Squelch | Resonance |
-| 6 | Payphone | Filter types (LP / HP / BP) |
-| 7 | Pluck | VCA + ADSR envelope |
-| 8 | Slow Bloom | Pad envelopes |
-| 9 | Wow Bass | Modulation: filter envelope |
-| 10 | Vibrato | LFO → pitch |
-| 11 | Wobble | LFO → filter |
-| 12 | Neon Avenue | Detune and beating |
-| 13 | Kick It | Pitch envelope (synth drums) |
-| 14 | Snare Crack | Noise |
+**Basics** is a six-lesson tutorial, one building block each. Finishing it opens six **themes**, which you can play in any order. Each theme teaches its style through several lessons and ends with a **challenge**: no parts list, just the brief, the sound and how many modules the patch uses.
+
+| Chapter | Gigs (★ = challenge) |
+|---|---|
+| **Basics** | Dial Tone (oscillator, pitch, cables) · Shape of Sound (waveforms) · Pixel Knight (intervals) · Thin Walls (low-pass) · Pluck (VCA + ADSR) · Vibrato (LFO, modulation) |
+| **Filter Lab** | Squelch (resonance) · Payphone (filter types) · Thin Air (high-pass) · Talk Box (formants) · ★ Acid Test |
+| **Bass** | Sub Club (sub bass) · Wow Bass (filter envelope) · Pluck Bass · Wobble (LFO → filter) · ★ Reese |
+| **Pads** | Slow Bloom (pad envelopes) · Glass Pad (layering) · Breathing Pad (slow LFO) · ★ String Section |
+| **Leads** | Brass Stab (filter attack) · Neon Avenue (detune) · Night Flute (expressive lead) · ★ Stadium Lead |
+| **Percussion** | Kick It (pitch envelope) · Floor Tom (tuning drums) · Snare Crack (noise) · Hi-Hat (short envelopes) · ★ Cowbell |
+| **Sound FX** | Laser Zap (pitch sweeps) · Siren (square LFO) · Wind (filtered noise) · ★ Close Encounter |
 
 Plus **Free Jam**, a sandbox with everything unlocked.
 
@@ -85,7 +80,7 @@ npm run screenshots    # regenerate docs/screenshots/
 
 Tests need Node 22+ and Chrome or Chromium on the PATH (or set `CHROME_PATH`). CI runs them on every push and pull request.
 
-**Adding a gig:** add an entry to `LEVELS` in `js/data.js` with a brief, a manual page, a palette, and a `target` patch (plus optional `start` presets and `startCables`). `npm test` checks that it fits the board and that its reference patch scores 100%. If you change the scoring, keep the bands in `tests/run.mjs` passing, or update them on purpose.
+**Adding a gig:** add an entry to `LEVELS` in `js/data.js` with a chapter (`ch`), a brief, a manual page, a palette, and a `target` patch (plus optional `start` presets, `startCables`, `challenge`, `tol`/`tolShape`). Gigs appear in their chapter in the order they're listed. `npm test` checks that it fits the board, that its reference patch scores 100%, and that an untouched rack doesn't pass. If you change the scoring, keep the bands in `tests/run.mjs` passing, or update them on purpose.
 
 See [`docs/design.md`](docs/design.md) for the design decisions behind the layout, slot board, scoring and touch controls.
 

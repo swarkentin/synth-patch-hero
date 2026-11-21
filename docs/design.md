@@ -28,11 +28,22 @@ Feedback that drove it: too much scrolling between panels; you must always be ab
 OSC 2¢ (wave, oct, semi, fine, pitch mod amt) · NOISE 1¢ · FILTER 3¢ (LP/HP/BP, cutoff, res, cutoff mod amt in octaves) · VCA 1¢ (level, CV in) · ENV 2¢ (ADSR, linear segments) · LFO 2¢ (wave, rate).
 Yellow cables = audio, blue = control. Modulation depth lives on the destination (MOD AMT knobs). Knobs and jacks unlock per lesson.
 
-## Curriculum (14 gigs + Free Jam)
-1 Oscillator/pitch · 2 Waveforms · 3 Intervals · 4 Low-pass · 5 Resonance · 6 Filter types · 7 VCA+ADSR · 8 Pad envelopes · 9 Filter envelope (modulation) · 10 LFO→pitch · 11 LFO→filter · 12 Detune · 13 Pitch envelope (kick) · 14 Noise (snare).
+## Curriculum (33 gigs in 7 chapters + Free Jam)
+Structure: **Basics** is a linear tutorial (6 gigs). Finishing it opens all six **themes** at once; within a theme, gigs unlock in order. Each theme ends in exactly one **challenge** gig (`challenge:true`). A challenge hides the parts list and the missing-part names, showing only "N/M modules", and its manual gives guiding questions instead of steps.
+- **Basics:** Dial Tone (oscillator, pitch, cables) · Shape of Sound (waveforms) · Pixel Knight (intervals) · Thin Walls (low-pass) · Pluck (VCA + ADSR) · Vibrato (LFO, modulation)
+- **Filter Lab:** Squelch (resonance) · Payphone (filter types) · Thin Air (high-pass) · Talk Box (formants) · ★ Acid Test
+- **Bass:** Sub Club (sub bass) · Wow Bass (filter envelope, presets) · Pluck Bass · Wobble (LFO → filter) · ★ Reese
+- **Pads:** Slow Bloom · Glass Pad (layering) · Breathing Pad (slow LFO) · ★ String Section
+- **Leads:** Brass Stab (filter attack) · Neon Avenue (detune) · Night Flute (expressive lead) · ★ Stadium Lead
+- **Percussion:** Kick It (pitch envelope, presets) · Floor Tom (tuning) · Snare Crack (noise) · Hi-Hat (short envelopes) · ★ Cowbell
+- **Sound FX:** Laser Zap (pitch sweeps) · Siren (square LFO) · Wind (filtered noise) · ★ Close Encounter
+
+**Features** (which knobs/jacks are visible): in Basics they unlock lesson by lesson (`unlock`). In themes the player gets everything from Basics plus waveform/resonance/filter type, plus whatever the chapter's gigs so far use (derived from their reference patches: `fine`, `noise`, `mod`, …).
+
+**Quality checks per gig** (`npm test`): the reference patch scores 100%; an untouched rack scores under 80%; ids are unique; every theme ends in one challenge; unlock order is correct. When authoring, also check that removing any module from the reference patch scores under 90%, so a gig can't be passed by skipping its lesson.
 
 ## Matching
-Offline render at 22.05 kHz, then: spectrogram distance (per-frame normalized, loudness-weighted, 1/36-oct bands) 50%, average-spectrum tone 20%, perceptual loudness envelope 30%. Score = exp(-d/K) per part, geometric mean. Per-level `tol` widens tolerance for movement-based gigs (vibrato, wobble, detune = 3; percussive = 1.5). Calibration: `index.html#selftest`, enforced by `npm test`.
+Offline render at 22.05 kHz, then: spectrogram distance (per-frame normalized, loudness-weighted, 1/36-oct bands) 50%, average-spectrum tone 20%, perceptual loudness envelope 30%. Score = exp(-d/K) per part, geometric mean. Per-level `tol` widens tolerance for movement-based gigs (vibrato, wobble, detune = 3; fast LFO gigs Siren and Close Encounter = 5; percussive = 1.5). `tolShape` optionally sets a separate, stricter loudness-shape tolerance (1.2 on slow-movement pads/leads/FX), so a gig can't be passed by leaving out its volume envelope. Calibration: `index.html#selftest`, enforced by `npm test`.
 Calibrated outcomes: exact = 100; cutoff +0.2 oct ≈ 94; decay −9% ≈ 88; wrong waveform 10–35; 1 semitone off < 7.
 
 ## Touch details

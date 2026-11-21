@@ -10,8 +10,30 @@ const store = {
 };
 let progress = store.get('progress',{solved:{},unlockAll:false});
 const saveProgress = ()=>store.set('progress',progress);
-const isUnlocked = i => progress.unlockAll || i===0 || !!progress.solved[LEVELS[i-1].id];
-function featuresFor(i){ const f=new Set(); for(let j=0;j<=i;j++) LEVELS[j].unlock.forEach(x=>f.add(x)); return f; }
+const chapterOf = i => CHAPTERS.find(c=>c.id===LEVELS[i].ch);
+const basicsDone = () => CHAPTERS[0].levels.every(i=>progress.solved[LEVELS[i].id]);
+function isUnlocked(i){
+  if(progress.unlockAll) return true;
+  const c=chapterOf(i), k=c.levels.indexOf(i);
+  if(c.id!=='basics'&&!basicsDone()) return false;
+  return k===0||!!progress.solved[LEVELS[c.levels[k-1]].id];
+}
+/* Features (which knobs/jacks show) needed by a gig's reference patch. */
+function autoFeatures(L){
+  const f=new Set();
+  L.target.mods.forEach(m=>{ f.add(m.type);
+    if(m.type==='filter'){ f.add('res'); if(m.p.type&&m.p.type!=='lowpass') f.add('ftype'); }
+    if(m.type==='osc'&&m.p.fine) f.add('fine'); });
+  L.target.cables.forEach(c=>{ if(/\.(pitch|cut)$/.test(c)) f.add('mod'); });
+  return f;
+}
+/* Basics unlocks features one lesson at a time; themes get everything from Basics plus what their gigs use. */
+function featuresFor(i){
+  const c=chapterOf(i), f=new Set(), upto=c.levels.slice(0,c.levels.indexOf(i)+1);
+  if(c.id!=='basics'){ CHAPTERS[0].levels.forEach(j=>LEVELS[j].unlock.forEach(x=>f.add(x))); ['wave','res','ftype'].forEach(x=>f.add(x)); }
+  upto.forEach(j=>{ LEVELS[j].unlock.forEach(x=>f.add(x)); if(c.id!=='basics') autoFeatures(LEVELS[j]).forEach(x=>f.add(x)); });
+  return f;
+}
 
 /* =====================================================================
    PATCH helpers
