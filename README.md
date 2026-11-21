@@ -21,7 +21,7 @@ There's no build step and there are no dependencies: it's plain HTML, CSS and Ja
 2. **Fill the board.** OUTPUT sits in the top-right slot, and some gigs start with **preset** modules already wired. Tap an empty slot (or a palette button) to add a module. The **Parts** chips (`FILTER 0/1`) tell you what's still missing.
 3. **Patch.** Drag from jack to jack, or tap one jack and then another. Yellow cables carry audio, blue cables carry control signals. Click a cable to unplug it.
 4. **Tune.** Drag knobs up and down (Shift for fine control, double-click to reset). On touch screens, tap a knob for a big slider.
-5. **Compare.** ▶ Target vs ▶ Yours, plus an oscilloscope, loudness and spectrum overlays and hints, are always on screen.
+5. **Compare.** ▶ Target vs ▶ Yours, plus an oscilloscope, loudness and spectrum overlays and hints, are always on screen. Press **⛶ Focus** (or Shift+F) for a full-screen board with a compact compare bar.
 6. **Send** at a 90% match or better. Then come back and beat par on cost.
 
 **Keyboards:** open **♪ Keys** for an on-screen keyboard that shows the client's note to find. USB/MIDI keyboards work in Chrome, Edge, Opera and Firefox on desktop, and Chrome on Android (velocity and sustain pedal included). Computer keys `A`–`K` play too, `Z`/`X` shift the octave, `Space` plays yours and `Shift+T` plays the target. The board zooms with `+` `-` `0`, Ctrl+scroll or pinch.

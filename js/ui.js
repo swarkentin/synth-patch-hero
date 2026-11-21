@@ -7,7 +7,7 @@ function showBoard(){
   allNotesOff(); stopOneShots(); S.pick=null; showPatchbar(); $('#sheet').hidden=true;
   S.li=-1; S.L=null; S.patch=null;
   $('#screenLevel').hidden=true; $('#screenBoard').hidden=false; $('#btnHome').hidden=true;
-  $('#crumbs').textContent='Gig board'; document.body.classList.remove('inLevel'); closeSide(); S.slotMenu=null;
+  $('#crumbs').textContent='Gig board'; document.body.classList.remove('inLevel'); if(S.focus) setFocus(false); closeSide(); S.slotMenu=null;
   const solved=Object.keys(progress.solved).length;
   const earn = Object.values(progress.solved).length*85;
   $('#ledger').innerHTML=`<div class="row"><span>Gigs done</span><b>${solved} / ${LEVELS.length}</b></div>
@@ -245,6 +245,16 @@ function revealSlot(i){
   document.addEventListener('gesturestart',e=>e.preventDefault());
   $('#zIn').onclick=()=>zoomCenter(1.2); $('#zOut').onclick=()=>zoomCenter(1/1.2); $('#zFit').onclick=()=>fitView();
 })();
+function setFocus(on){
+  S.focus=on; document.body.classList.toggle('focus',on);
+  const b=$('#focusBtn'); b.innerHTML=on?'<span class="ico">✕</span><span class="lbl"> Exit focus</span>':'<span class="ico">⛶</span><span class="lbl"> Focus</span>'; b.classList.toggle('on',on);
+  const de=document.documentElement;
+  try{ if(on&&de.requestFullscreen&&!document.fullscreenElement){ const p=de.requestFullscreen(); if(p&&p.catch) p.catch(()=>{}); }
+       if(!on&&document.fullscreenElement){ const p=document.exitFullscreen(); if(p&&p.catch) p.catch(()=>{}); } }catch(_){}
+  closeSide();
+  setTimeout(()=>{ if(!S.userZoom) fitView(); else { clampView(); applyView(); } drawCables(); drawPlots(); renderKeys(); },60);
+}
+document.addEventListener('fullscreenchange',()=>{ if(!document.fullscreenElement&&S.focus) setFocus(false); });
 function setKeysOpen(on){
   S.keysOpen=on; store.set('keysOpen',on);
   $('#keysDock').hidden=!on; $('#keysBtn').classList.toggle('on',on);
@@ -470,7 +480,7 @@ function updateCompare(){
   }
   drawPlots();
 }
-function setupCanvas(cv){ const dpr=window.devicePixelRatio||1, w=cv.clientWidth; if(!cv.dataset.h) cv.dataset.h=cv.getAttribute('height'); const h=Math.round(+cv.dataset.h*(S.mobile?0.8:1));
+function setupCanvas(cv){ const dpr=window.devicePixelRatio||1, w=cv.clientWidth; if(!cv.dataset.h) cv.dataset.h=cv.getAttribute('height'); const h=S.focus?(S.mobile?52:60):Math.round(+cv.dataset.h*(S.mobile?0.8:1));
   cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); cv.style.height=h+'px'; const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); return {g,w,h}; }
 const cssv=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 function scopeSeg(x,start,len,period){
@@ -549,6 +559,7 @@ window.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
   if(k===' '){ e.preventDefault(); playFixed(S.patch,S.L,'pY'); return; }
   if(k==='t'&&e.shiftKey&&!S.sandbox){ playFixed(targetPatch(S.L),S.L,'pT'); return; }
+  if(k==='f'&&e.shiftKey){ setFocus(!S.focus); return; }
   if(k==='='||k==='+'){ zoomCenter(1.2); return; } if(k==='-'){ zoomCenter(1/1.2); return; } if(k==='0'){ fitView(); return; }
   if(k==='z'){ octShift=Math.max(-3,octShift-1); toast('Keyboard octave '+fmtSigned(octShift)); return; }
   if(k==='x'){ octShift=Math.min(3,octShift+1); toast('Keyboard octave '+fmtSigned(octShift)); return; }
@@ -561,6 +572,7 @@ window.addEventListener('resize',()=>{ clearTimeout(rzT); rzT=setTimeout(()=>{ i
 $('#kbDn').onclick=()=>{ S.kbLo-=12; renderKeys(); };
 $('#kbUp').onclick=()=>{ S.kbLo+=12; renderKeys(); };
 $('#keysBtn').onclick=()=>setKeysOpen(!S.keysOpen);
+$('#focusBtn').onclick=()=>setFocus(!S.focus);
 $('#clearBtn').onclick=()=>{ const b=$('#clearBtn'); if(!b.dataset.armed){ b.dataset.armed=1; b.textContent='Sure?'; setTimeout(()=>{ b.textContent='Reset'; delete b.dataset.armed; },2500); return; }
   delete b.dataset.armed; b.textContent='Reset'; S.pick=null; showPatchbar(); freshPatch(); refreshRack(); scheduleAnalyze(); toast('Rack reset'); };
 $('#briefBtn').onclick=openSide; $('#sideClose').onclick=closeSide; $('#sideBackdrop').onclick=closeSide;

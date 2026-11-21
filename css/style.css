@@ -314,3 +314,36 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
   .modalCard{padding:18px}
   .modalBtns .btn{flex:1}
 }
+
+/* ---------- focus mode: full screen board + compact compare bar ---------- */
+body.focus{--topH:0px}
+body.focus .topbar{display:none}
+body.focus #screenLevel{display:flex;flex-direction:column;height:100vh;height:100dvh}
+body.focus .side{position:fixed;left:0;top:0;bottom:0;width:min(380px,92vw);z-index:30;transform:translateX(-102%);transition:transform .2s;border-right:1px solid var(--line2);box-shadow:20px 0 50px rgba(0,0,0,.5)}
+body.focus .side.open{transform:none}
+body.focus #sideBackdrop.open{display:block;position:fixed;inset:0;background:rgba(8,6,5,.45);z-index:29}
+body.focus .sideHead{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 0}
+body.focus .briefBtn{display:flex}
+body.focus .work{flex:1}
+@media (min-width:761px){
+  body.focus .compare{order:-1;flex:none;flex-direction:row;align-items:stretch;gap:14px;padding:8px 12px;border-left:0;border-bottom:1px solid var(--line);overflow:hidden}
+  body.focus .cmpTop{display:grid;grid-template-columns:1fr 1fr;gap:5px;width:200px;flex:none;align-content:center}
+  body.focus #btnSubmit{flex-basis:auto;padding:8px}
+  body.focus .pctBox{text-align:left;align-self:center}
+  body.focus .compare>.bar{display:none}
+  body.focus .cmpBody{flex:1;min-width:0;flex-direction:row;gap:14px}
+  body.focus .subs,body.focus .stats,body.focus .legend,body.focus .plotTabs{display:none}
+  body.focus .hints{width:240px;flex:none;font-size:12px;align-self:center}
+  body.focus .hints li:nth-child(n+3){display:none}
+  body.focus .hints li:first-child{border-top:0}
+  body.focus .plots{flex:1;min-width:0;display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px}
+  body.focus .plotBox{margin:0}
+}
+@media (max-width:760px){
+  #focusBtn{order:-2;padding:6px 9px}
+  #focusBtn .lbl{display:none}
+  body.focus .plotTabs{display:none}
+  body.focus .plots{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  body.focus .plots .plotBox[data-p=scope],body.focus .plots .plotBox[data-p=env]{display:block}
+  body.focus .plots .plotBox[data-p=spec]{display:none}
+}

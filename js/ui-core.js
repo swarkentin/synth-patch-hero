@@ -8,7 +8,7 @@ const el=(tag,attrs={},html)=>{ const e=document.createElement(tag); for(const k
 const S={li:-1, L:null, patch:null, feats:null, palette:null, mine:null, cmp:null, sandbox:false, pick:null, mobile:false,
   idNote:{}, sustained:new Set(), sustain:false, kbLo:null, kbOct:4, promptDone:false, kbFb:null,
   slots:4, grid:null, view:{s:1,x:0,y:0}, userZoom:false, pinching:false, slotMenu:null,
-  plotView:'scope', keysOpen:false};
+  plotView:'scope', keysOpen:false, focus:false};
 const MQ=window.matchMedia('(max-width:760px)'); S.mobile=MQ.matches;
 const MQ2=window.matchMedia('(max-width:1099px)');
 const onMQ=()=>{ S.mobile=MQ.matches; if(S.L){ layoutBoard(); renderRack(); requestAnimationFrame(()=>{ fitView(); drawPlots(); renderKeys(); }); } };

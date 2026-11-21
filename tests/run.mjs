@@ -57,6 +57,23 @@ try {
     const errs = page.errors(); ok(errs.length === 0, `no page errors${errs.length ? ': ' + errs.join(' | ') : ''}`);
   }
 
+  for (const vp of [{ name: 'desktop', width: 1280, height: 800 }, { name: 'phone', width: 390, height: 664, mobile: true }]) {
+    console.log(`\nFocus mode · ${vp.name}`);
+    await page.open(URL, vp);
+    await page.waitFor("document.querySelector('.gig')");
+    const f = await page.evaluate(`(async()=>{ progress.unlockAll=true; store.del('draft2.wow-bass'); openLevel(8); closeSide();
+      for(let t=0;t<100&&!S.mine;t++) await new Promise(r=>setTimeout(r,50));
+      const area0=S.view.s; setFocus(true); await new Promise(r=>setTimeout(r,400));
+      const vis=(sel,w=100,h=30)=>{ const r=document.querySelector(sel).getBoundingClientRect(); return r.width>w&&r.height>h&&r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth; };
+      const vpR=document.querySelector('#viewport').getBoundingClientRect(), o=document.querySelector('.module[data-id="out"]').getBoundingClientRect();
+      const fb=document.querySelector('#focusBtn').getBoundingClientRect();
+      const r={topbarHidden:document.querySelector('.topbar').offsetHeight===0, scope:vis('#cScope'), loud:vis('#cEnv'), play:vis('#pT',40,20)&&vis('#pY',40,20),
+        out:o.left>=vpR.left-1&&o.right<=vpR.right+1&&o.top>=vpR.top-1&&o.bottom<=vpR.bottom+1, exitVisible:fb.right<=innerWidth&&fb.left>=0, zoom:S.view.s>=area0-0.01};
+      setFocus(false); await new Promise(r=>setTimeout(r,200)); r.restored=!document.body.classList.contains('focus')&&document.querySelector('.topbar').offsetHeight>0;
+      showBoard(); return r; })()`);
+    for (const [k, v] of Object.entries(f)) ok(v, `focus: ${k}`);
+  }
+
   console.log('\nEvery gig is solvable with its reference patch');
   await page.open(URL, { width: 1280, height: 800 });
   await page.waitFor("document.querySelector('.gig')");
