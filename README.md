@@ -14,6 +14,12 @@ Everything is in one file: `index.html`. Open it in a desktop browser (it uses t
 
 On phones (≤760px wide) the level screen switches to three tabs (Brief / Rack / Match), with Target, Yours and the match % always visible at the top. Modules stack in signal-flow order, and cables run along a left-hand gutter. Tap a jack, then tap where it goes (this also works on desktop). Tap a knob to open a slider with −/+ steps. Dragging a knob with a finger works too, at lower sensitivity.
 
+### Keyboards
+
+Each gig has an on-screen keyboard: a dock under the rack on desktop, or the **Keys** tab on phones. It shows the client's note highlighted, plus a plain description ("the third A below middle C"). Playing it marks the gig with ♪. Wrong notes get coaching such as "That's C2. A1 is 3 semitones lower" or "Right note, wrong octave: go 1 octave down". After that, every key plays your patch.
+
+**USB / MIDI keyboards** connect through the Web MIDI API ("Connect USB keyboard"). Supported in Chrome, Edge, Opera and Firefox on desktop, and Chrome on Android. Note-on velocity sets loudness, and the sustain pedal (CC64) is supported. iPhone and iPad Safari have no Web MIDI, so use the on-screen keys there. Some embedded or sandboxed viewers block MIDI. Opening `index.html` directly, or hosting it (e.g. GitHub Pages), avoids that.
+
 Keys: `A`–`K` play your patch (black keys on `W E T Y U`), `Z`/`X` shift the octave, `Space` plays yours, `Shift+T` plays the target.
 
 ## Curriculum
