@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Synth Patch Hero: a Zachtronics-style synth-patching puzzle game that teaches synthesis. Repo: https://github.com/swarkentin/synth-patch-hero (`main` is the source of truth). The linked claude.ai project tracks design notes in `design/game-design-v0.1.md`, mirrored here as `docs/design.md`.
+Synth Patch Hero: a synth-patching puzzle game that teaches synthesis. Repo: https://github.com/swarkentin/synth-patch-hero (`main` is the source of truth). The linked claude.ai project tracks design notes in `design/game-design-v0.1.md`, mirrored here as `docs/design.md`.
 
 ## Ground rules
 - **No build step, no dependencies.** Plain HTML/CSS/JS loaded by `index.html` as classic scripts, in this order: `data → store → audio → analysis → ui-core → keys → ui → selftest → main`. Top-level `const`/`function`s are shared across files, so keep names unique.
