@@ -1,24 +1,33 @@
 # Synth Patch Hero
 
-A Zachtronics-style puzzle game about building synth patches. You play a broke musician who takes gigs from artists. Each gig gives you a reference sound to match by patching modules on a virtual modular synth. Every gig teaches one new synthesis concept.
+**A Zachtronics-style puzzle game about building synth patches.** You're a broke musician taking gigs from artists who want very specific sounds. Each gig hands you a reference sound and a rack. Patch oscillators, filters, envelopes and LFOs together until your sound matches theirs. Every gig teaches one new piece of synthesis.
 
-Everything is in one file: `index.html`. Open it in a desktop browser (it uses the Web Audio API). There is no build step and nothing to install.
+![Desktop: brief on the left, slot board in the middle, compare panel with oscilloscope on the right](docs/screenshots/desktop.png)
 
-## How to play
+<p align="center"><img src="docs/screenshots/phone.png" width="300" alt="Phone layout: compare strip on top, zoomable board below"></p>
 
-1. Pick a gig on the board. The brief and the manual page for that lesson sit on the left (on phones and tablets, tap **Brief**).
-2. The rack is a board of slots. The **OUTPUT**, plus any **preset** modules the gig provides, start in fixed slots. Dashed empty slots are where your modules go. Tap an empty slot or a palette button to add one.
-3. The **Parts** chips show what the sound needs (e.g. `FILTER 0/1`). Missing parts pulse, and the top hint names them.
-4. Patch cables by dragging between jacks, or tap one jack and then another. Click a cable to unplug it. Drag a module's header to move it to another slot.
-5. Turn knobs by dragging up and down (Shift = fine, double-click resets). On touch screens, tap a knob for a big slider with −/+ steps.
-6. The compare panel is always visible: ▶ Target / ▶ Yours, match %, hints, an **oscilloscope** (a few cycles of both waveforms), loudness over time, and the spectrum. On phones it's a strip at the top with Scope / Loudness / Spectrum tabs.
-7. Zoom the rack with − / + / Fit, Ctrl+scroll or pinch. Drag empty space to pan.
-8. At 90% or better, **Send** it. Then try to beat par on cost (¢). Preset modules are free.
+## Play
+
+- **Hosted:** GitHub Pages, deployed from `main` by [`.github/workflows/pages.yml`](.github/workflows/pages.yml). To turn it on: Settings → Pages → Source: *GitHub Actions*.
+- **Locally:** `npm start`, then open http://localhost:8080. Opening `index.html` directly also works.
+
+There's no build step and there are no dependencies: it's plain HTML, CSS and JavaScript using the Web Audio API. Use headphones.
+
+## How it plays
+
+1. **Pick a gig.** Read the client's brief and the manual page for that lesson.
+2. **Fill the board.** OUTPUT sits in the top-right slot, and some gigs start with **preset** modules already wired. Tap an empty slot (or a palette button) to add a module. The **Parts** chips (`FILTER 0/1`) tell you what's still missing.
+3. **Patch.** Drag from jack to jack, or tap one jack and then another. Yellow cables carry audio, blue cables carry control signals. Click a cable to unplug it.
+4. **Tune.** Drag knobs up and down (Shift for fine control, double-click to reset). On touch screens, tap a knob for a big slider.
+5. **Compare.** ▶ Target vs ▶ Yours, plus an oscilloscope, loudness and spectrum overlays and hints, are always on screen.
+6. **Send** at a 90% match or better. Then come back and beat par on cost.
+
+**Keyboards:** open **♪ Keys** for an on-screen keyboard that shows the client's note to find. USB/MIDI keyboards work in Chrome, Edge, Opera and Firefox on desktop, and Chrome on Android (velocity and sustain pedal included). Computer keys `A`–`K` play too, `Z`/`X` shift the octave, `Space` plays yours and `Shift+T` plays the target. The board zooms with `+` `-` `0`, Ctrl+scroll or pinch.
 
 ## Curriculum
 
-| # | Gig | Concept introduced |
-|---|-----|--------------------|
+| # | Gig | Concept |
+|---|-----|---------|
 | 1 | Dial Tone | Oscillator, pitch, patch cables |
 | 2 | Shape of Sound | Waveforms and harmonics |
 | 3 | Pixel Knight | Intervals (octaves, fifths) |
@@ -34,36 +43,46 @@ Everything is in one file: `index.html`. Open it in a desktop browser (it uses t
 | 13 | Kick It | Pitch envelope (synth drums) |
 | 14 | Snare Crack | Noise |
 
-There's also **Free Jam**, a sandbox with every module unlocked and no target.
+Plus **Free Jam**, a sandbox with everything unlocked.
 
 ## How matching works
 
-Both the target and your patch are rendered offline (`OfflineAudioContext`, 22.05 kHz) and analyzed in JavaScript:
+The target and your patch are both rendered offline (`OfflineAudioContext`, 22.05 kHz) and compared on three measures:
 
-- **Spectrogram** (50%): timbre over time. 2048-point FFT, sampled on a 1/36-octave log scale, each frame normalized to its own peak and weighted by loudness.
-- **Tone** (20%): the time-averaged spectrum shape.
-- **Shape** (30%): the loudness envelope on a perceptual (amplitude^0.5) scale.
+- **Spectrogram (50%):** timbre over time, on 1/36-octave bands, with each frame normalized and weighted by loudness.
+- **Tone (20%):** the time-averaged spectrum shape.
+- **Shape (30%):** the loudness envelope on a perceptual scale.
 
-Each distance maps to a score with `exp(-d / K)`. The overall score is the weighted geometric mean. Levels built on movement (vibrato, wobble, detune) use a wider tolerance (`tol`), because small rate differences add up across a note. Because matching is done on the audio, any patch that sounds right passes, not just the reference patch.
+Each distance becomes a score with `exp(-d/K)`, and the scores are combined with a weighted geometric mean. Gigs built on movement (vibrato, wobble, detune) get a wider tolerance. Because matching listens to the audio, any patch that sounds right passes, not just the reference patch. Hints (pitch in semitones, brighter/darker, attack, length, missing parts) come from pitch detection, spectral centroid and envelope features.
 
-Hints (pitch in semitones, brighter/darker, attack and length) come from a normalized-autocorrelation pitch detector, the spectral centroid, and envelope features.
+## Project layout
 
-To check calibration, open `index.html#selftest`. It renders about 60 near-miss variants and prints their scores.
+```
+index.html          markup only
+css/style.css       all styles (desktop, tablet, phone breakpoints)
+js/data.js          module types and the gig list (briefs, manual pages, target patches, presets)
+js/store.js         saved progress (localStorage) and patch helpers
+js/audio.js         Web Audio engine: patch → voice, live playback
+js/analysis.js      offline render, FFT, match score, hints
+js/ui-core.js       shared UI state and helpers
+js/keys.js          on-screen keyboard, computer keys, Web MIDI, play-the-note prompt
+js/ui.js            gig board, slot board, zoom/pan, knobs, cables, compare panel
+js/selftest.js      scoring calibration run (index.html#selftest)
+tests/              headless-Chrome tests (npm test)
+scripts/            dev server, screenshot generator
+docs/design.md      design notes and decisions
+```
 
-## Code map (inside `index.html`)
+## Development
 
-- `MT`: module definitions (ports, params, cost, which lesson unlocks each knob)
-- `LEVELS`: gig data (brief, manual text, palette limits, target patch, reply)
-- `buildVoice()`: turns a patch into a Web Audio graph (envelopes drive `ConstantSourceNode`s; modulation goes to `detune` in cents)
-- `analyze()` / `compare()`: offline analysis and scoring
-- UI: gig board, rack (drag modules, patch cables), knobs, right-hand match panel
+```sh
+npm start              # http://localhost:8080
+npm test               # scoring calibration + every gig opens on desktop & phone + every gig is solvable
+npm run screenshots    # regenerate docs/screenshots/
+```
 
-Progress and in-progress patches are saved in `localStorage`.
+Tests need Node 22+ and Chrome or Chromium on the PATH (or set `CHROME_PATH`). CI runs them on every push and pull request.
 
-## Ideas for next steps
+**Adding a gig:** add an entry to `LEVELS` in `js/data.js` with a brief, a manual page, a palette, and a `target` patch (plus optional `start` presets and `startCables`). `npm test` checks that it fits the board and that its reference patch scores 100%. If you change the scoring, keep the bands in `tests/run.mjs` passing, or update them on purpose.
 
-- More modules: second filter, mixer with levels, sample & hold, FM (audio-rate modulation), delay, distortion
-- Histograms of other players' cost/cable scores, like Zachtronics
-- Story beats between chapters and an end-of-act "album" where your patches get used in a song
-- Melodic targets (play a short riff, not a single note)
-- Touch-friendly layout for tablets
+See [`docs/design.md`](docs/design.md) for the design decisions behind the layout, slot board, scoring and touch controls.
