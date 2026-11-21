@@ -1,6 +1,6 @@
 // Minimal headless-Chrome driver over the DevTools protocol. No dependencies (Node 22+).
 import { spawn } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -9,16 +9,24 @@ const CANDIDATES = [process.env.CHROME_PATH, 'google-chrome', 'google-chrome-sta
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 export async function launch() {
-  const port = 9300 + Math.floor(Math.random() * 600);
   const profile = mkdtempSync(join(tmpdir(), 'sph-chrome-'));
   const bin = CANDIDATES.find(c => c.includes('/') ? existsSync(c) : true);
-  const proc = spawn(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--mute-audio', `--remote-debugging-port=${port}`,
-    `--user-data-dir=${profile}`, '--autoplay-policy=no-user-gesture-required', 'about:blank'], { stdio: 'ignore' });
-  let targets;
-  for (let i = 0; i < 100 && !targets; i++) {
-    try { targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); } catch { await sleep(150); }
+  // Port 0 lets Chrome pick a free port; it writes the choice to DevToolsActivePort in the profile.
+  const proc = spawn(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--mute-audio',
+    '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--autoplay-policy=no-user-gesture-required', 'about:blank'],
+    { stdio: ['ignore', 'ignore', 'pipe'] });
+  let stderr = ''; proc.stderr.on('data', d => { stderr = (stderr + d).slice(-4000); });
+  let exited = null; proc.on('exit', code => { exited = code; });
+  let targets, port;
+  const portFile = join(profile, 'DevToolsActivePort');
+  for (let i = 0; i < 300 && !targets && exited == null; i++) {
+    try {
+      if (!port && existsSync(portFile)) port = +readFileSync(portFile, 'utf8').split('\n')[0];
+      if (port) targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
+    } catch {}
+    if (!targets) await sleep(100);
   }
-  if (!targets) throw new Error(`Could not start Chrome (${bin}). Set CHROME_PATH.`);
+  if (!targets) { proc.kill(); throw new Error(`Could not start Chrome (${bin}${exited != null ? ', exit ' + exited : ''}). Set CHROME_PATH.\n${stderr}`); }
   const ws = new WebSocket(targets.find(t => t.type === 'page').webSocketDebuggerUrl);
   await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
   let id = 0; const pending = new Map(); let errors = [];
