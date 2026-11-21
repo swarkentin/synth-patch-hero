@@ -173,6 +173,91 @@ button{font:inherit;color:inherit;cursor:pointer}
   .center{height:70vh}
   .intro{grid-template-columns:1fr}
 }
+
+/* ---------- shared: tap-to-patch, value sheet ---------- */
+button{touch-action:manipulation}
+.mstrip,.tabbar{display:none}
+.port.picked .jack{border-color:var(--text);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 2px rgba(239,230,216,.35),inset 0 0 0 3px #1a1613}50%{box-shadow:0 0 0 8px rgba(239,230,216,.06),inset 0 0 0 3px #1a1613}}
+#patchbar{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:40;display:flex;gap:8px;align-items:center;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:8px 8px 8px 14px;box-shadow:0 10px 30px rgba(0,0,0,.5);font-size:13px;width:max-content;max-width:calc(100vw - 16px)}
+#patchbar .msg{flex:1;line-height:1.3}
+#sheet{position:fixed;inset:0;z-index:45;background:rgba(8,6,5,.5);display:flex;align-items:flex-end;justify-content:center}
+.sheetCard{width:min(520px,100%);background:var(--panel);border:1px solid var(--line2);border-bottom:0;border-radius:16px 16px 0 0;padding:14px 16px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -20px 50px rgba(0,0,0,.5)}
+.shHead{display:flex;align-items:center;gap:10px}
+.shTitle{flex:1;font-family:var(--head);font-weight:600;letter-spacing:.12em;font-size:13px;color:var(--dim)}
+.shVal{font-family:var(--mono);font-weight:600;font-size:38px;text-align:center;margin:6px 0 8px;color:var(--sel,var(--amber))}
+.shRange{width:100%;-webkit-appearance:none;appearance:none;height:44px;background:transparent;margin:0;touch-action:pan-x}
+.shRange::-webkit-slider-runnable-track{height:10px;border-radius:5px;background:#0f0c0a;border:1px solid var(--line2)}
+.shRange::-webkit-slider-thumb{-webkit-appearance:none;width:34px;height:34px;border-radius:50%;background:var(--sel,var(--amber));margin-top:-13px;border:4px solid #16120f;box-shadow:0 0 0 1px var(--line2)}
+.shRange::-moz-range-track{height:10px;border-radius:5px;background:#0f0c0a;border:1px solid var(--line2)}
+.shRange::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:var(--sel,var(--amber));border:4px solid #16120f}
+.shBtns{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 8px}
+.shBtns button,.shRow button{height:48px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);font-family:var(--mono);font-size:16px;font-weight:600}
+.shBtns button:active,.shRow button:active{background:#3a322b}
+.shRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* ---------- phones ---------- */
+@media (max-width:760px){
+  body{font-size:15px}
+  .topbar{height:44px;padding:0 10px}
+  .crumbs{display:none}
+  .brand{flex:1}
+  #screenBoard{height:calc(100vh - 44px);height:calc(100dvh - 44px)}
+  .boardInner{padding:18px 14px 40px}
+  .intro{gap:14px;margin-bottom:14px}
+  .intro h1{font-size:25px}
+  .intro p{font-size:14px}
+  .intro p+p{display:none}
+  .ledger{display:grid;grid-template-columns:1fr 1fr;column-gap:14px;padding:10px 12px}
+  .ledger .row{border-bottom:1px dashed var(--line)!important}
+  .gigs{grid-template-columns:1fr;gap:8px}
+  .gig{min-height:0;padding:12px 14px}
+  .gig .title{font-size:17px}
+  .boardFoot span{display:none}
+  #screenLevel{display:flex;flex-direction:column;height:calc(100vh - 44px);height:calc(100dvh - 44px);overflow:hidden}
+  #screenLevel>.col,#screenLevel>.center{display:none;flex:1;min-height:0;height:auto;border:0;overflow:auto}
+  #screenLevel[data-tab=brief]>.left,#screenLevel[data-tab=match]>.right{display:block}
+  #screenLevel[data-tab=rack]>.center{display:flex;overflow:hidden}
+  .mstrip{display:flex;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--panel);flex:none}
+  .mstrip .playBtn{padding:10px 11px;font-size:11.5px;flex:none;gap:6px}
+  .mpct{flex:1;text-align:right;font-family:var(--mono);font-weight:600;font-size:22px;line-height:1;color:var(--amber)}
+  .mpct.ok{color:var(--good)}
+  .mpct small{display:block;font-size:9.5px;color:var(--faint);font-weight:400;margin-top:2px}
+  .mstrip .btn{padding:10px 10px}
+  .tabbar{display:flex;flex:none;border-top:1px solid var(--line);background:var(--panel);padding-bottom:env(safe-area-inset-bottom)}
+  .tabbar button{flex:1;background:none;border:0;border-top:2px solid transparent;padding:12px 0 12px;font-family:var(--head);font-weight:600;letter-spacing:.1em;font-size:12px;color:var(--dim)}
+  .tabbar button.on{color:var(--text);border-top-color:var(--amber)}
+  .tabbar button b{font-family:var(--mono);font-weight:600;color:var(--amber);margin-left:4px}
+  .tabbar button b.ok{color:var(--good)}
+  .listenCard{display:none}
+  .palette{flex-wrap:nowrap;overflow-x:auto;padding:8px 10px;flex:none;scrollbar-width:none}
+  .palette::-webkit-scrollbar{display:none}
+  .palette .keys,.palette .spacer,.palette .lbl{display:none}
+  .palBtn,.palette .btn{flex:none;padding-top:7px;padding-bottom:7px}
+  .rackScroll{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+  #rack{width:100%;height:auto;min-height:100%}
+  #mods{position:relative;padding:12px 10px 60px 62px}
+  .module{position:relative;left:auto!important;top:auto!important;width:auto;margin-bottom:14px}
+  .module .mhead{cursor:default;padding:8px 6px 8px 10px}
+  .module .mhead .del{font-size:22px;padding:0 8px}
+  .module .mbody{padding:10px 0}
+  .module .jacks{display:flex;flex-direction:column;gap:12px;width:52px;flex:none;align-items:center}
+  .module .jacks .sep{width:24px;border-top:1px dashed var(--line2)}
+  .port .jack{width:28px;height:28px;border-width:4px}
+  .port label{font-size:9.5px}
+  .module .params{gap:10px 2px;padding-right:6px}
+  .knob{width:60px}
+  .knob .kl{font-size:9.5px}
+  .knob .kv{font-size:11.5px}
+  .choice button{height:34px;max-width:56px}
+  .outBox .spk{width:40px;height:40px}
+  #patchbar{bottom:calc(58px + env(safe-area-inset-bottom))}
+  .toast{bottom:calc(70px + env(safe-area-inset-bottom));max-width:calc(100vw - 24px)}
+  .resGrid{grid-template-columns:repeat(2,1fr)}
+  .modalCard{padding:18px}
+  .modalBtns{flex-wrap:wrap}
+  .modalBtns .btn{flex:1}
+}
 </style>
 </head>
 <body>
@@ -197,12 +282,13 @@ button{font:inherit;color:inherit;cursor:pointer}
     <div class="boardFoot">
       <button class="btn ghost" id="btnUnlock">Studio key: unlock all gigs</button>
       <button class="btn ghost" id="btnReset">Wipe progress</button>
-      <span>Use headphones. Best in Chrome, Edge, Safari or Firefox on desktop.</span>
+      <span>Use headphones. Works on desktop and phones.</span>
     </div>
   </div>
 </section>
 
-<section id="screenLevel" hidden>
+<section id="screenLevel" hidden data-tab="rack">
+  <div class="mstrip" id="mstrip"></div>
   <aside class="col left">
     <div class="card brief" id="brief"></div>
     <div class="card manual" id="manual"></div>
@@ -214,7 +300,9 @@ button{font:inherit;color:inherit;cursor:pointer}
     </div>
   </main>
   <aside class="col right" id="right"></aside>
+  <nav class="tabbar" id="tabbar"><button data-tab="brief">BRIEF</button><button data-tab="rack">RACK</button><button data-tab="match">MATCH</button></nav>
 </section>
+<div id="sheet" hidden></div>
 
 <div id="modal" hidden></div>
 
@@ -230,7 +318,7 @@ const WAVE_PATH = {
   square:'M2 15 L2 3 L14 3 L14 15 L26 15 L26 3',
   sawtooth:'M2 15 L14 3 L14 15 L26 3 L26 15'
 };
-const fmtHz = v => v >= 1000 ? (v/1000).toFixed(v>=10000?1:2)+'k' : Math.round(v)+'';
+const fmtHz = v => v >= 1000 ? (v/1000).toFixed(v>=10000?1:2)+'kHz' : Math.round(v)+'Hz';
 const fmtT = v => v < 1 ? Math.round(v*1000)+'ms' : v.toFixed(2)+'s';
 const fmtSigned = v => (v>0?'+':'')+v;
 const fmtPct = v => Math.round(v*100)+'%';
@@ -544,6 +632,7 @@ function outChain(ctx,dest,t0){
 /* ---- Live playback ---- */
 let AC=null, liveBus=null;
 function ac(){
+  try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(_){}
   if(!AC){
     AC=new (window.AudioContext||window.webkitAudioContext)();
     const comp=AC.createDynamicsCompressor(); comp.threshold.value=-10; comp.ratio.value=8; comp.connect(AC.destination); liveBus=comp;
@@ -689,7 +778,16 @@ function makeHints(T,Y){
 /* =====================================================================
    UI STATE
    ===================================================================== */
-const S={li:-1, L:null, patch:null, feats:null, palette:null, mine:null, cmp:null, sandbox:false};
+const S={li:-1, L:null, patch:null, feats:null, palette:null, mine:null, cmp:null, sandbox:false, tab:'rack', pick:null, mobile:false};
+const MQ=window.matchMedia('(max-width:760px)'); S.mobile=MQ.matches;
+const onMQ=()=>{ S.mobile=MQ.matches; if(S.L){ renderRack(); setTab(S.tab); } };
+if(MQ.addEventListener) MQ.addEventListener('change',onMQ); else if(MQ.addListener) MQ.addListener(onMQ);
+function setTab(t){
+  S.tab=t; $('#screenLevel').dataset.tab=t;
+  document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  if(t!=='rack') clearPick();
+  requestAnimationFrame(()=>{ if(t==='rack') drawCables(); if(t==='match') drawPlots(); });
+}
 let idc=1;
 const $=s=>document.querySelector(s);
 const el=(tag,attrs={},html)=>{ const e=document.createElement(tag); for(const k in attrs){ if(k==='class') e.className=attrs[k]; else if(k.startsWith('on')) e.addEventListener(k.slice(2),attrs[k]); else e.setAttribute(k,attrs[k]); } if(html!=null) e.innerHTML=html; return e; };
@@ -702,7 +800,7 @@ const SANDBOX={id:'jam',title:'Free Jam',concept:'Sandbox',client:'You',role:'Af
    BOARD
    ===================================================================== */
 function showBoard(){
-  allNotesOff(); stopOneShots();
+  allNotesOff(); stopOneShots(); S.pick=null; showPatchbar(); $('#sheet').hidden=true;
   S.li=-1; S.L=null; S.patch=null;
   $('#screenLevel').hidden=true; $('#screenBoard').hidden=false; $('#btnHome').hidden=true;
   $('#crumbs').textContent='Gig board';
@@ -739,8 +837,10 @@ function openLevel(i){
   idc = 1+Math.max(0,...S.patch.modules.map(m=>parseInt(String(m.id).replace(/\D/g,''))||0));
   $('#screenBoard').hidden=true; $('#screenLevel').hidden=false; $('#btnHome').hidden=false;
   $('#crumbs').textContent = S.sandbox? 'After hours · Free Jam' : `Gig ${String(i+1).padStart(2,'0')} · ${S.L.title} · Lesson: ${S.L.concept}`;
+  S.pick=null; showPatchbar();
   renderBrief(); renderPalette(); renderRack(); renderRight(); scheduleAnalyze();
-  $('#rackScroll').scrollTo(0,0);
+  setTab(draft||S.sandbox?'rack':'brief');
+  $('#rackScroll').scrollTo(0,0); document.querySelectorAll('#screenLevel .col').forEach(c=>c.scrollTo(0,0));
 }
 function freshPatch(){
   S.patch={modules:[{id:'out',type:'out',x:540,y:260,params:{}}],cables:[]};
@@ -770,10 +870,13 @@ function addModule(t){
   const sc=$('#rackScroll'); const taken=S.patch.modules;
   let x=40+sc.scrollLeft, y=30+sc.scrollTop, tries=0;
   while(taken.some(m=>Math.abs(m.x-x)<180&&Math.abs(m.y-y)<120)&&tries<40){ x+=225; if(x>480+sc.scrollLeft){ x=40+sc.scrollLeft; y+=150; } tries++; }
-  S.patch.modules.push({id:'m'+(idc++),type:t,x,y,params:defaultParams(t)});
+  const id='m'+(idc++);
+  S.patch.modules.push({id,type:t,x,y,params:defaultParams(t)});
   renderPalette(); renderRack(); scheduleAnalyze();
+  if(S.mobile){ const e=document.querySelector(`.module[data-id="${id}"]`); if(e) e.scrollIntoView({behavior:'smooth',block:'center'}); }
 }
 function removeModule(id){
+  if(S.pick&&S.pick.mid===id) clearPick();
   S.patch.modules=S.patch.modules.filter(m=>m.id!==id);
   S.patch.cables=S.patch.cables.filter(c=>c.from.m!==id&&c.to.m!==id);
   renderPalette(); renderRack(); scheduleAnalyze();
@@ -797,10 +900,13 @@ function makeKnob(m,d){
   const draw=()=>{ k.innerHTML=knobSVG(toN(d,m.params[d.id]),col)+`<div class="kl">${d.label}</div><div class="kv">${d.fmt(m.params[d.id])}</div>`; };
   draw();
   const set=v=>{ if(v===m.params[d.id]) return; m.params[d.id]=v; draw(); scheduleAnalyze(); };
+  k._set=set;
   k.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); try{k.setPointerCapture(e.pointerId);}catch(_){}
-    let y0=e.clientY, n0=toN(d,m.params[d.id]);
-    const mv=ev=>{ const sens=ev.shiftKey?0.0012:0.006; const n=n0+(y0-ev.clientY)*sens; set(fromN(d,n)); };
-    const up=()=>{ k.removeEventListener('pointermove',mv); k.removeEventListener('pointerup',up); k.removeEventListener('pointercancel',up); };
+    const touch=e.pointerType!=='mouse'; let y0=e.clientY, n0=toN(d,m.params[d.id]), moved=false;
+    const mv=ev=>{ if(!moved&&Math.abs(y0-ev.clientY)<(touch?6:2)) return; if(!moved){ moved=true; y0=ev.clientY; }
+      const sens=ev.shiftKey?0.0012:(touch?0.0022:0.006); set(fromN(d,n0+(y0-ev.clientY)*sens)); };
+    const up=ev=>{ k.removeEventListener('pointermove',mv); k.removeEventListener('pointerup',up); k.removeEventListener('pointercancel',up);
+      if(!moved&&ev.type==='pointerup'&&(touch||S.mobile)) openSheet(m,d,k); };
     k.addEventListener('pointermove',mv); k.addEventListener('pointerup',up); k.addEventListener('pointercancel',up); });
   k.addEventListener('dblclick',()=>set(d.def));
   k.addEventListener('wheel',e=>{ e.preventDefault(); const st=d.step?d.step/(d.max-d.min):0.01; const n=toN(d,m.params[d.id])+(e.deltaY<0?1:-1)*Math.max(st,e.shiftKey?0.002:0.01); set(fromN(d,n)); },{passive:false});
@@ -820,7 +926,9 @@ function makeChoice(m,d){
 /* ---------- rack ---------- */
 function renderRack(){
   const box=$('#mods'); box.innerHTML='';
-  for(const m of S.patch.modules){
+  const RANK={lfo:0,env:1,noise:2,osc:3,filter:4,vca:5,out:6};
+  const list=S.mobile? S.patch.modules.map((m,i)=>[m,i]).sort((a,b)=>RANK[a[0].type]-RANK[b[0].type]||a[1]-b[1]).map(x=>x[0]) : S.patch.modules;
+  for(const m of list){
     const T=MT[m.type];
     const d=el('div',{class:'module','data-id':m.id}); d.style.left=m.x+'px'; d.style.top=m.y+'px';
     const head=el('div',{class:'mhead'},`<span class="stripe" style="background:${T.color}"></span><span class="name">${T.name}</span><span class="cost">${T.cost?T.cost+'¢':''}</span>`);
@@ -832,9 +940,12 @@ function renderRack(){
     T.params.filter(p=>!p.req||S.feats.has(p.req)).forEach(p=>prm.appendChild(p.type==='choice'?makeChoice(m,p):makeKnob(m,p)));
     if(m.type==='out') prm.innerHTML='<div class="outBox"><div class="spk"></div>to speakers</div>';
     if(m.type==='noise') prm.innerHTML='<div class="outBox" style="font-family:var(--mono)">∿∿ white ∿∿</div>';
-    body.append(ins,prm,outs); d.appendChild(body); box.appendChild(d);
+    if(S.mobile){ const j=el('div',{class:'jacks'}); j.append(...ins.childNodes); if(j.childNodes.length&&outs.childNodes.length) j.appendChild(el('div',{class:'sep'})); j.append(...outs.childNodes); body.append(j,prm); }
+    else body.append(ins,prm,outs);
+    d.appendChild(body); box.appendChild(d);
     dragModule(head,m,d);
   }
+  if(S.pick) markPicked();
   requestAnimationFrame(()=>drawCables());
 }
 function makePort(m,p,dir){
@@ -846,6 +957,7 @@ function makePort(m,p,dir){
 }
 function dragModule(handle,m,d){
   handle.addEventListener('pointerdown',e=>{
+    if(S.mobile) return;
     e.preventDefault(); try{handle.setPointerCapture(e.pointerId);}catch(_){} handle.style.cursor='grabbing';
     const x0=e.clientX, y0=e.clientY, mx=m.x, my=m.y;
     const mv=ev=>{ m.x=Math.max(0,Math.min(1180-214,mx+ev.clientX-x0)); m.y=Math.max(0,Math.min(680-80,my+ev.clientY-y0)); d.style.left=m.x+'px'; d.style.top=m.y+'px'; drawCables(); };
@@ -861,7 +973,33 @@ function cablePath(a,b){
   const dx=Math.max(40,Math.abs(b[0]-a[0])*0.45), dist=Math.hypot(b[0]-a[0],b[1]-a[1]), sag=20+dist*0.18;
   return `M${a[0]} ${a[1]} C${a[0]+dx} ${a[1]+sag}, ${b[0]-dx} ${b[1]+sag}, ${b[0]} ${b[1]}`;
 }
+function lanePath(a,b,lx){
+  const r=6, dy=Math.sign(b[1]-a[1])||1;
+  if(Math.abs(b[1]-a[1])<2*r) return `M${a[0]} ${a[1]} L${lx} ${a[1]} L${lx} ${b[1]} L${b[0]} ${b[1]}`;
+  return `M${a[0]} ${a[1]} L${lx+r} ${a[1]} Q${lx} ${a[1]} ${lx} ${a[1]+dy*r} L${lx} ${b[1]-dy*r} Q${lx} ${b[1]} ${lx+r} ${b[1]} L${b[0]} ${b[1]}`;
+}
+function drawCablesMobile(temp){
+  const svg=$('#cables'); let h='';
+  const items=[];
+  S.patch.cables.forEach((c,i)=>{ const a=jackXY(c.from.m,c.from.p,'out'), b=jackXY(c.to.m,c.to.p,'in'); if(!a||!b) return;
+    const kind=MT[S.patch.modules.find(m=>m.id===c.from.m).type].outs.find(o=>o.id===c.from.p).kind;
+    items.push({i,a,b,kind,top:Math.min(a[1],b[1]),bot:Math.max(a[1],b[1])}); });
+  items.sort((p,q)=>(p.bot-p.top)-(q.bot-q.top));
+  const lanes=[];
+  for(const it of items){ let L=0; while(lanes[L]&&lanes[L].some(([t,b])=>it.top<b+12&&it.bot>t-12)) L++; (lanes[L]=lanes[L]||[]).push([it.top,it.bot]); it.lane=L; }
+  const sp=Math.min(9,46/Math.max(1,lanes.length));
+  for(const it of items){
+    const lx=52-it.lane*sp, d=lanePath(it.a,it.b,lx), col=it.kind==='audio'?'var(--audio)':'var(--mod)';
+    h+=`<g data-i="${it.i}"><path class="main" d="${d}" stroke="${col}" stroke-width="3.5" fill="none" stroke-linejoin="round" opacity=".95"/>
+      <circle cx="${it.a[0]}" cy="${it.a[1]}" r="5" fill="${col}"/><circle cx="${it.b[0]}" cy="${it.b[1]}" r="5" fill="${col}"/>
+      <path class="hit" d="${d}" stroke="transparent" stroke-width="14" fill="none"></path></g>`;
+  }
+  if(temp) h+=`<path d="M${temp.a[0]} ${temp.a[1]} L${temp.b[0]} ${temp.b[1]}" stroke="${temp.kind==='audio'?'var(--audio)':'var(--mod)'}" stroke-width="3.5" fill="none" stroke-dasharray="6 5"/>`;
+  svg.innerHTML=h;
+  svg.querySelectorAll('g').forEach(g=>g.querySelector('.hit').addEventListener('click',()=>{ S.patch.cables.splice(+g.dataset.i,1); drawCables(); scheduleAnalyze(); showPatchbar(); }));
+}
 function drawCables(temp){
+  if(S.mobile) return drawCablesMobile(temp);
   const svg=$('#cables'); let h='';
   S.patch.cables.forEach((c,i)=>{
     const a=jackXY(c.from.m,c.from.p,'out'), b=jackXY(c.to.m,c.to.p,'in'); if(!a||!b) return;
@@ -881,42 +1019,98 @@ function reaches(fromM,toM){ // does a signal path already go from fromM to toM?
   while(q.length){ const x=q.shift(); if(x===toM) return true; S.patch.cables.filter(c=>c.from.m===x).forEach(c=>{ if(!seen.has(c.to.m)){ seen.add(c.to.m); q.push(c.to.m);} }); }
   return false;
 }
+function tryConnect(aEl,bEl){
+  const dir=aEl.dataset.dir, kind=aEl.dataset.kind;
+  if(bEl.dataset.dir===dir){ toast('Connect an output to an input.'); return false; }
+  if(bEl.dataset.kind!==kind){ toast(kind==='audio'?'Audio (yellow) jacks only connect to audio jacks.':'Control (blue) jacks only connect to control jacks.'); return false; }
+  const o=dir==='out'?aEl:bEl, n=dir==='out'?bEl:aEl;
+  const from={m:o.dataset.mod,p:o.dataset.port}, to={m:n.dataset.mod,p:n.dataset.port};
+  if(from.m===to.m){ toast('A module can\'t patch into itself.'); return false; }
+  if(S.patch.cables.some(c=>c.from.m===from.m&&c.from.p===from.p&&c.to.m===to.m&&c.to.p===to.p)){ toast('Already patched.'); return false; }
+  if(reaches(to.m,from.m)){ toast('That would make a feedback loop.'); return false; }
+  S.patch.cables.push({from,to}); scheduleAnalyze(); return true;
+}
 function startCable(ev,portEl){
   ev.preventDefault(); ev.stopPropagation();
   const R=$('#rack').getBoundingClientRect();
   const dir=portEl.dataset.dir, kind=portEl.dataset.kind, mid=portEl.dataset.mod, pid=portEl.dataset.port;
-  const anchor=jackXY(mid,pid,dir);
-  document.querySelectorAll(`.port.${dir==='out'?'in':'out'}.${kind}`).forEach(p=>{ if(p.dataset.mod!==mid) p.classList.add('hot'); });
-  const mv=e=>{ const pt=[e.clientX-R.left,e.clientY-R.top]; drawCables(dir==='out'?{a:anchor,b:pt,kind}:{a:pt,b:anchor,kind}); };
+  const anchor=jackXY(mid,pid,dir), x0=ev.clientX, y0=ev.clientY; let dragging=false;
+  const mv=e=>{
+    if(!dragging){ if(Math.hypot(e.clientX-x0,e.clientY-y0)<8) return; dragging=true;
+      document.querySelectorAll(`.port.${dir==='out'?'in':'out'}.${kind}`).forEach(p=>{ if(p.dataset.mod!==mid) p.classList.add('hot'); }); }
+    const pt=[e.clientX-R.left,e.clientY-R.top]; drawCables(dir==='out'?{a:anchor,b:pt,kind}:{a:pt,b:anchor,kind}); };
   const up=e=>{
-    window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up);
+    window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); window.removeEventListener('pointercancel',up);
+    if(!dragging){ if(e.type==='pointerup') tapPort(portEl); return; }
     document.querySelectorAll('.port.hot').forEach(p=>p.classList.remove('hot'));
+    if(S.pick) markPicked();
     const t=document.elementFromPoint(e.clientX,e.clientY); const tp=t&&t.closest('.port');
-    if(tp&&tp.dataset.dir!==dir){
-      if(tp.dataset.kind!==kind){ toast(kind==='audio'?'Audio (yellow) jacks only connect to audio inputs.':'Control (blue) jacks only connect to control inputs.'); }
-      else {
-        const from=dir==='out'?{m:mid,p:pid}:{m:tp.dataset.mod,p:tp.dataset.port}, to=dir==='out'?{m:tp.dataset.mod,p:tp.dataset.port}:{m:mid,p:pid};
-        if(from.m===to.m) toast('A module can\'t patch into itself.');
-        else if(S.patch.cables.some(c=>c.from.m===from.m&&c.from.p===from.p&&c.to.m===to.m&&c.to.p===to.p)) toast('Already patched.');
-        else if(reaches(to.m,from.m)) toast('That would make a feedback loop.');
-        else { S.patch.cables.push({from,to}); scheduleAnalyze(); }
-      }
-    }
-    drawCables();
+    if(tp&&tp!==portEl) tryConnect(portEl,tp);
+    drawCables(); showPatchbar();
   };
-  window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up);
+  window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up); window.addEventListener('pointercancel',up);
+}
+/* tap a jack, then tap where it goes */
+const portSel=k=>document.querySelector(`.port[data-mod="${k.mid}"][data-port="${k.pid}"][data-dir="${k.dir}"]`);
+function tapPort(p){
+  const k={mid:p.dataset.mod,pid:p.dataset.port,dir:p.dataset.dir,kind:p.dataset.kind};
+  if(S.pick){
+    if(S.pick.mid===k.mid&&S.pick.pid===k.pid&&S.pick.dir===k.dir){ clearPick(); return; }
+    if(k.dir!==S.pick.dir){ const a=portSel(S.pick); if(a&&tryConnect(a,p)){ clearPick(); drawCables(); return; } return; }
+  }
+  S.pick=k; markPicked(); showPatchbar();
+}
+function markPicked(){
+  document.querySelectorAll('.port.picked,.port.hot').forEach(p=>p.classList.remove('picked','hot'));
+  if(!S.pick) return; const a=portSel(S.pick); if(!a){ S.pick=null; showPatchbar(); return; }
+  a.classList.add('picked');
+  document.querySelectorAll(`.port.${S.pick.dir==='out'?'in':'out'}.${S.pick.kind}`).forEach(p=>{ if(p.dataset.mod!==S.pick.mid) p.classList.add('hot'); });
+}
+function clearPick(){ S.pick=null; markPicked(); showPatchbar(); }
+function pickConns(){ const k=S.pick; return S.patch.cables.filter(c=>k.dir==='out'?(c.from.m===k.mid&&c.from.p===k.pid):(c.to.m===k.mid&&c.to.p===k.pid)); }
+function showPatchbar(){
+  let b=document.getElementById('patchbar');
+  if(!S.pick){ if(b) b.remove(); return; }
+  if(!b){ b=el('div',{id:'patchbar'}); document.body.appendChild(b); }
+  const m=S.patch.modules.find(x=>x.id===S.pick.mid), T=MT[m.type], port=[...T.ins,...T.outs].find(q=>q.id===S.pick.pid), n=pickConns().length;
+  const col=S.pick.kind==='audio'?'yellow':'blue';
+  b.innerHTML=`<span class="msg"><b>${T.name} ${port.label}</b><br><span style="color:var(--dim)">Tap a ${col} ${S.pick.dir==='out'?'input':'output'} to patch</span></span>${n?`<button class="btn" id="pbUn">Unplug${n>1?' '+n:''}</button>`:''}<button class="btn ghost" id="pbX">Done</button>`;
+  $('#pbX').onclick=clearPick;
+  if(n) $('#pbUn').onclick=()=>{ const kill=new Set(pickConns()); S.patch.cables=S.patch.cables.filter(c=>!kill.has(c)); clearPick(); drawCables(); scheduleAnalyze(); };
+}
+
+/* ---------- value sheet (tap a knob) ---------- */
+function openSheet(m,d,knobEl){
+  const sh=$('#sheet'); sh.hidden=false; sh.style.setProperty('--sel',MT[m.type].color);
+  const steps=d.step?Math.round((d.max-d.min)/d.step):0;
+  const small=steps?1/steps:0.004, big=steps?Math.max(1,Math.round(steps/12))/steps:0.04;
+  sh.innerHTML=`<div class="sheetCard"><div class="shHead"><span class="shTitle">${MT[m.type].name} · ${d.label}</span><button class="btn primary" id="shDone">Done</button></div>
+    <div class="shVal" id="shVal"></div><input class="shRange" id="shR" type="range" min="0" max="1000" step="1" aria-label="${d.label}">
+    <div class="shBtns"><button data-d="${-big}">−−</button><button data-d="${-small}">−</button><button data-d="${small}">+</button><button data-d="${big}">++</button></div>
+    <div class="shRow"><button id="shReset">Reset</button><button id="shPlay">▶ Yours</button></div></div>`;
+  const R=$('#shR');
+  const sync=()=>{ $('#shVal').textContent=d.fmt(m.params[d.id]); R.value=Math.round(toN(d,m.params[d.id])*1000); };
+  const set=v=>{ knobEl._set(v); sync(); };
+  sync();
+  R.addEventListener('input',()=>set(fromN(d,R.value/1000)));
+  sh.querySelectorAll('.shBtns button').forEach(b=>b.addEventListener('click',()=>{ let v=m.params[d.id], n=toN(d,v)+parseFloat(b.dataset.d), nv=fromN(d,n);
+    if(nv===v&&!steps){ nv=fromN(d,toN(d,v)+2*parseFloat(b.dataset.d)); } set(nv); }));
+  $('#shReset').onclick=()=>set(d.def);
+  $('#shPlay').onclick=()=>playFixed(S.patch,S.L,'mY');
+  const close=()=>{ sh.hidden=true; sh.innerHTML=''; };
+  $('#shDone').onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); };
 }
 
 /* ---------- right panel ---------- */
 function renderRight(){
   const r=$('#right');
   if(S.sandbox){
-    r.innerHTML=`<div class="card"><h3>Listen</h3><div class="playRow"><button class="playBtn y" style="grid-column:span 2" id="pY"><span class="dot"></span>▶ PLAY PATCH</button></div></div>
+    r.innerHTML=`<div class="card listenCard"><h3>Listen</h3><div class="playRow"><button class="playBtn y" style="grid-column:span 2" id="pY"><span class="dot"></span>▶ PLAY PATCH</button></div></div>
     <div class="card"><h3>Your sound</h3><div class="stats" id="stats"></div>
      <div class="plotLbl">LOUDNESS OVER TIME</div><canvas class="plot" id="cEnv" height="90"></canvas>
      <div class="plotLbl">SPECTRUM (40 Hz – 10 kHz)</div><canvas class="plot" id="cSpec" height="120"></canvas></div>`;
   } else {
-    r.innerHTML=`<div class="card"><h3>Listen</h3><div class="playRow"><button class="playBtn t" id="pT"><span class="dot"></span>▶ TARGET</button><button class="playBtn y" id="pY"><span class="dot"></span>▶ YOURS</button></div></div>
+    r.innerHTML=`<div class="card listenCard"><h3>Listen</h3><div class="playRow"><button class="playBtn t" id="pT"><span class="dot"></span>▶ TARGET</button><button class="playBtn y" id="pY"><span class="dot"></span>▶ YOURS</button></div></div>
     <div class="card"><h3>Match</h3>
       <div class="matchBig"><span class="pct" id="pct">–</span><span class="lab">match · need ${PASS}%</span></div>
       <div class="bar big"><i id="barAll"></i><span class="thr" style="left:${PASS}%"></span></div>
@@ -933,11 +1127,17 @@ function renderRight(){
     $('#btnSubmit').onclick=submit;
   }
   $('#pY').onclick=()=>playFixed(S.patch,S.L,'pY');
+  $('#mstrip').innerHTML = S.sandbox
+    ? `<button class="playBtn y" id="mY"><span class="dot"></span>▶ PLAY PATCH</button><div class="mpct" style="font-size:12px;color:var(--faint);font-weight:400">Free jam</div>`
+    : `<button class="playBtn t" id="mT"><span class="dot"></span>▶ TARGET</button><button class="playBtn y" id="mY"><span class="dot"></span>▶ YOURS</button><div class="mpct" id="mPct">–<small>need ${PASS}%</small></div><button class="btn primary" id="mSend" disabled>Send</button>`;
+  $('#mY').onclick=()=>playFixed(S.patch,S.L,'mY');
+  if(!S.sandbox){ $('#mT').onclick=()=>playFixed(targetPatch(S.L),S.L,'mT'); $('#mSend').onclick=submit; }
+  $('#tabbar').querySelector('[data-tab=match]').innerHTML = S.sandbox?'SOUND':'MATCH';
 }
-function flashPlay(id,dur){ const b=document.getElementById(id); if(!b) return; b.style.borderColor='var(--text)'; setTimeout(()=>b.style.borderColor='',dur*1000); }
+function flashPlay(id,dur){ [id,id.replace(/^p/,'m'),id.replace(/^m/,'p')].forEach(x=>{ const b=document.getElementById(x); if(!b) return; b.style.borderColor='var(--text)'; setTimeout(()=>b.style.borderColor='',dur*1000); }); }
 
 let aTimer=null, aSeq=0;
-function scheduleAnalyze(){ clearTimeout(aTimer); aTimer=setTimeout(runAnalyze,120); saveDraft(); }
+function scheduleAnalyze(){ clearTimeout(aTimer); aTimer=setTimeout(runAnalyze,S.mobile?220:120); saveDraft(); }
 function saveDraft(){ if(S.L&&S.patch) store.set('draft.'+S.L.id,S.patch); }
 async function runAnalyze(){
   if(!S.L) return; const seq=++aSeq, L=S.L;
@@ -957,12 +1157,14 @@ function updateRight(){
     [['Spec','sSpec'],['Tone','sTone'],['Shape','sShape']].forEach(([k,f])=>{ $('#bar'+k).style.width=c[f]+'%'; $('#v'+k).textContent=Math.floor(c[f]); });
     $('#hints').innerHTML=c.hints.map(h=>`<li class="${h.ok?'ok':''}">${h.t}</li>`).join('');
     $('#btnSubmit').disabled=!ok;
+    const mp=$('#mPct'); if(mp){ mp.innerHTML=`${Math.floor(c.overall)}%<small>${ok?'ready to send':'need '+PASS+'%'}</small>`; mp.classList.toggle('ok',ok); $('#mSend').disabled=!ok; }
+    $('#tabbar').querySelector('[data-tab=match]').innerHTML=`MATCH<b class="${ok?'ok':''}">${Math.floor(c.overall)}%</b>`;
   }
   drawPlots();
 }
 function setupCanvas(cv){ const dpr=window.devicePixelRatio||1, w=cv.clientWidth, h=+cv.getAttribute('height'); cv.width=w*dpr; cv.height=h*dpr; cv.style.height=h+'px'; const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); return {g,w,h}; }
 function drawPlots(){
-  const T=S.sandbox?null:S.L._tA, Y=S.mine; if(!Y) return;
+  const T=S.sandbox?null:S.L._tA, Y=S.mine; if(!Y||!$('#cEnv')||!$('#cEnv').clientWidth) return;
   const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
   const CREAM=css('--cream'), AMB=css('--amber'), GRID='#2a241f';
   // loudness
@@ -1016,7 +1218,7 @@ const KEYMAP={a:0,w:1,s:2,e:3,d:4,f:5,t:6,g:7,y:8,h:9,u:10,j:11,k:12,o:13,l:14};
 let octShift=0;
 window.addEventListener('keydown',e=>{
   if(!S.L||e.metaKey||e.ctrlKey||e.altKey||e.repeat) return;
-  if(!$('#modal').hidden) return;
+  if(!$('#modal').hidden||!$('#sheet').hidden) return;
   const k=e.key.toLowerCase();
   if(k===' '){ e.preventDefault(); playFixed(S.patch,S.L,'pY'); return; }
   if(k==='t'&&!S.sandbox&&e.shiftKey){ playFixed(targetPatch(S.L),S.L,'pT'); return; }
@@ -1029,6 +1231,9 @@ window.addEventListener('blur',allNotesOff);
 window.addEventListener('resize',()=>{ if(S.L){ drawCables(); drawPlots(); } });
 
 $('#btnHome').onclick=showBoard;
+document.querySelectorAll('#tabbar button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
+$('#rackScroll').addEventListener('click',e=>{ if(S.pick&&!e.target.closest('.port,.module,#cables g')) clearPick(); });
+window.addEventListener('keydown',e=>{ if(e.key==='Escape'){ clearPick(); $('#sheet').hidden=true; } });
 $('#btnUnlock').onclick=()=>{ progress.unlockAll=true; saveProgress(); showBoard(); toast('All gigs unlocked'); };
 $('#btnReset').onclick=()=>{ const b=$('#btnReset'); if(b.dataset.armed){ progress={solved:{},unlockAll:false}; saveProgress(); LEVELS.concat([SANDBOX]).forEach(L=>store.del('draft.'+L.id)); b.textContent='Wipe progress'; delete b.dataset.armed; showBoard(); toast('Progress wiped'); } else { b.dataset.armed=1; b.textContent='Click again to confirm'; setTimeout(()=>{ b.textContent='Wipe progress'; delete b.dataset.armed; },3000); } };
 

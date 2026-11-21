@@ -12,6 +12,8 @@ Everything is in one file: `index.html`. Open it in a desktop browser (it uses t
 4. Compare **▶ Target** and **▶ Yours**. The right panel shows a match score, hints, and overlaid loudness and spectrum plots.
 5. At 90% or better, send it to the client. Then come back and solve it cheaper (cost ¢), Zachtronics-style.
 
+On phones (≤760px wide) the level screen switches to three tabs (Brief / Rack / Match), with Target, Yours and the match % always visible at the top. Modules stack in signal-flow order, and cables run along a left-hand gutter. Tap a jack, then tap where it goes (this also works on desktop). Tap a knob to open a slider with −/+ steps. Dragging a knob with a finger works too, at lower sensitivity.
+
 Keys: `A`–`K` play your patch (black keys on `W E T Y U`), `Z`/`X` shift the octave, `Space` plays yours, `Shift+T` plays the target.
 
 ## Curriculum
