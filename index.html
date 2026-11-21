@@ -1337,7 +1337,7 @@ function updateRight(){
   }
   drawPlots();
 }
-function setupCanvas(cv){ const dpr=window.devicePixelRatio||1, w=cv.clientWidth, h=+cv.getAttribute('height'); cv.width=w*dpr; cv.height=h*dpr; cv.style.height=h+'px'; const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); return {g,w,h}; }
+function setupCanvas(cv){ const dpr=window.devicePixelRatio||1, w=cv.clientWidth; if(!cv.dataset.h) cv.dataset.h=cv.getAttribute('height'); const h=+cv.dataset.h; cv.width=w*dpr; cv.height=h*dpr; cv.style.height=h+'px'; const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); return {g,w,h}; }
 function drawPlots(){
   const T=S.sandbox?null:S.L._tA, Y=S.mine; if(!Y||!$('#cEnv')||!$('#cEnv').clientWidth) return;
   const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
