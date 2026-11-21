@@ -46,7 +46,7 @@ try {
       progress.unlockAll=true; const out=[];
       for(let i=-1;i<LEVELS.length;i++){
         LEVELS.concat([SANDBOX]).forEach(L=>store.del('draft2.'+L.id));
-        openLevel(i); closeSide(); await new Promise(r=>setTimeout(r,250));
+        openLevel(i); closeSide(); for(let t=0;t<100&&!S.mine;t++) await new Promise(r=>setTimeout(r,50));
         const vpR=document.querySelector('#viewport').getBoundingClientRect(), o=document.querySelector('.module[data-id="out"]').getBoundingClientRect();
         const outVisible=o.left>=vpR.left-1&&o.right<=vpR.right+1&&o.top>=vpR.top-1&&o.bottom<=vpR.bottom+1;
         const cmp=document.querySelector('#compare').getBoundingClientRect();
