@@ -39,6 +39,18 @@ Feedback that drove it: difficulty rises fast (especially the VCA lesson); playe
 - **Click/tap without dragging** opens the precise editor: big slider, − / + (about 0.25% of the range, or one step on stepped knobs) and −− / ++ (3%), ←/→ keys (Shift for bigger steps), Reset, ▶ Yours.
 - **Wheel/trackpad** follows the scroll distance (0.06% per pixel, Shift 0.015%). Coarse stepped knobs (OCT, SEMI, FINE) move one step per ~40px. This fixes trackpads sending dozens of events per swipe, which previously moved 1% per event.
 
+## Feel: haptics and the end-of-gig jingle
+- **Haptics** (`js/haptics.js`, touch devices only, on/off switch on the gig board, saved): a knob tick at each step (stepped knobs) or every 5% (smooth knobs), and a firmer bump at an end stop. Cable plug = one solid pulse, unplug = double tap, add/move/remove a module = thunk, choice buttons and jack picks = light tick, on-screen keys = tiny tick, crossing 90% and Send = celebration pattern. Throttled so fast turns don't blur into one buzz.
+  - Android and most browsers: `navigator.vibrate`.
+  - iPhone Safari has no vibrate(). On iOS 18+ we click a hidden `<input type="checkbox" switch>`, which plays the system switch haptic (one tick per pulse). On older iOS nothing happens. Not yet verified on a real iPhone.
+- **Jingle:** on Send, the result screen plays a short phrase on the player's own patch (a copy, scheduled with the normal voice engine), shaped per chapter, with note markers that light in time and a Replay button. It stops when the dialog closes.
+  - melodic "ta-da" arpeggio (Basics, Filters, Leads)
+  - funky riff (Bass)
+  - IV → I chords (Pads)
+  - drum fill on one pitch (Percussion)
+  - three hits at different pitches (Sound FX)
+  - Test: every gig's jingle, rendered offline on its reference patch, is audible and finite.
+
 ## Modules (cost)
 OSC 2¢ (wave, oct, semi, fine, pitch mod amt) · NOISE 1¢ · FILTER 3¢ (LP/HP/BP, cutoff, res, cutoff mod amt in octaves) · VCA 1¢ (level, CV in) · ENV 2¢ (ADSR, linear segments) · LFO 2¢ (wave, rate).
 Yellow cables = audio, blue = control. Modulation depth lives on the destination (MOD AMT knobs). Knobs and jacks unlock per lesson.

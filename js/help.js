@@ -147,7 +147,7 @@ async function requestHelp(){
       msg=`<p>You have the right modules, but a cable is missing: <b>${describeCable(si.T,r.t)}</b>.</p><p>${PORT_WHY[t.type+'.'+r.t.to.p]||''}</p>`; }
     else { const c=si.extraCables[0]; msg=`<p>Your cable <b>${describeCable(si.P,c)}</b> isn't part of the client's patch, and it's changing the sound.</p>`; }
     helpCard(msg+`<p class="hcSoft">Want me to wire it up? Your knob settings are kept.</p>`,[
-      {label:'Patch it for me',primary:true,run:()=>{ const notes=applyStructure(structureIssues()); markHelped(); afterChange();
+      {label:'Patch it for me',primary:true,run:()=>{ const notes=applyStructure(structureIssues()); markHelped(); Haptics.plug(); afterChange();
         helpCard(`<ul>${notes.map(n=>`<li>${n}</li>`).join('')}</ul><p class="hcSoft">Now listen again. If it's still off, press Help for the knob that matters most.</p>`); }},
       {label:'I\'ll try myself',run:closeHelp}]);
     return;
@@ -166,7 +166,7 @@ async function requestHelp(){
   } finally { H.busy=false; }
 }
 function lockNow(c){
-  lockParam(c); markHelped(); H.pending=null; afterChange();
+  lockParam(c); markHelped(); H.pending=null; Haptics.plug(); afterChange();
   helpCard(`<p><b>${paramName(c.m,c.d)}</b> is now locked at the client's value: <b>${c.d.type==='choice'?c.tv:c.d.fmt(c.tv)}</b>.</p><p>${PARAM_HELP[c.m.type+'.'+c.d.id]||''}</p><p class="hcSoft">Tap a locked knob to read why, or to unlock it. Press Help again for the next one.</p>`);
   setTimeout(()=>flashKnob(c.m,c.d),50);
 }

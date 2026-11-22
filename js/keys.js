@@ -5,7 +5,7 @@ function keyDown(id,note,vel){
   if(!S.L||note<0||note>127) return;
   if(held[id]) noteOff(id);
   S.sustained.delete(id); S.idNote[id]=note;
-  noteOn(id,note,vel); paintLit(); checkPrompt(note);
+  noteOn(id,note,vel); paintLit(); checkPrompt(note); if(id.startsWith('p')) Haptics.key();
   if(!id.startsWith('p')) ensureVisible(note);
 }
 function keyUp(id){

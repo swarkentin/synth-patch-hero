@@ -116,6 +116,40 @@ try {
     LEVELS.forEach(L=>store.del('draft2.'+L.id)); progress.helped={}; showBoard(); return out; })()`);
   for (const r of rescued) ok(r.paletteOk && r.score >= 90 && r.steps <= 16, `${r.id.padEnd(13)} palette has the parts; passes after ${r.steps} help step(s) (${r.score.toFixed(0)}%)`);
 
+  console.log('\nEvery gig ends with an audible jingle on its patch');
+  const jingles = await page.evaluate(`(async()=>{ const out=[];
+    for(const L of LEVELS){ const x=await renderJingle(targetPatch(L),L); let peak=0, nan=false;
+      for(let i=0;i<x.length;i++){ const v=x[i]; if(v!==v){ nan=true; break; } const a=Math.abs(v); if(a>peak) peak=a; }
+      out.push({id:L.id,peak,nan,secs:x.length/SR}); }
+    return out; })()`);
+  for (const j of jingles) ok(!j.nan && j.peak > 0.01 && j.peak < 4, `${j.id.padEnd(13)} jingle peak ${j.peak.toFixed(2)} over ${j.secs.toFixed(1)}s`);
+  const modal = await page.evaluate(`(async()=>{ progress.unlockAll=true; const i=LEVELS.findIndex(l=>l.id==='pluck'); store.del('draft2.pluck'); openLevel(i);
+    const t=targetPatch(S.L); let k=0; t.modules.forEach(m=>{ m.slot=m.type==='out'?S.slots-1:k++; }); S.patch=t; renderRack(); scheduleAnalyze();
+    for(let n=0;n<60&&!(S.cmp&&S.cmp.overall>=PASS);n++) await new Promise(r=>setTimeout(r,50));
+    submit(); await new Promise(r=>setTimeout(r,900));
+    const dots=document.querySelectorAll('#jDots i').length, playing=!!jingleNow; document.querySelector('#mStay').click(); const stopped=!jingleNow;
+    delete progress.solved.pluck; saveProgress(); showBoard(); return {dots,playing,stopped}; })()`);
+  ok(modal.dots >= 4 && modal.playing && modal.stopped, `result screen plays the jingle (${modal.dots} note markers) and stops it when closed`);
+
+  console.log('\nHaptics on a phone');
+  await page.open(URL, { width: 390, height: 664, mobile: true });
+  await page.waitFor("document.querySelector('.gig')");
+  const hap = await page.evaluate(`(async()=>{ const calls=[]; navigator.vibrate=p=>{ calls.push(p); return true; }; const wait=ms=>new Promise(r=>setTimeout(r,ms));
+    progress.unlockAll=true; store.del('draft2.thin-walls'); openLevel(LEVELS.findIndex(l=>l.id==='thin-walls')); closeSide(); const res={available:Haptics.available};
+    let n=calls.length; addModule('osc'); await wait(120); res.addModule=calls.length>n;
+    const o=S.patch.modules.find(m=>m.type==='osc'); n=calls.length;
+    const tap=el=>{ const r=el.getBoundingClientRect(); const e={bubbles:true,clientX:r.left+6,clientY:r.top+6,pointerId:7,pointerType:'touch'}; el.dispatchEvent(new PointerEvent('pointerdown',e)); window.dispatchEvent(new PointerEvent('pointerup',e)); };
+    tap(document.querySelector('.port[data-mod="'+o.id+'"][data-dir="out"]')); await wait(80); tap(document.querySelector('.port[data-mod="out"][data-dir="in"]')); await wait(80);
+    res.plug=S.patch.cables.length===1&&calls.length>=n+2;
+    const k=document.querySelector('.module[data-id="'+o.id+'"] [data-param="oct"]'); const r=k.getBoundingClientRect();
+    k.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,clientX:r.left+20,clientY:r.top+20,pointerId:8,pointerType:'touch'}));
+    k.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,clientX:r.left+20,clientY:r.top+20,pointerId:8,pointerType:'touch'}));
+    n=calls.length; for(let q=0;q<3;q++){ document.querySelectorAll('.shBtns button')[2].click(); await wait(60); } res.knob=calls.length>=n+3&&o.params.oct===3;
+    document.querySelector('#shDone').click(); for(let q=0;q<60&&!S.cmp;q++) await wait(50); await wait(400); n=calls.length; S.wasOk=false; S.cmp={...S.cmp,overall:95}; updateCompare(); res.pass=calls.length>n;
+    Haptics.set(false); n=calls.length; addModule('filter'); await wait(80); res.toggleOff=calls.length===n; Haptics.set(true);
+    store.del('draft2.thin-walls'); showBoard(); return res; })()`);
+  for (const [k, v] of Object.entries(hap)) ok(v, `haptics: ${k}`);
+
   console.log('\nCurriculum structure');
   const cur = await page.evaluate(`(()=>{
     const ids=LEVELS.map(l=>l.id), uniq=new Set(ids).size===ids.length;

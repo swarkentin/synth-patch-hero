@@ -76,7 +76,7 @@ function openLevel(i){
   $('#screenBoard').hidden=true; $('#screenLevel').hidden=false; $('#btnHome').hidden=false;
   const ch=S.sandbox?null:chapterOf(i);
   $('#crumbs').textContent=S.sandbox?'Free Jam':`${ch.title} ${ch.levels.indexOf(i)+1}/${ch.levels.length} · ${S.L.title} · ${S.L.challenge?'Challenge':S.L.concept}`;
-  S.pick=null; showPatchbar(); allNotesOff();
+  S.pick=null; S.wasOk=false; showPatchbar(); allNotesOff(); stopJingle();
   S.kbLo=null; S.kbFb=null; S.promptDone=S.sandbox||!!(progress.played&&progress.played[S.L.id]);
   renderBrief(); renderPalette(); layoutBoard(); renderRack(); renderCompare(); renderPrompt(); renderMidiChip(); setKeysOpen(S.keysOpen);
   S.userZoom=false;
@@ -132,13 +132,14 @@ function addModule(t,slot){
   if(slot==null){ const e=emptySlots(); if(!e.length){ toast('The rack is full. Remove a module first.'); return; } slot=e[0]; }
   const id='m'+(idc++);
   S.patch.modules.push({id,type:t,slot,params:defaultParams(t)});
-  S.slotMenu=null; refreshRack(); scheduleAnalyze(); revealSlot(slot);
+  S.slotMenu=null; Haptics.thunk(); refreshRack(); scheduleAnalyze(); revealSlot(slot);
 }
 function removeModule(id){
   const m=S.patch.modules.find(x=>x.id===id); if(!m||m.locked) return;
   if(S.pick&&S.pick.mid===id) clearPick();
   S.patch.modules=S.patch.modules.filter(x=>x.id!==id);
   S.patch.cables=S.patch.cables.filter(c=>c.from.m!==id&&c.to.m!==id);
+  Haptics.thunk();
   refreshRack(); scheduleAnalyze();
 }
 function refreshRack(){ renderPalette(); renderRack(); if(S.cmp) updateCompare(); }
@@ -206,7 +207,7 @@ function dragModule(head,m,d){
       if(!moved) return;
       const t=slotAt(stagePoint(ev));
       if(t!=null&&t!==m.slot&&t!==S.slots-1){ const o=occupant(t);
-        if(!o) m.slot=t; else if(!o.locked){ o.slot=m.slot; m.slot=t; } else toast('That slot holds a preset module.'); }
+        if(!o){ m.slot=t; Haptics.thunk(); } else if(!o.locked){ o.slot=m.slot; m.slot=t; Haptics.thunk(); } else toast('That slot holds a preset module.'); }
       renderRack(); saveDraft(); };
     head.addEventListener('pointermove',mv); head.addEventListener('pointerup',up); head.addEventListener('pointercancel',up);
   });
@@ -294,7 +295,9 @@ function makeKnob(m,d){
   const k=el('div',{class:'knob'+(locked?' locked':''),'data-param':d.id,title:locked?`${d.label} is locked by Help. Tap to see why, or to unlock it.`:`${d.label} · drag up/down (Shift = fine) · click for precise control`});
   const draw=()=>{ k.innerHTML=knobSVG(toN(d,m.params[d.id]),col)+`<div class="kl">${d.label}</div><div class="kv">${d.fmt(m.params[d.id])}</div>`; };
   draw();
-  const set=v=>{ if(v===m.params[d.id]) return; m.params[d.id]=v; draw(); scheduleAnalyze(); };
+  const steps=d.step?(d.max-d.min)/d.step:0, notch=n=>steps&&steps<=60?Math.round(n*steps):Math.floor(n*20+1e-9);
+  const set=v=>{ const old=m.params[d.id]; if(v===old) return; m.params[d.id]=v; draw(); scheduleAnalyze();
+    const n0=toN(d,old), n1=toN(d,v); if((n1<=0||n1>=1)&&n0>0&&n0<1) Haptics.edge(); else if(notch(n0)!==notch(n1)) Haptics.detent(); };
   k._set=set;
   if(locked){ k.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); }); k.addEventListener('click',()=>showLockInfo(m,d)); return k; }
   k.addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); try{k.setPointerCapture(e.pointerId);}catch(_){}
@@ -321,7 +324,7 @@ function makeChoice(m,d){
     const b=el('button',{class:m.params[d.id]===o?'on':'',title:o},
       WAVE_PATH[o]?`<svg width="28" height="18" viewBox="0 0 28 18"><path d="${WAVE_PATH[o]}" stroke="#a09482" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg>`:(d.labels?d.labels[i]:o));
     b.addEventListener('pointerdown',e=>e.stopPropagation());
-    b.addEventListener('click',()=>{ if(locked){ showLockInfo(m,d); return; } m.params[d.id]=o; draw(); scheduleAnalyze(); });
+    b.addEventListener('click',()=>{ if(locked){ showLockInfo(m,d); return; } if(m.params[d.id]!==o) Haptics.select(); m.params[d.id]=o; draw(); scheduleAnalyze(); });
     w.appendChild(b); }); };
   draw(); return w;
 }
@@ -340,7 +343,7 @@ function tryConnect(aEl,bEl){
   if(from.m===to.m){ toast('A module can\'t patch into itself.'); return false; }
   if(S.patch.cables.some(c=>c.from.m===from.m&&c.from.p===from.p&&c.to.m===to.m&&c.to.p===to.p)){ toast('Already patched.'); return false; }
   if(reaches(to.m,from.m)){ toast('That would make a feedback loop.'); return false; }
-  S.patch.cables.push({from,to}); scheduleAnalyze(); return true;
+  S.patch.cables.push({from,to}); Haptics.plug(); scheduleAnalyze(); return true;
 }
 /* tap a jack, then tap where it goes */
 const portSel=k=>document.querySelector(`.port[data-mod="${k.mid}"][data-port="${k.pid}"][data-dir="${k.dir}"]`);
@@ -350,7 +353,7 @@ function tapPort(p){
     if(S.pick.mid===k.mid&&S.pick.pid===k.pid&&S.pick.dir===k.dir){ clearPick(); return; }
     if(k.dir!==S.pick.dir){ const a=portSel(S.pick); if(a&&tryConnect(a,p)){ clearPick(); drawCables(); return; } return; }
   }
-  S.pick=k; markPicked(); showPatchbar();
+  S.pick=k; Haptics.select(); markPicked(); showPatchbar();
 }
 function markPicked(){
   document.querySelectorAll('.port.picked,.port.hot').forEach(p=>p.classList.remove('picked','hot'));
@@ -368,7 +371,7 @@ function showPatchbar(){
   const col=S.pick.kind==='audio'?'yellow':'blue';
   b.innerHTML=`<span class="msg"><b>${T.name} ${port.label}</b><br><span style="color:var(--dim)">Tap a ${col} ${S.pick.dir==='out'?'input':'output'} to patch</span></span>${n?`<button class="btn" id="pbUn">Unplug${n>1?' '+n:''}</button>`:''}<button class="btn ghost" id="pbX">Done</button>`;
   $('#pbX').onclick=clearPick;
-  if(n) $('#pbUn').onclick=()=>{ const kill=new Set(pickConns()); S.patch.cables=S.patch.cables.filter(c=>!kill.has(c)); clearPick(); drawCables(); scheduleAnalyze(); };
+  if(n) $('#pbUn').onclick=()=>{ Haptics.unplug(); const kill=new Set(pickConns()); S.patch.cables=S.patch.cables.filter(c=>!kill.has(c)); clearPick(); drawCables(); scheduleAnalyze(); };
 }
 
 /* ---------- value sheet (tap a knob) ---------- */
@@ -427,7 +430,7 @@ function drawCables(temp){
   svg.innerHTML=h;
   svg.querySelectorAll('g').forEach(g=>{ const hit=g.querySelector('.hit');
     hit.addEventListener('pointerdown',e=>e.stopPropagation());
-    hit.addEventListener('click',()=>{ S.patch.cables.splice(+g.dataset.i,1); drawCables(); scheduleAnalyze(); showPatchbar(); }); });
+    hit.addEventListener('click',()=>{ Haptics.unplug(); S.patch.cables.splice(+g.dataset.i,1); drawCables(); scheduleAnalyze(); showPatchbar(); }); });
 }
 function startCable(ev,portEl){
   ev.preventDefault(); ev.stopPropagation();
@@ -499,6 +502,7 @@ function updateCompare(){
   st.innerHTML=`<div class="stat"><b>${playerCost(S.patch)}¢</b><span>Cost</span></div><div class="stat"><b>${S.patch.modules.filter(m=>m.type!=='out').length}</b><span>Modules</span></div><div class="stat"><b>${S.patch.cables.length}</b><span>Cables</span></div>`;
   if(c){
     const ok=c.overall>=PASS-1e-9, pct=$('#pct');
+    if(ok&&!S.wasOk) Haptics.success(); S.wasOk=ok;
     pct.textContent=Math.floor(c.overall)+'%'; pct.classList.toggle('ok',ok);
     $('#pctSub').textContent=ok?'ready to send':`need ${PASS}%`;
     $('#barAll').style.width=c.overall+'%'; $('#barAll').style.background=ok?'var(--good)':'var(--amber)';
@@ -577,10 +581,18 @@ function submit(){
       <div class="res"><b>${mods}</b><span>Added</span><em>modules</em></div>
       <div class="res"><b>${cab}</b><span>Cables</span><em>best ${best.cables}</em></div>
     </div>
+    <div class="jingle"><button class="btn ghost" id="mJingle">♪ Replay jingle</button><span class="jDots" id="jDots"></span><span class="jLbl">your patch takes a bow</span></div>
     <div class="modalBtns"><button class="btn" id="mStay">Keep tweaking</button><button class="btn" id="mBoard">Gig board</button>${next!=null?'<button class="btn primary" id="mNext">Next gig →</button>':''}</div></div>`;
-  $('#mStay').onclick=()=>m.hidden=true;
-  $('#mBoard').onclick=()=>{ m.hidden=true; showBoard(); };
-  if(next!=null) $('#mNext').onclick=()=>{ m.hidden=true; openLevel(next); };
+  const leave=fn=>()=>{ stopJingle(); clearTimeout(S.jT); m.hidden=true; fn&&fn(); };
+  $('#mStay').onclick=leave(); $('#mBoard').onclick=leave(showBoard);
+  if(next!=null) $('#mNext').onclick=leave(()=>openLevel(next));
+  const patch=JSON.parse(JSON.stringify(S.patch));
+  const runJingle=()=>{ const j=playJingle(patch,L), dots=$('#jDots'); if(!dots) return;
+    const starts=[...new Set(j.events.map(e=>e.t))];
+    dots.innerHTML=starts.map(()=>'<i></i>').join(''); (S.jTs||[]).forEach(clearTimeout);
+    S.jTs=starts.map((t,k)=>setTimeout(()=>{ const d=dots.children[k]; if(d){ d.classList.add('on'); setTimeout(()=>d.classList.remove('on'),220); } },80+t*1000)); };
+  $('#mJingle').onclick=runJingle;
+  Haptics.success(); S.jT=setTimeout(runJingle,250);
 }
 let toastT=null;
 function toast(msg){ let t=document.querySelector('.toast'); if(!t){ t=el('div',{class:'toast'}); document.body.appendChild(t); } t.textContent=msg; clearTimeout(toastT); toastT=setTimeout(()=>t.remove(),2600); }
@@ -616,4 +628,6 @@ $('#midiChip').onclick=()=>{ if(MIDI.state==='on'){ toast('Connected: '+MIDI.nam
 if(store.get('midiAuto',false)) connectMIDI(true);
 $('#btnHome').onclick=showBoard;
 $('#btnUnlock').onclick=()=>{ progress.unlockAll=true; saveProgress(); showBoard(); toast('All gigs unlocked'); };
+(function(){ if(!Haptics.available) return; const b=el('button',{class:'btn ghost',id:'btnHaptics'}); const lbl=()=>b.textContent='Haptics: '+(Haptics.enabled?'on':'off'); lbl();
+  b.onclick=()=>{ Haptics.set(!Haptics.enabled); lbl(); Haptics.select(); }; $('#btnReset').after(b); })();
 $('#btnReset').onclick=()=>{ const b=$('#btnReset'); if(b.dataset.armed){ progress={solved:{},unlockAll:false}; saveProgress(); LEVELS.concat([SANDBOX]).forEach(L=>{ store.del('draft.'+L.id); store.del('draft2.'+L.id); }); b.textContent='Wipe progress'; delete b.dataset.armed; showBoard(); toast('Progress wiped'); } else { b.dataset.armed=1; b.textContent='Click again to confirm'; setTimeout(()=>{ b.textContent='Wipe progress'; delete b.dataset.armed; },3000); } };

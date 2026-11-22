@@ -115,3 +115,39 @@ function noteOff(key){
   const t=AC.currentTime+0.005; h.v.release(t); const end=t+h.v.maxR+0.06; h.oc.close(end); h.v.stop(end+0.05);
 }
 function allNotesOff(){ Object.keys(held).forEach(noteOff); if(S.idNote){ S.idNote={}; S.sustained.clear(); paintLit(); } }
+
+/* ---- End-of-gig jingle: a short phrase played on the player's own patch, shaped to suit the chapter ---- */
+// Each event: [semitones from the gig's note, start (beats), length (beats), velocity]. Chords share a start.
+const JINGLES = {
+  melodic: { beat:0.15, notes:[[0,0,.8,.9],[4,1,.8,.85],[7,2,.8,.9],[4,3,.8,.8],[12,4,3.5,1]] },
+  bass:    { beat:0.17, notes:[[0,0,.7,1],[0,1,.6,.8],[12,1.5,.45,.9],[0,2,.7,.9],[10,3,.6,.85],[7,3.5,.6,.85],[0,4.5,2.5,1]] },
+  pads:    { beat:1.0,  notes:[[5,0,1.15,.55],[9,0,1.15,.5],[12,0,1.15,.5],[0,1.25,1.7,.55],[4,1.25,1.7,.5],[7,1.25,1.7,.5],[12,1.25,1.7,.45]] },
+  perc:    { beat:0.14, notes:[[0,0,.6,1],[0,2,.6,.7],[0,3,.6,.8],[0,4,.6,1],[0,5.5,.5,.6],[0,6,.6,.8],[0,7,.6,.9],[0,8,1,1]] },
+  fx:      { beat:0.5,  notes:[[0,0,.9,.9],[-5,1.1,.9,.9],[7,2.2,1.4,1]] },
+};
+function jingleFor(L){ return JINGLES[{bass:'bass',pads:'pads',perc:'perc',fx:'fx'}[L.ch]||'melodic']; }
+/* Schedule the jingle on ctx. Returns {events:[{t,dur,note}], end, stop(t)}. */
+function scheduleJingle(ctx, dest, patch, L, t0){
+  const J=jingleFor(L), voices=[]; let end=0;
+  const events=J.notes.map(([rel,at,len,vel])=>{
+    const t=t0+at*J.beat, dur=len*J.beat, oc=outChain(ctx,dest,t,vel);
+    const v=buildVoice(ctx,patch,oc.node,t,L.note+rel,dur), stopAt=t+dur+v.maxR+0.06;
+    oc.close(stopAt); v.stop(stopAt+0.02); voices.push({oc,v,stopAt}); end=Math.max(end,stopAt);
+    return {t:at*J.beat,dur,note:L.note+rel};
+  });
+  return { events, end, stop(t){ voices.forEach(x=>{ if(x.stopAt>t){ x.oc.close(t+0.03); x.v.stop(t+0.06); } }); } };
+}
+let jingleNow=null;
+function playJingle(patch, L){
+  const ctx=ac(); stopJingle(); stopOneShots();
+  jingleNow=scheduleJingle(ctx, liveBus, patch, L, ctx.currentTime+0.08);
+  return jingleNow;
+}
+function stopJingle(){ if(jingleNow&&AC){ jingleNow.stop(AC.currentTime); } jingleNow=null; }
+/* Offline render of the jingle (used by tests to check every gig's jingle is audible). */
+async function renderJingle(patch, L){
+  const J=jingleFor(L), last=Math.max(...J.notes.map(n=>(n[1]+n[2])*J.beat));
+  const len=Math.ceil((last+2.5)*SR), ctx=new OfflineAudioContext(1,len,SR);
+  scheduleJingle(ctx, ctx.destination, patch, L, 0.02);
+  return (await ctx.startRendering()).getChannelData(0);
+}
