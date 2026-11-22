@@ -21,8 +21,9 @@ function autoFeatures(L){
   const f=new Set();
   L.target.mods.forEach(m=>{ f.add(m.type);
     if(m.type==='filter'){ f.add('res'); if(m.p.type&&m.p.type!=='lowpass') f.add('ftype'); }
-    if(m.type==='osc'&&m.p.fine) f.add('fine'); });
-  L.target.cables.forEach(c=>{ if(/\.(pitch|cut|mod)$/.test(c)) f.add('mod'); if(/\.fm$/.test(c)) f.add('fm'); });
+    if(m.type==='osc'&&m.p.fine) f.add('fine');
+    if(m.type==='filter'&&m.p.track) f.add('keytrk'); });
+  L.target.cables.forEach(c=>{ if(/\.(pitch|cut|mod|sweep)$/.test(c)||/^\w+\.out>\w+\.cv$/.test(c)&&L.target.mods.some(m=>m.type==='fold'&&c.endsWith(m.id+'.cv'))) f.add('mod'); if(/\.fm$/.test(c)) f.add('fm'); });
   return f;
 }
 /* Basics unlocks features one lesson at a time; themes get everything from Basics plus what their gigs use. */

@@ -17,7 +17,8 @@ async function renderPatch(patch,L){
   const len=Math.ceil(L.dur*SR);
   const ctx=new OfflineAudioContext(1,len,SR);
   const oc=outChain(ctx,ctx.destination,0);
-  const v=buildVoice(ctx,patch,oc.node,0,L.note,L.gate); oc.close(L.dur); v.stop(L.dur);
+  if(usesWorklet(patch)) await ensureWorklets(ctx);
+  const v=buildNotes(ctx,patch,oc.node,0,L); oc.close(L.dur); v.stop(L.dur);
   const buf=await ctx.startRendering(); return buf.getChannelData(0);
 }
 const dB = p => 10*Math.log10(p+1e-14);

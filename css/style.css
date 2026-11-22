@@ -2,6 +2,7 @@
   --bg:#13100e; --panel:#1d1916; --panel2:#26211d; --line:#3a322b; --line2:#4d433a;
   --text:#efe6d8; --dim:#a09482; --faint:#6d6356;
   --amber:#f2a541; --teal:#4fb3a9; --red:#e0604f; --violet:#a58be8; --green:#8cc152; --grey:#b5ada3; --cream:#efe6d8;
+  --rust:#d9643a; --gold:#d8b04a; --lilac:#c39be8; --cyan:#5fc7c0; --coral:#ef7f7a; --olive:#a6b85c;
   --sand:#cbb894; --pink:#e58fb4; --blue:#6fa8dc; --sky:#8fc6e6; --orange:#e07a3f; --lime:#c4d65a;
   --audio:#f2c14e; --mod:#7fb2f0; --good:#8cc152; --bad:#e0604f;
   --mono:'IBM Plex Mono',ui-monospace,monospace; --head:'Chakra Petch',system-ui,sans-serif; --sans:'IBM Plex Sans',system-ui,sans-serif;
@@ -490,3 +491,6 @@ label.kbClose,#btnHelp[role=button]{display:inline-flex;align-items:center;justi
 .knob.bar .kl{font-size:7.5px;margin-top:2px}
 .knob.bar .kv{font-size:7.5px;color:var(--dim)}
 @media (max-width:760px){ .module.dense .knob{width:40px} .knob.bar{width:20px} }
+
+.chBadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--coral);border:1px solid currentColor;border-radius:4px;padding:2px 6px;vertical-align:middle;margin-left:8px;font-weight:600}
+.chBadge.bonus{color:var(--cyan)}

@@ -31,6 +31,9 @@ const BANDS = {
   'notch|f.type=bandpass': [0, 40], 'notch|f.cutoff=700': [65, 89.9], 'swell|f.cutAmt=4200': [0, 75], 'sub-layer|m.l2=0.5': [0, 75],
   'build-square|h.h3=0.3': [93, 100], 'build-square|h.h5=0': [40, 85], 'metal-ring|m.semi=7': [0, 35], 'fm-bell|m.semi=7': [0, 35], 'epiano|me.d=1.2': [0, 60],
   'slapback|d.time=0.16': [0, 65], 'canyon|d.time=0.25': [0, 50], 'chorus|d.modAmt=0.004': [40, 85], 'fuzz|d.drive=1': [0, 60], 'fuzz|d.drive=13': [90, 100],
+  // advanced tier: sync, ring, function generator, mod VCA, folder, low-pass gate, key tracking
+  'torn-edge|s.ratio=2': [0, 50], 'sync-sweep|s.sweepAmt=2': [0, 85], 'robot-voice|b.semi=5': [0, 45], 'strike-once|f.fall=0.4': [0, 50],
+  'late-vibrato|o.pitchAmt=60': [0, 85], 'fold|f.fold=2.5': [0, 45], 'fold|f.fold=3.3': [90, 100], 'bonk|e.d=0.15': [0, 50], 'bonk|e.d=0.27': [90, 100], 'even-keel|f.track=0': [0, 75],
   'ks-string|d.tone=3000': [0, 70], 'ks-string|d.fb=0.95': [70, 89.9], 'robot|f.type=lowpass': [0, 65],
 };
 
@@ -214,7 +217,7 @@ try {
   console.log('\nCurriculum structure');
   const cur = await page.evaluate(`(()=>{
     const ids=LEVELS.map(l=>l.id), uniq=new Set(ids).size===ids.length;
-    const themesEndInChallenge=CHAPTERS.slice(1).every(c=>LEVELS[c.levels[c.levels.length-1]].challenge&&c.levels.filter(i=>LEVELS[i].challenge).length===1);
+    const themesEndInChallenge=CHAPTERS.slice(1).filter(c=>!c.bonus).every(c=>LEVELS[c.levels[c.levels.length-1]].challenge&&c.levels.filter(i=>LEVELS[i].challenge).length===1);
     const every=CHAPTERS.reduce((n,c)=>n+c.levels.length,0)===LEVELS.length;
     const saved=progress; progress={solved:{}};
     const allOpen=LEVELS.every((l,i)=>isUnlocked(i));
@@ -224,7 +227,7 @@ try {
     progress=saved; return {uniq,every,themesEndInChallenge,allOpen,nextStart,skipAhead,n:LEVELS.length,chapters:CHAPTERS.length};
   })()`);
   ok(cur.uniq && cur.every, `${cur.n} gigs in ${cur.chapters} chapters, unique ids`);
-  ok(cur.themesEndInChallenge, 'every theme ends with exactly one challenge');
+  ok(cur.themesEndInChallenge, 'every theme (bonus chapters aside) ends with exactly one challenge');
   ok(cur.allOpen, 'every gig is open to a new player');
   ok(cur.nextStart, 'each chapter suggests its first gig as NEXT');
   ok(cur.skipAhead, 'solving a later gig out of order is recorded, and NEXT still points at the earliest unsolved one');

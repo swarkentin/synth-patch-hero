@@ -87,12 +87,20 @@ Feedback that drove it: difficulty rises fast (especially the VCA lesson); playe
 - **DELAY** 3¢: MS/NOTE sync, time, feedback, mix, tone (low-pass in the feedback loop, peak-free so the loop gain stays below 1), and a TIME mod input with MOD depth (chorus). NOTE sync sets the time to one period of the played note, which gives Karplus–Strong strings. Web Audio's minimum delay inside a feedback loop is 128 frames (5.8 ms at the 22.05 kHz scoring rate), so string gigs keep notes at or below about 170 Hz.
 - **REVERB** 3¢: size (seconds), mix. The impulse response is generated from seeded noise, so renders are deterministic.
 - **DRIVE** 2¢: tanh waveshaper, drive, level.
+- **Advanced tier:**
+  - **SYNC OSC** 3¢: hard-sync oscillator (saw/square, oct, RATIO 1–8×, SWEEP input + amount). Hard sync needs per-sample phase resets, so it runs in a small AudioWorklet (4× oversampled) loaded from a Blob URL, or a data: URL on `file://`. Offline renders await the worklet; until it's ready, live playback falls back to a plain saw. RATIO and SWEEP move in 0.05 steps because sync timbre is very sensitive to ratio.
+  - **RING MOD** 2¢: multiplies inputs A and B (silent without both).
+  - **FUNC** 2¢: function generator. RISE/FALL, ONCE (one AD shape per note, ignores the hold) or LOOP (a drawable LFO).
+  - **MOD VCA** 1¢: a VCA for control signals with a bipolar AMOUNT (attenuverter). Used for modulation controlling modulation, e.g. delayed vibrato.
+  - **FOLDER** 2¢: sine wavefolder (FOLD 1–8×, CV with MOD AMT, LEVEL), 4× oversampled.
+  - **LPG** 2¢: low-pass gate. One CV drives the volume and the cutoff (8 octaves) together. OPEN sets the resting state.
+  - **FILTER KEY TRK** (feature `keytrk`): the cutoff follows the note relative to middle C. Only the bonus gig uses it.
 - **S&H** 2¢: sample and hold. Random steps from a fixed 32-step seeded sequence, so targets are repeatable. Rate is stepped at 0.5 Hz, so exact values are reachable.
 
 Yellow cables = audio, blue = control. Modulation depth lives on the destination (MOD AMT knobs). Bipolar knobs fill from the centre. Knobs and jacks unlock per lesson. Modules with five or more knobs use a denser knob layout so they fit a slot.
 
-## Curriculum (64 gigs in 14 chapters + Free Jam)
-Structure: **Basics** (7 gigs) is the suggested starting point, followed by thirteen **themes**. **Every gig is open from the start** (playtest, 2026-11-22: let people explore and skip ahead); progress is still recorded per gig. Each gig card has a round **▶ preview** button that plays the target sound right on the board, so players can browse by ear before picking a gig. Tap again to stop. Starting another preview or opening a gig stops the current one. It sits beside the card rather than inside it, so it never opens the gig, and on iPhone it's its own haptic tap target. The board suggests an order: each chapter marks its first unsolved gig as **NEXT**, and the ledger's "Next lesson" is the earliest unsolved gig. Each theme ends in exactly one **challenge** gig (`challenge:true`), which hides the parts list and missing-part names (showing only "N/M modules") and gives guiding questions instead of steps.
+## Curriculum (77 gigs in 18 chapters + Free Jam)
+Structure: **Basics** (7 gigs) is the suggested starting point, followed by thirteen **themes**, three **advanced** chapters (marked ADVANCED on the board, `level:'advanced'`) and a **Bonus** chapter (`bonus:true`, exempt from the one-challenge rule). **Every gig is open from the start** (playtest, 2026-11-22: let people explore and skip ahead); progress is still recorded per gig. Each gig card has a round **▶ preview** button that plays the target sound right on the board, so players can browse by ear before picking a gig. Tap again to stop. Starting another preview or opening a gig stops the current one. It sits beside the card rather than inside it, so it never opens the gig, and on iPhone it's its own haptic tap target. The board suggests an order: each chapter marks its first unsolved gig as **NEXT**, and the ledger's "Next lesson" is the earliest unsolved gig. Each theme ends in exactly one **challenge** gig (`challenge:true`), which hides the parts list and missing-part names (showing only "N/M modules") and gives guiding questions instead of steps.
 - **Basics:** Dial Tone (oscillator, pitch, cables) · Shape of Sound (waveforms) · Pixel Knight (intervals) · Thin Walls (low-pass) · Curtain Call (VCA + envelope: sustain & release, with OSC → VCA → OUT pre-wired) · Pluck (all four ADSR stages, built from scratch) · Vibrato (LFO, modulation)
 - **Filter Lab:** Squelch (resonance) · Payphone (filter types) · Thin Air (high-pass) · Talk Box (formants) · The Scoop (notch) · Upside Down (inverted filter envelope) · ★ Acid Test
 - **Bass:** Sub Club (sub bass) · Wow Bass (filter envelope, presets) · Pluck Bass · Wobble (LFO → filter) · ★ Reese
@@ -107,13 +115,19 @@ Structure: **Basics** (7 gigs) is the suggested starting point, followed by thir
 - **Strings & Plucks:** Plucked String (Karplus–Strong, presets) · Nylon (damping) · ★ Harp
 - **Random & Generative:** Computer Bleeps (sample & hold) · Random Filter · ★ Robot Babble
 - **Repair Shop:** broken, unlocked presets to diagnose. No Signal (signal flow) · Muffled Mess (diagnosing tone) · Wrong Jack (audio vs. control) · Seasick (modulation depth) · ★ Total Wreck
+- **Sync & Ring** (advanced): Torn Edge (hard sync) · Sync Sweep (envelope → ratio) · Robot Voice (ring modulation) · ★ Screamer
+- **Modulation Deep Dive** (advanced): Strike Once (function generator, ignores the hold) · Pump (looping custom LFO shape) · Late Vibrato (MOD VCA: an envelope controls vibrato depth) · ★ Tidal Wobble
+- **West Coast** (advanced): Fold (wavefolding) · Bloom (enveloped folding) · Bonk (low-pass gate) · ★ Wooden Toy (one FUNC feeds both the folder and the LPG)
+- **Bonus:** Even Keel (key tracking). The target is a fixed four-note run (A1 → A4, via the `seq` field), so no keyboard is needed. The manual suggests trying it on ♪ Keys or MIDI afterwards. Key tracking otherwise stays out of the curriculum, because most players won't have a keyboard.
 
 **Features** (which knobs/jacks are visible): in Basics they unlock lesson by lesson (`unlock`). In themes the player gets everything from Basics plus waveform/resonance/filter type, plus whatever the chapter's gigs so far use (derived from their reference patches: `fine`, `noise`, `mod`, …).
+
+**Multi-note targets:** `seq:[[semitones, start, gate], …]` renders several notes of the same patch (each ending after its own gate + release). The brief shows `NOTES A1 → A2 → …` instead of NOTE/HOLD.
 
 **Quality checks per gig** (`npm test`): the reference patch scores 100%; an untouched rack scores under 80%; ids are unique; every theme ends in one challenge; every gig is open; NEXT points at each chapter's earliest unsolved gig, even when later gigs were solved out of order. When authoring, also check that removing any module from the reference patch (bypassing it, so the chain stays connected) scores under 90%, so a gig can't be passed by skipping its lesson, and that the knob a lesson teaches fails when it's clearly wrong.
 
 ## Matching
-Offline render at 22.05 kHz, then: spectrogram distance (per-frame normalized, loudness-weighted, 1/36-oct bands) 50%, average-spectrum tone 20%, perceptual loudness envelope 30%. Score = exp(-d/K) per part, geometric mean. Per-level `tol` multiplies K, so above 1 is more forgiving and below 1 stricter. Movement-based gigs get more (vibrato, wobble, detune, chorus, Seasick = 3; fast LFO gigs Siren and Close Encounter, and the S&H gigs = 5; percussive, Temple Gong and Harp = 1.5). The drawbar lessons get 0.7, so a harmonic that's clearly off fails. `tolShape` optionally sets a separate, stricter loudness-shape tolerance (1.2 on slow-movement pads/leads/FX), so a gig can't be passed by leaving out its volume envelope. Calibration: `index.html#selftest`, enforced by `npm test`.
+Offline render at 22.05 kHz, then: spectrogram distance (per-frame normalized, loudness-weighted, 1/36-oct bands) 50%, average-spectrum tone 20%, perceptual loudness envelope 30%. Score = exp(-d/K) per part, geometric mean. Per-level `tol` multiplies K, so above 1 is more forgiving and below 1 stricter. Movement-based gigs get more (vibrato, wobble, detune, chorus, Seasick = 3; fast LFO gigs Siren and Close Encounter, and the S&H gigs = 5; percussive, Temple Gong, Harp, Bonk and Wooden Toy = 1.5; sync gigs = 2, because sync timbre shifts sharply with ratio). The drawbar lessons get 0.7, so a harmonic that's clearly off fails. `tolShape` optionally sets a separate, stricter loudness-shape tolerance (1.2 on slow-movement pads/leads/FX), so a gig can't be passed by leaving out its volume envelope. Calibration: `index.html#selftest`, enforced by `npm test`.
 Calibrated outcomes: exact = 100; cutoff +0.2 oct ≈ 94; decay −9% ≈ 88; wrong waveform 10–35; 1 semitone off < 7.
 
 ## Touch details
@@ -128,7 +142,7 @@ Calibrated outcomes: exact = 100; cutoff +0.2 oct ≈ 94; decay −9% ≈ 88; wr
 
 ## Roadmap / open ideas
 - Melodic targets: play A1 → C2 → E2 prompts, then riffs; glide/portamento; arpeggiators.
-- Tremolo (LFO → VCA) as its own lesson; key tracking on the filter; pulse width and PWM.
+- Tremolo (LFO → VCA) as its own lesson; pulse width and PWM; step sequencer + glide + quantizer (multi-note `seq` targets already work); physical-modeling exciter/resonator; FM operators with feedback; self-oscillating filter; translation challenges (match a subtractive target with only FM or folding).
 - Blind "ear" gigs that hide the graphs; budget gigs with a hard cost cap; remix gigs that change one quality of an existing patch.
 - Vocabulary quizzes between chapters (which knob makes it "brighter", "plucky", "wider"?).
 - More presets in later gigs (e.g. a prebuilt filter section in Wobble, so the lesson focuses on the LFO).

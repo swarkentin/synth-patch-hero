@@ -30,7 +30,7 @@ function showBoard(){
   CHAPTERS.forEach(c=>{
     const done=c.levels.filter(i=>progress.solved[LEVELS[i].id]).length;
     const sec=el('section',{class:'chapter'}), nxt=nextInChapter(c);
-    sec.innerHTML=`<div class="chHead"><div><h2>${c.title}</h2><p>${c.blurb}</p></div><span class="chProg">${done===c.levels.length?'✓ complete':done+' / '+c.levels.length}</span></div>`;
+    sec.innerHTML=`<div class="chHead"><div><h2>${c.title}${c.level==='advanced'?' <span class="chBadge">ADVANCED</span>':c.bonus?' <span class="chBadge bonus">BONUS</span>':''}</h2><p>${c.blurb}</p></div><span class="chProg">${done===c.levels.length?'✓ complete':done+' / '+c.levels.length}</span></div>`;
     const grid=el('div',{class:'gigs'});
     c.levels.forEach((i,k)=>{
       const L=LEVELS[i], sv=progress.solved[L.id];
@@ -114,7 +114,7 @@ function renderBrief(){
   $('#brief').innerHTML=`<h3>${S.sandbox?'Session':'The client'}</h3><div class="who">${L.client}</div><div class="role">${L.role}</div>
    <blockquote>${L.brief}</blockquote>
    ${L.presetNote?`<div class="preset">${L.presetNote}</div>`:''}
-   <div class="specs"><span>NOTE ${noteName(L.note)}</span><span>HOLD ${L.gate}s</span>${S.sandbox?'':`<span>PASS ≥ ${PASS}%</span><span>PARTS: ${parts}</span>`}</div>`;
+   <div class="specs">${L.seq?`<span>NOTES ${L.seq.map(q=>noteName(L.note+q[0])).join(' → ')}</span>`:`<span>NOTE ${noteName(L.note)}</span><span>HOLD ${L.gate}s</span>`}${S.sandbox?'':`<span>PASS ≥ ${PASS}%</span><span>PARTS: ${parts}</span>`}</div>`;
   $('#manual').innerHTML=`<h3>Manual · ${L.concept}</h3>`+L.manual;
 }
 function openSide(){ $('#side').classList.add('open'); $('#sideBackdrop').classList.add('open'); }

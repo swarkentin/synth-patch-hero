@@ -34,6 +34,7 @@ const MT = {
       {id:'cutoff',label:'CUTOFF',min:40,max:12000,scale:'log',def:2000,fmt:fmtHz},
       {id:'res',label:'RES',min:0,max:1,step:0.01,def:0.1,fmt:fmtPct,req:'res'},
       {id:'cutAmt',label:'MOD AMT',min:-7200,max:7200,step:10,def:0,fmt:v=>(v>0?'+':'')+(v/1200).toFixed(2)+'oct',req:'mod',bipolar:true},
+      {id:'track',label:'KEY TRK',min:0,max:1,step:0.01,def:0,fmt:fmtPct,req:'keytrk'},
     ]},
   vca: {name:'VCA', long:'Amplifier', color:'var(--red)', cost:1,
     ins:[{id:'in',kind:'audio',label:'IN'},{id:'gain',kind:'mod',label:'CV'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
@@ -84,9 +85,41 @@ const MT = {
     ]},
   sh: {name:'S&H', long:'Sample & hold (random steps)', color:'var(--lime)', cost:2, ins:[], outs:[{id:'out',kind:'mod',label:'S&H'}],
     params:[{id:'rate',label:'RATE',min:0.5,max:30,scale:'log',step:0.5,def:6,fmt:v=>v.toFixed(v<10?2:1)+'Hz'}]},
+  /* ---- advanced tier ---- */
+  sync: {name:'SYNC OSC', long:'Hard-sync oscillator', color:'var(--rust)', cost:3,
+    ins:[{id:'sweep',kind:'mod',label:'SWEEP',req:'mod'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
+    params:[
+      {id:'wave',type:'choice',options:['sawtooth','square'],def:'sawtooth'},
+      {id:'oct',label:'OCT',min:-3,max:3,step:1,def:0,fmt:fmtSigned},
+      {id:'ratio',label:'RATIO',min:1,max:8,step:0.05,def:2,fmt:v=>v.toFixed(2)+'×'},
+      {id:'sweepAmt',label:'SWEEP',min:0,max:8,step:0.05,def:0,fmt:v=>'+'+v.toFixed(2)+'×',req:'mod'},
+    ]},
+  ring: {name:'RING MOD', long:'Ring modulator (multiplies two signals)', color:'var(--gold)', cost:2,
+    ins:[{id:'a',kind:'audio',label:'A'},{id:'b',kind:'audio',label:'B'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
+    params:[{id:'level',label:'LEVEL',min:0,max:1,step:0.01,def:0.8,fmt:fmtPct}]},
+  func: {name:'FUNC', long:'Function generator (rise/fall, one-shot or looping)', color:'var(--lilac)', cost:2,
+    ins:[], outs:[{id:'out',kind:'mod',label:'OUT'}],
+    params:[
+      {id:'loop',type:'choice',options:['once','loop'],labels:['ONCE','LOOP'],def:'once'},
+      {id:'rise',label:'RISE',min:0.002,max:5,scale:'log',def:0.01,fmt:fmtT},
+      {id:'fall',label:'FALL',min:0.002,max:5,scale:'log',def:0.5,fmt:fmtT},
+    ]},
+  modvca: {name:'MOD VCA', long:'Control-signal amplifier / attenuverter', color:'var(--cyan)', cost:1,
+    ins:[{id:'in',kind:'mod',label:'IN'},{id:'cv',kind:'mod',label:'CV'}], outs:[{id:'out',kind:'mod',label:'OUT'}],
+    params:[{id:'amt',label:'AMOUNT',min:-1,max:1,step:0.01,def:1,fmt:v=>(v>0?'+':'')+Math.round(v*100)+'%',bipolar:true}]},
+  fold: {name:'FOLDER', long:'Wavefolder', color:'var(--coral)', cost:2,
+    ins:[{id:'in',kind:'audio',label:'IN'},{id:'cv',kind:'mod',label:'CV',req:'mod'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
+    params:[
+      {id:'fold',label:'FOLD',min:1,max:8,step:0.01,def:1,fmt:v=>v.toFixed(2)+'×'},
+      {id:'foldAmt',label:'MOD AMT',min:0,max:7,step:0.01,def:0,fmt:v=>'+'+v.toFixed(2)+'×',req:'mod'},
+      {id:'level',label:'LEVEL',min:0,max:1,step:0.01,def:0.7,fmt:fmtPct},
+    ]},
+  lpg: {name:'LPG', long:'Low-pass gate (volume and brightness together)', color:'var(--olive)', cost:2,
+    ins:[{id:'in',kind:'audio',label:'IN'},{id:'cv',kind:'mod',label:'CV'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
+    params:[{id:'open',label:'OPEN',min:0,max:1,step:0.01,def:0,fmt:fmtPct}]},
   out: {name:'OUTPUT', long:'Speaker', color:'var(--cream)', cost:0, ins:[{id:'in',kind:'audio',label:'IN'}], outs:[], params:[]},
 };
-const ALL_FEATURES = ['osc','wave','filter','res','ftype','vca','env','mod','lfo','fine','noise','fm'];
+const ALL_FEATURES = ['osc','wave','filter','res','ftype','vca','env','mod','lfo','fine','noise','fm','keytrk'];
 
 /* =====================================================================
    DATA: levels
@@ -778,6 +811,142 @@ const LEVELS = [
       {id:'e2',type:'env',p:{a:0.003,d:0.2,s:0,r:0.1}},{id:'d',type:'delay',p:{time:0.3,fb:0.4,mix:0.3,tone:3000}}],
     cables:['o.out>f.in','f.out>v.in','v.out>d.in','d.out>out.in','e.out>v.gain','e2.out>f.cut']},
   reply:`You fixed it ALL? I'm giving you the shop keys. Kidding. Mostly.`},
+/* ---------------- SYNC & RING (advanced) ---------------- */
+{ id:'torn-edge', ch:'sync', tol:2, title:'Torn Edge', concept:'Hard sync', client:'Vesna Kralj', role:'Industrial techno producer',
+  unlock:[], palette:{sync:1}, note:45, gate:1.2, dur:1.4,
+  brief:`Saws are too polite. I want a tone with a <i>torn</i> edge: hard, nasal and metallic, but still sitting firmly on the note.`,
+  manual:`<h4>Hard sync</h4>
+  <p>A <b>SYNC OSC</b> holds two oscillators. One plays the note. The other runs faster, by the <b>RATIO</b>, but every time the note's cycle starts again, it is forced to restart too.</p>
+  <ul><li>The restart chops the fast wave off mid-cycle. That jagged edge is the sync sound.</li><li>The pitch you hear stays on the note, because the chop happens once per note cycle.</li><li>RATIO changes the <b>tone</b>, not the pitch. Whole numbers sound smooth. In-between values tear.</li></ul>
+  <div class="tip">Watch the scope: one cycle of the note, with a fast wave inside it that gets cut off at the end.</div>`,
+  target:{mods:[{id:'s',type:'sync',p:{wave:'sawtooth',ratio:2.6}}], cables:['s.out>out.in']},
+  reply:`That's the sound of a warehouse at 4am. Perfect.`},
+{ id:'sync-sweep', ch:'sync', tol:2, title:'Sync Sweep', concept:'Sweeping the ratio', client:'Vesna Kralj', role:'Industrial techno producer',
+  unlock:['mod'], palette:{sync:1,env:1}, note:45, gate:1.0, dur:1.3,
+  brief:`Now make it <i>move</i>. Every note should start with a scream that sweeps down and settles into a growl.`,
+  manual:`<h4>Sync sweeps</h4>
+  <p>Sync sounds best when the ratio is <b>moving</b>. Patch an ENV into the SYNC OSC's <b>SWEEP</b> jack and the ratio rises with the envelope, then falls back.</p>
+  <ul><li>RATIO is where the sweep ends up (the resting tone).</li><li>SWEEP is how far above it the envelope pushes.</li><li>The envelope's decay is how long the sweep takes.</li></ul>
+  <div class="tip">The spectrum shows a bright band sliding down over the first half second. Match the start with SWEEP and the end with RATIO.</div>`,
+  target:{mods:[{id:'s',type:'sync',p:{wave:'sawtooth',ratio:1.3,sweepAmt:4}},{id:'e',type:'env',p:{a:0.005,d:0.6,s:0.15,r:0.2}}],
+    cables:['s.out>out.in','e.out>s.sweep']},
+  reply:`Every kick-drum in Berlin just turned to look.`},
+{ id:'robot-voice', ch:'sync', title:'Robot Voice', concept:'Ring modulation', client:'Theo Achterberg', role:'Radio drama sound designer',
+  unlock:['wave'], palette:{osc:2,ring:1}, note:45, gate:1.2, dur:1.4,
+  brief:`Our villain is a broken robot. Its voice should be buzzy and clangy, with tones that don't quite belong to the note.`,
+  manual:`<h4>Ring modulation</h4>
+  <p>A <b>RING MOD</b> multiplies two signals. Instead of the two notes, you hear new tones at their <b>sum</b> and <b>difference</b>.</p>
+  <ul><li>Feed one oscillator into A and another into B. It needs both: with nothing in B, it's silent.</li><li>Change the interval between them (SEMI) and the new tones move in odd, inharmonic ways.</li><li>Like FM, this is a quick way to get metallic sounds.</li></ul>
+  <div class="tip">The original notes mostly vanish. Look for pairs of peaks either side of where they would be.</div>`,
+  target:{mods:[{id:'a',type:'osc',p:{wave:'sawtooth'}},{id:'b',type:'osc',p:{wave:'sine',semi:7}},{id:'r',type:'ring',p:{level:0.9}}],
+    cables:['a.out>r.a','b.out>r.b','r.out>out.in']},
+  reply:`The cast flinched at the read-through. It's perfectly horrible. Thank you.`},
+{ id:'screamer', ch:'sync', challenge:true, tol:2, tolShape:1.2, title:'Screamer', concept:'Challenge', client:'Ash Valentine', role:'Synthwave lead player',
+  unlock:['mod'], palette:{sync:1,env:2,filter:1,vca:1,ring:1}, note:57, gate:0.9, dur:1.3,
+  brief:`I need THE lead. Every note bites with a screaming sweep, the top end is just a little tamed, and it holds while I hold the key, then lets go quickly.`,
+  manual:`<h4>Challenge: the sync lead</h4>
+  <p>No parts list. Things to listen for:</p>
+  <ul><li>"Screaming sweep": what moves, and what moves it?</li><li>"A little tamed": something rolls off the very top.</li><li>"Holds while I hold, lets go quickly": a volume shape of its own.</li></ul>
+  <div class="tip">Two different envelopes doing two different jobs. Get the volume shape right first.</div>`,
+  target:{mods:[{id:'s',type:'sync',p:{wave:'sawtooth',ratio:1.5,sweepAmt:5}},{id:'se',type:'env',p:{a:0.003,d:0.45,s:0.25,r:0.2}},{id:'f',type:'filter',p:{cutoff:3500,res:0.2}},
+      {id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.005,d:0.3,s:0.8,r:0.12}}],
+    cables:['s.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain','se.out>s.sweep']},
+  reply:`Neon, palm trees, a car with no roof. That's the sound. You legend.`},
+/* ---------------- MODULATION DEEP DIVE (advanced) ---------------- */
+{ id:'strike-once', ch:'modlab', title:'Strike Once', concept:'Function generator', client:'Odile Fontaine', role:'Experimental percussionist',
+  unlock:[], palette:{osc:1,vca:1,func:1}, note:57, gate:1.5, dur:1.6,
+  brief:`I'm triggering this from a pad that holds the note for ages. I want a ping that dies away on its own, no matter how long the note is held.`,
+  manual:`<h4>The function generator</h4>
+  <p><b>FUNC</b> draws one simple shape: <b>RISE</b> up to full, then <b>FALL</b> back to zero.</p>
+  <ul><li>In <b>ONCE</b> mode it runs one time per note and <i>ignores how long you hold</i>. An ADSR waits for you to let go; FUNC doesn't.</li><li>A fast rise and a longer fall make a strike.</li><li>Patch it into a VCA's CV, just like an envelope.</li></ul>
+  <div class="tip">The target note is held for 1.5 seconds, but the sound is gone well before that. That's your clue that it doesn't wait for release.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'triangle'}},{id:'v',type:'vca',p:{level:0.9}},{id:'f',type:'func',p:{loop:'once',rise:0.005,fall:0.7}}],
+    cables:['o.out>v.in','v.out>out.in','f.out>v.gain']},
+  reply:`I held the pad for a full minute. One perfect ping. Bravo.`},
+{ id:'pump', ch:'modlab', tol:3, title:'Pump', concept:'Looping shapes', client:'Kai Nakamura', role:'House music DJ',
+  unlock:['mod','res'], palette:{osc:1,filter:1,func:1,lfo:1}, note:45, gate:2.0, dur:2.0,
+  brief:`I want that pumping house chord, but on one held note. The filter snaps open, then slowly closes, over and over. A plain wobble doesn't cut it: it needs the snap.`,
+  manual:`<h4>Shapes an LFO can't make</h4>
+  <p>An LFO only has a few waveforms. Put FUNC in <b>LOOP</b> mode and it repeats its rise and fall forever. It's an LFO you draw yourself.</p>
+  <ul><li>A fast rise and a slow fall gives a "snap, then sag" rhythm.</li><li>RISE + FALL together set the speed: 0.02 s + 0.3 s ≈ three pumps per second.</li><li>Patch it into the filter's CUT jack with some MOD AMT.</li></ul>
+  <div class="tip">The spectrum brightens suddenly, then fades, in a steady rhythm. Time one cycle from flash to flash.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:300,res:0.3,cutAmt:3600}},{id:'u',type:'func',p:{loop:'loop',rise:0.02,fall:0.3}}],
+    cables:['o.out>f.in','f.out>out.in','u.out>f.cut']},
+  reply:`The dance floor is breathing in time. You get it.`},
+{ id:'late-vibrato', ch:'modlab', tol:2, title:'Late Vibrato', concept:'Modulating modulation', client:'Giulia Brandt', role:'Opera singer, synth side project',
+  unlock:['mod'], palette:{osc:1,lfo:1,modvca:1,env:1}, note:57, gate:2.2, dur:2.4,
+  brief:`Singers don't wobble straight away. We start the note pure and let the vibrato bloom in after a moment. Give me that.`,
+  manual:`<h4>Modulation that's modulated</h4>
+  <p>An LFO into PITCH gives vibrato from the first instant. To make it <b>fade in</b>, the vibrato's <i>depth</i> has to change over time.</p>
+  <ul><li>A <b>MOD VCA</b> is a VCA for control signals. The LFO goes into its IN, and its OUT goes to the oscillator's PITCH.</li><li>An ENV into the MOD VCA's <b>CV</b> sets how much LFO gets through: a slow attack makes the vibrato swell in.</li><li>The oscillator's MOD AMT is the full vibrato width.</li></ul>
+  <div class="tip">Modulation routings like this are how real players' expression gets built into a patch.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'triangle',pitchAmt:110}},{id:'l',type:'lfo',p:{wave:'sine',rate:5.5}},{id:'m',type:'modvca',p:{amt:1}},{id:'e',type:'env',p:{a:1.1,d:0.1,s:1,r:0.3}}],
+    cables:['o.out>out.in','l.out>m.in','m.out>o.pitch','e.out>m.cv']},
+  reply:`It sounds like it's breathing before it sings. Bellissimo.`},
+{ id:'tidal', ch:'modlab', challenge:true, tol:3, title:'Tidal Wobble', concept:'Challenge', client:'Low Tide Collective', role:'Bass music trio',
+  unlock:['mod','res'], palette:{osc:1,filter:1,lfo:1,modvca:1,func:1,env:1}, note:45, gate:2.4, dur:2.4,
+  brief:`A fast filter wobble that comes and goes like waves: it swells up, fades away to nothing, swells up again. All on one held note.`,
+  manual:`<h4>Challenge: the tide</h4>
+  <p>No parts list. Things to listen for:</p>
+  <ul><li>The fast wobble: what's moving the filter, and how fast?</li><li>"Comes and goes like waves": the wobble's <i>depth</i> rises and falls slowly, forever.</li><li>Which module repeats a slow rise and fall? And how do you let it control another modulator?</li></ul>
+  <div class="tip">Get a steady wobble first, then make its depth move.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:500,res:0.5,cutAmt:2400}},{id:'l',type:'lfo',p:{wave:'sine',rate:6}},{id:'m',type:'modvca',p:{amt:1}},
+      {id:'u',type:'func',p:{loop:'loop',rise:0.6,fall:0.6}}],
+    cables:['o.out>f.in','f.out>out.in','l.out>m.in','m.out>f.cut','u.out>m.cv']},
+  reply:`The sub is surfing. Crowd's surfing. Everyone's surfing.`},
+/* ---------------- WEST COAST (advanced) ---------------- */
+{ id:'fold', ch:'west', title:'Fold', concept:'Wavefolding', client:'Juniper Okonkwo', role:'Modular performance artist',
+  unlock:[], palette:{osc:1,fold:1}, note:45, gate:1.2, dur:1.4,
+  brief:`Everything so far started bright and got filtered darker. I want to go the other way: start with a soft, pure tone and make it <i>richer</i>, but rounder and rubberier than a saw.`,
+  manual:`<h4>The other way to make a sound</h4>
+  <p>There are two big ideas in synthesis. <b>Subtractive</b>: start bright and filter harmonics away. <b>Waveshaping</b>: start pure and <i>add</i> harmonics by bending the wave.</p>
+  <ul><li>A <b>FOLDER</b> pushes the wave up, and every time it hits the edge it <b>folds back</b> on itself instead of clipping.</li><li>More FOLD means more folds and more harmonics.</li><li>Start with a sine. Folding a pure wave makes its sound easy to hear.</li></ul>
+  <div class="tip">Watch the scope while you turn FOLD: the sine grows extra bumps on each half.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sine'}},{id:'f',type:'fold',p:{fold:3.5,level:0.7}}], cables:['o.out>f.in','f.out>out.in']},
+  reply:`Rubber band harmonics. This goes in the performance tonight.`},
+{ id:'bloom', ch:'west', title:'Bloom', concept:'Moving folds', client:'Juniper Okonkwo', role:'Modular performance artist',
+  unlock:['mod'], palette:{osc:1,fold:1,env:1}, note:45, gate:1.2, dur:1.5,
+  brief:`Now make it bloom. The note should burst open rich and bright, then settle back toward a soft, round tone as it holds. And no filter.`,
+  manual:`<h4>Moving timbre without a filter</h4>
+  <p>Patch an ENV into the FOLDER's <b>CV</b> jack. The envelope pushes the fold harder, adding harmonics, then lets go.</p>
+  <ul><li>FOLD is where the tone rests.</li><li>MOD AMT is how much extra fold the envelope adds at its peak.</li><li>The envelope's decay and sustain shape how the brightness settles.</li></ul>
+  <div class="tip">Compare with filter sweeps: folding changes <i>which</i> harmonics exist, so the tone moves in a different, more vocal way.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sine'}},{id:'f',type:'fold',p:{fold:1,foldAmt:4.5,level:0.7}},{id:'e',type:'env',p:{a:0.02,d:0.7,s:0.2,r:0.3}}],
+    cables:['o.out>f.in','f.out>out.in','e.out>f.cv']},
+  reply:`It opens like a flower. The audience gasped. Actually gasped.`},
+{ id:'bonk', ch:'west', tol:1.5, title:'Bonk', concept:'Low-pass gate', client:'Pip Haddad', role:'Children\'s museum installation',
+  unlock:[], palette:{osc:1,lpg:1,env:1,vca:1,filter:1}, note:57, gate:0.2, dur:1.0,
+  brief:`Our sound sculpture needs a friendly, woody "bonk" when kids touch it. Like a wooden block: a soft knock that gets darker as it dies away.`,
+  manual:`<h4>The low-pass gate</h4>
+  <p>Real objects get <b>darker as they get quieter</b>: high frequencies die first. A VCA and a filter can fake that with two envelopes, but a <b>LPG</b> does both jobs with one signal.</p>
+  <ul><li>Audio through the LPG, and an envelope into its CV.</li><li>As the envelope falls, volume and brightness fall together.</li><li>A very short envelope makes the classic "bonk".</li></ul>
+  <div class="tip">One envelope, one module. The decay length is the size of the wooden block.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'triangle'}},{id:'g',type:'lpg',p:{open:0}},{id:'e',type:'env',p:{a:0.001,d:0.3,s:0,r:0.15}}],
+    cables:['o.out>g.in','g.out>out.in','e.out>g.cv']},
+  reply:`A five-year-old just hugged the sculpture. Mission accomplished.`},
+{ id:'wooden-toy', ch:'west', challenge:true, tol:1.5, title:'Wooden Toy', concept:'Challenge', client:'Pip Haddad', role:'Children\'s museum, the whole gallery',
+  unlock:['mod'], palette:{osc:1,fold:1,lpg:1,func:1,env:1,reverb:1}, note:57, gate:0.3, dur:1.4,
+  brief:`The whole gallery now. Each strike should flash bright and rubbery, then quickly turn soft and woody and fade, in a small, friendly room. And here's the trick: our technician says one shape does everything.`,
+  manual:`<h4>Challenge: one shape, two jobs</h4>
+  <p>No parts list. Things to listen for:</p>
+  <ul><li>"Bright and rubbery" on the strike: that's not a filter opening.</li><li>"Soft and woody as it fades": volume and brightness falling together.</li><li>"One shape does everything": a single output can feed two inputs. The shape doesn't wait for the key to be released.</li><li>"A small, friendly room".</li></ul>
+  <div class="tip">Drag a second cable from the same output jack to patch one source into two places.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sine'}},{id:'f',type:'fold',p:{fold:1.2,foldAmt:3,level:0.8}},{id:'g',type:'lpg',p:{open:0}},{id:'u',type:'func',p:{loop:'once',rise:0.002,fall:0.45}},
+      {id:'r',type:'reverb',p:{size:1.2,mix:0.2}}],
+    cables:['o.out>f.in','f.out>g.in','g.out>r.in','r.out>out.in','u.out>f.cv','u.out>g.cv']},
+  reply:`The kids are playing it like a xylophone. Best exhibit we've ever had.`},
+/* ---------------- BONUS ---------------- */
+{ id:'even-keel', ch:'bonus', title:'Even Keel', concept:'Key tracking', client:'Rosalind Achebe', role:'Session keyboardist',
+  unlock:['keytrk','res'], palette:{osc:1,filter:1,vca:1,env:1}, note:33, gate:0.4, dur:2.2,
+  seq:[[0,0,0.4],[12,0.5,0.4],[24,1.0,0.4],[36,1.5,0.4]],
+  brief:`My bass patch sounds great down low, but when I play up the keyboard it gets muffled, like a blanket over the high notes. I want every note to have the same brightness, low or high.`,
+  manual:`<h4>Key tracking</h4>
+  <p>A filter's cutoff is a fixed frequency. A low note's harmonics fit under it, but a high note's harmonics are all higher, so more of them get cut. High notes sound duller.</p>
+  <ul><li><b>KEY TRK</b> moves the cutoff with the note. At 100%, the cutoff rises an octave whenever the note does.</li><li>CUTOFF is now the setting <i>at middle C</i>. Notes below it get a lower cutoff, notes above a higher one.</li><li>This gig plays four notes, low to high, so you can hear the difference without a keyboard.</li></ul>
+  <div class="tip">Bonus: after sending it, open ♪ Keys (or plug in a MIDI keyboard) and play up and down with KEY TRK at 0% and then 100%.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:900,res:0.25,track:1}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.005,d:0.2,s:0.7,r:0.15}}],
+    cables:['o.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain']},
+  reply:`Top to bottom, the same tone. My hands feel ten years younger.`},
 ];
 
 /* Chapters: Basics is a linear tutorial; every theme opens once Basics is done. */
@@ -796,5 +965,9 @@ const CHAPTERS = [
   {id:'strings', title:'Strings & Plucks', short:'STRINGS', blurb:'Turn a click and a delay into a real-sounding string.'},
   {id:'random', title:'Random & Generative', short:'RANDOM', blurb:'Sample & hold: controlled chaos that still repeats.'},
   {id:'repair', title:'Repair Shop', short:'REPAIR', blurb:'Broken patches come in. Diagnose them and get them working.'},
+  {id:'sync', title:'Sync & Ring', short:'SYNC', level:'advanced', blurb:'Hard sync and ring modulation: tearing leads and clangy robots.'},
+  {id:'modlab', title:'Modulation Deep Dive', short:'MOD LAB', level:'advanced', blurb:'Draw your own shapes, and let modulation control modulation.'},
+  {id:'west', title:'West Coast', short:'WEST', level:'advanced', blurb:'Build tone up by folding waves, and gate it like an acoustic sound.'},
+  {id:'bonus', title:'Bonus', short:'BONUS', bonus:true, blurb:'Great with ♪ Keys or a MIDI keyboard, but nothing here needs one.'},
 ];
 CHAPTERS.forEach(c=>{ c.levels=LEVELS.map((L,i)=>L.ch===c.id?i:-1).filter(i=>i>=0); });

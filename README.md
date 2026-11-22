@@ -31,7 +31,7 @@ On phones, knobs, cables and modules give **haptic feedback** (Android fully; iP
 
 ## Curriculum
 
-**Basics** is a seven-lesson tutorial on the building blocks, followed by thirteen **themes**. **Every gig is open**, so start with Basics or skip ahead; your progress is saved either way, and each chapter marks its next gig. Each theme teaches its style through several lessons and ends with a **challenge**: no parts list, just the brief, the sound and how many modules the patch uses.
+**Basics** is a seven-lesson tutorial on the building blocks, followed by thirteen **themes**, three **advanced** chapters and a bonus. **Every gig is open**, so start with Basics or skip ahead; your progress is saved either way, and each chapter marks its next gig. Each theme teaches its style through several lessons and ends with a **challenge**: no parts list, just the brief, the sound and how many modules the patch uses.
 
 | Chapter | Gigs (★ = challenge) |
 |---|---|
@@ -49,6 +49,10 @@ On phones, knobs, cables and modules give **haptic feedback** (Android fully; iP
 | **Strings & Plucks** | Plucked String (Karplus–Strong) · Nylon (damping) · ★ Harp |
 | **Random & Generative** | Computer Bleeps (sample & hold) · Random Filter · ★ Robot Babble |
 | **Repair Shop** | No Signal (signal flow) · Muffled Mess (diagnosing tone) · Wrong Jack (audio vs. control) · Seasick (modulation depth) · ★ Total Wreck |
+| **Sync & Ring** (advanced) | Torn Edge (hard sync) · Sync Sweep · Robot Voice (ring modulation) · ★ Screamer |
+| **Modulation Deep Dive** (advanced) | Strike Once (function generator) · Pump (looping shapes) · Late Vibrato (modulating modulation) · ★ Tidal Wobble |
+| **West Coast** (advanced) | Fold (wavefolding) · Bloom (moving folds) · Bonk (low-pass gate) · ★ Wooden Toy |
+| **Bonus** | Even Keel (key tracking: no keyboard needed, but fun with one) |
 
 Plus **Free Jam**, a sandbox with everything unlocked.
 

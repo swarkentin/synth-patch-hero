@@ -36,6 +36,38 @@ function shBuffer(ctx,rate){
   for(let k=0;k<steps;k++){ const v=r(); d.fill(v,k*per,(k+1)*per); }
   m.set(key,b); return b;
 }
+const foldCache={};
+function foldCurve(){ if(foldCache.c) return foldCache.c; const n=8192, c=new Float32Array(n); for(let i=0;i<n;i++){ const x=i/(n-1)*2-1; c[i]=Math.sin(x*FOLD_MAX*Math.PI/2); } return foldCache.c=c; }
+const FOLD_MAX=16;
+/* Hard sync needs per-sample phase resets, which no built-in node does, so it runs in a small AudioWorklet.
+   The worklet is loaded from a Blob or data: URL (no extra file, works from file:// too). Until it's ready, SYNC OSC falls back to a plain saw. */
+const WORKLET_SRC=`
+class SyncOsc extends AudioWorkletProcessor{
+  static get parameterDescriptors(){ return [{name:'freq',defaultValue:220,automationRate:'a-rate'},{name:'ratio',defaultValue:2,automationRate:'a-rate'}]; }
+  constructor(o){ super(); this.sq=(o.processorOptions||{}).wave==='square'; this.pm=0; this.ps=0; this.alive=true; this.port.onmessage=()=>{ this.alive=false; }; }
+  process(ins,outs,P){
+    const out=outs[0][0]; if(!out) return this.alive; const F=P.freq, R=P.ratio, OS=4;
+    for(let i=0;i<out.length;i++){
+      const f=F.length>1?F[i]:F[0]; let r=R.length>1?R[i]:R[0]; if(r<1) r=1; const dm=f/sampleRate/OS; let acc=0;
+      for(let k=0;k<OS;k++){ this.pm+=dm; this.ps+=dm*r; if(this.pm>=1){ this.pm-=1; this.ps=this.pm*r; } this.ps-=Math.floor(this.ps);
+        acc+= this.sq ? (this.ps<0.5?1:-1) : 2*this.ps-1; }
+      out[i]=acc/OS;
+    }
+    return this.alive;
+  }
+}
+registerProcessor('sync-osc',SyncOsc);`;
+const workletCache=new WeakMap();
+function ensureWorklets(ctx){
+  if(!ctx.audioWorklet||typeof AudioWorkletNode==='undefined') return Promise.resolve(false);
+  let p=workletCache.get(ctx);
+  if(!p){ // Blob URLs fail on file:// (null origin) and data: URLs can be blocked by some hosts, so try both.
+    const blob=()=>ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET_SRC],{type:'application/javascript'})));
+    const data=()=>ctx.audioWorklet.addModule('data:application/javascript;charset=utf-8,'+encodeURIComponent(WORKLET_SRC));
+    p=(location.protocol==='file:'?data():blob().catch(data)).then(()=>{ ctx.__sync=true; return true; },()=>false); workletCache.set(ctx,p); }
+  return p;
+}
+const usesWorklet = patch => patch.modules.some(m=>m.type==='sync');
 function envPoints(p,gate){
   const {a,d,s,r}=p;
   if(gate<=a) return [[0,0],[gate,gate/a],[gate+r,0]];
@@ -46,7 +78,7 @@ function envAt(p,t){ if(t<p.a) return t/p.a; if(t<p.a+p.d) return 1-(1-p.s)*(t-p
 
 /* Build one note of a patch. gate: seconds, or null for a held note (call release()). */
 function buildVoice(ctx, patch, dest, t0, note, gate){
-  const N={}, sources=[], envs=[];
+  const N={}, sources=[], envs=[], funcs=[], workers=[];
   const incoming=(id,port)=>patch.cables.some(c=>c.to.m===id&&c.to.p===port);
   let maxR=0.02;
   for(const m of patch.modules){
@@ -61,7 +93,7 @@ function buildVoice(ctx, patch, dest, t0, note, gate){
       case 'noise': {
         const s=ctx.createBufferSource(); s.buffer=noiseBuffer(ctx); s.loop=true; n.outs.out=s; sources.push(s); break; }
       case 'filter': {
-        const f=ctx.createBiquadFilter(); f.type=P.type; f.frequency.value=P.cutoff;
+        const f=ctx.createBiquadFilter(); f.type=P.type; f.frequency.value=Math.min(ctx.sampleRate*0.45,P.cutoff*Math.pow(2,(P.track||0)*(note-60)/12));   // KEY TRK: cutoff follows the note (relative to middle C)
         f.Q.value = (P.type==='bandpass'||P.type==='notch') ? 0.6+P.res*14 : -3+P.res*28;
         const mg=ctx.createGain(); mg.gain.value=P.cutAmt; mg.connect(f.detune);
         n.ins.in=f; n.ins.cut=mg; n.outs.out=f; break; }
@@ -105,6 +137,30 @@ function buildVoice(ctx, patch, dest, t0, note, gate){
         n.ins.in=ws; n.outs.out=g; break; }
       case 'sh': {
         const s=ctx.createBufferSource(); s.buffer=shBuffer(ctx,P.rate); s.loop=true; n.outs.out=s; sources.push(s); break; }
+      case 'sync': {
+        const f=mtof(note)*Math.pow(2,P.oct), out=ctx.createGain(), sg=ctx.createGain(); sg.gain.value=P.sweepAmt||0;
+        if(ctx.__sync){ const w=new AudioWorkletNode(ctx,'sync-osc',{numberOfInputs:0,outputChannelCount:[1],processorOptions:{wave:P.wave}});
+          w.parameters.get('freq').value=f; w.parameters.get('ratio').value=P.ratio; sg.connect(w.parameters.get('ratio')); w.connect(out); workers.push(w); }
+        else { const o=ctx.createOscillator(); o.type=P.wave; o.frequency.value=f*P.ratio; o.connect(out); sources.push(o); }
+        n.ins.sweep=sg; n.outs.out=out; break; }
+      case 'ring': {
+        const g=ctx.createGain(); g.gain.value=0; const lv=ctx.createGain(); lv.gain.value=P.level; g.connect(lv);
+        n.ins.a=g; n.ins.b=g.gain; n.outs.out=lv; break; }
+      case 'func': {
+        const c=ctx.createConstantSource(); c.offset.value=0; n.outs.out=c; sources.push(c); funcs.push({param:c.offset,p:P}); break; }
+      case 'modvca': {
+        const g=ctx.createGain(); g.gain.value=incoming(m.id,'cv')?0:P.amt; const cg=ctx.createGain(); cg.gain.value=P.amt; cg.connect(g.gain);
+        n.ins.in=g; n.ins.cv=cg; n.outs.out=g; break; }
+      case 'fold': {
+        const pre=ctx.createGain(); pre.gain.value=P.fold/FOLD_MAX; const cg=ctx.createGain(); cg.gain.value=(P.foldAmt||0)/FOLD_MAX; cg.connect(pre.gain);
+        const ws=ctx.createWaveShaper(); ws.curve=foldCurve(); ws.oversample='4x'; const lv=ctx.createGain(); lv.gain.value=P.level; pre.connect(ws); ws.connect(lv);
+        n.ins.in=pre; n.ins.cv=cg; n.outs.out=lv; break; }
+      case 'lpg': {
+        // One control voltage opens volume AND brightness together: quieter is darker, like an acoustic sound dying away.
+        const f=ctx.createBiquadFilter(); f.type='lowpass'; f.Q.value=0; f.frequency.value=60*Math.pow(2,8*P.open);
+        const g=ctx.createGain(); g.gain.value=P.open; f.connect(g);
+        const cv=ctx.createGain(); cv.gain.value=1; const cents=ctx.createGain(); cents.gain.value=9600; cv.connect(g.gain); cv.connect(cents); cents.connect(f.detune);
+        n.ins.in=f; n.ins.cv=cv; n.outs.out=g; break; }
       case 'out': n.ins.in=dest; break;
     }
   }
@@ -117,6 +173,11 @@ function buildVoice(ctx, patch, dest, t0, note, gate){
     const pts = gate!=null ? envPoints(e.p,gate) : [[0,0],[e.p.a,1],[e.p.a+e.p.d,e.p.s]];
     for(let i=1;i<pts.length;i++) prm.linearRampToValueAtTime(pts[i][1],t0+pts[i][0]);
   }
+  for(const fn of funcs){
+    const prm=fn.param, p=fn.p; prm.setValueAtTime(0,t0);
+    if(p.loop==='loop'){ const H=gate!=null?gate+6:30; let t=0, k=0; while(t<H&&k<3000){ t+=p.rise; prm.linearRampToValueAtTime(1,t0+t); t+=p.fall; prm.linearRampToValueAtTime(0,t0+t); k++; } }
+    else { prm.linearRampToValueAtTime(1,t0+p.rise); prm.linearRampToValueAtTime(0,t0+p.rise+p.fall); }
+  }
   sources.forEach(s=>s.start(t0));
   return {
     maxR,
@@ -128,8 +189,15 @@ function buildVoice(ctx, patch, dest, t0, note, gate){
         prm.linearRampToValueAtTime(0,t+e.p.r);
       }
     },
-    stop(t){ sources.forEach(s=>{try{s.stop(t);}catch(_){}}); }
+    stop(t){ sources.forEach(s=>{try{s.stop(t);}catch(_){}});
+      if(workers.length){ const ms=Math.max(0,(t-ctx.currentTime)*1000)+50; setTimeout(()=>workers.forEach(w=>{ try{ w.port.postMessage('stop'); w.disconnect(); }catch(_){} }),ms); } }
   };
+}
+/* A gig's notes: one held note, or L.seq = [[semitones, start, gate], …] for multi-note targets (e.g. key tracking). */
+function buildNotes(ctx,patch,dest,t0,L){
+  if(!L.seq) return buildVoice(ctx,patch,dest,t0,L.note,L.gate);
+  const vs=L.seq.map(([st,at,g])=>{ const v=buildVoice(ctx,patch,dest,t0+at,L.note+st,g); v.stop(t0+at+g+Math.min(v.maxR,1.5)+0.02); return v; });   // each note ends after its own gate + release
+  return {maxR:Math.max(...vs.map(v=>v.maxR)), release(t){ vs.forEach(v=>v.release(t)); }, stop(t){ vs.forEach(v=>v.stop(t)); }};
 }
 /* Output chain: declick gain -> master -> dest. Returns input node + gate controls. */
 function outChain(ctx,dest,t0,level=1){
@@ -144,7 +212,7 @@ function ac(){
   try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(_){}
   if(!AC){
     AC=new (window.AudioContext||window.webkitAudioContext)();
-    const comp=AC.createDynamicsCompressor(); comp.threshold.value=-10; comp.ratio.value=8; comp.connect(AC.destination); liveBus=comp;
+    const comp=AC.createDynamicsCompressor(); comp.threshold.value=-10; comp.ratio.value=8; comp.connect(AC.destination); liveBus=comp; ensureWorklets(AC);
   }
   if(AC.state==='suspended') AC.resume();
   return AC;
@@ -153,7 +221,7 @@ let oneShots=[];
 function playFixed(patch,L,which){
   const ctx=ac(); stopOneShots();
   const t0=ctx.currentTime+0.03, oc=outChain(ctx,liveBus,t0);
-  const v=buildVoice(ctx,patch,oc.node,t0,L.note,L.gate);
+  const v=buildNotes(ctx,patch,oc.node,t0,L);
   oc.close(t0+L.dur); v.stop(t0+L.dur+0.05);
   oneShots.push({v,oc,end:t0+L.dur});
   flashPlay(which,L.dur);
@@ -205,6 +273,7 @@ function stopJingle(){ if(jingleNow&&AC){ jingleNow.stop(AC.currentTime); } jing
 async function renderJingle(patch, L){
   const J=jingleFor(L), last=Math.max(...J.notes.map(n=>(n[1]+n[2])*J.beat));
   const len=Math.ceil((last+2.5)*SR), ctx=new OfflineAudioContext(1,len,SR);
+  if(usesWorklet(patch)) await ensureWorklets(ctx);
   scheduleJingle(ctx, ctx.destination, patch, L, 0.02);
   return (await ctx.startRendering()).getChannelData(0);
 }

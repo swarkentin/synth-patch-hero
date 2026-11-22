@@ -25,6 +25,9 @@ Synth Patch Hero: a synth-patching puzzle game that teaches synthesis. Repo: htt
 - `start[]`: presets `{id?, type, slot, locked?, p?}`.
 - `startCables[]`.
 - `presetNote`.
+- `seq`: `[[semitones, start, gate], …]` for multi-note targets.
+
+`CHAPTERS[]` entries: `id, title, short, blurb`, plus optional `level:'advanced'` (badge) or `bonus:true` (badge; exempt from the one-challenge-per-theme rule).
 
 Slot `S.slots-1` is reserved for OUTPUT.
 

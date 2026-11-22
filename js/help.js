@@ -33,6 +33,19 @@ const PARAM_HELP = {
   'drive.drive': 'DRIVE pushes the signal into soft clipping, adding harmonics. Higher = grittier.',
   'drive.level': 'LEVEL is the output volume after the drive.',
   'sh.rate': 'RATE is how many random steps per second.',
+  'filter.track': 'KEY TRK moves the cutoff with the note you play, so high notes stay as bright as low ones. At 100% the cutoff follows the pitch exactly.',
+  'sync.ratio': 'RATIO is how fast the synced wave runs compared with the note. It restarts every cycle of the note, so higher ratios add a stronger, brighter "tear" while the pitch stays put.',
+  'sync.sweepAmt': 'SWEEP sets how far a signal in the SWEEP jack pushes the ratio up. An envelope here gives the classic screaming sync sweep.',
+  'sync.oct': 'OCT moves the note (and the whole synced sound) up or down by octaves.',
+  'ring.level': 'LEVEL is the output volume of the ring modulator.',
+  'func.loop': 'ONCE runs the rise and fall one time per note, whatever the hold. LOOP repeats them forever, which turns the function generator into an LFO with any shape you like.',
+  'func.rise': 'RISE is how long the shape takes to climb from 0 to full.',
+  'func.fall': 'FALL is how long the shape takes to fall back to 0.',
+  'modvca.amt': 'AMOUNT scales the control signal passing through. Left of centre inverts it. With something in CV, that signal sets how much gets through.',
+  'fold.fold': 'FOLD is how hard the wave is pushed into the folder. Each time it passes the edge it folds back, adding bright, rubbery harmonics.',
+  'fold.foldAmt': 'MOD AMT sets how far a signal in the CV jack pushes the fold. An envelope here makes the tone bloom and settle.',
+  'fold.level': 'LEVEL is the output volume of the folder.',
+  'lpg.open': 'OPEN is how open the gate rests with no signal in its CV. Usually 0, so the envelope does all the work.',
 };
 const MODULE_WHY = {
   osc: 'An oscillator is the sound source.',
@@ -47,6 +60,12 @@ const MODULE_WHY = {
   reverb: 'A reverb adds the sound of a room around the sound.',
   drive: 'Drive clips the signal softly, adding harmonics and grit.',
   sh: 'Sample & hold jumps to a new random value at a steady rate: classic computer bleeps.',
+  sync: 'A sync oscillator restarts its wave every cycle of the note, giving a hard, tearing tone that changes as you move the ratio.',
+  ring: 'A ring modulator multiplies two sounds, creating new tones at their sum and difference: metallic, bell-like, robotic.',
+  func: 'A function generator draws a rise-and-fall shape, once per note or looping forever.',
+  modvca: 'A MOD VCA lets one control signal set how much of another gets through. Modulation controlling modulation.',
+  fold: 'A wavefolder folds loud peaks back on themselves, adding harmonics without a filter.',
+  lpg: 'A low-pass gate opens volume and brightness together with one signal, so notes fade darker as they get quieter.',
 };
 const PORT_WHY = {
   'out.in': 'That is what sends it to the speakers.',
@@ -58,6 +77,11 @@ const PORT_WHY = {
   'osc.fm': 'Audio in the FM jack bends this oscillator\'s frequency hundreds of times a second. That\'s FM synthesis.',
   'mixer.in1': 'Each mixer input has its own level knob.', 'mixer.in2': 'Each mixer input has its own level knob.', 'mixer.in3': 'Each mixer input has its own level knob.',
   'delay.in': 'Audio has to pass through the delay to be echoed.', 'delay.mod': 'A signal in the delay\'s TIME jack wobbles the delay time.',
+  'sync.sweep': 'A signal in the SWEEP jack moves the sync ratio over time.',
+  'ring.a': 'The ring modulator needs a sound in both A and B: it multiplies them together.', 'ring.b': 'The ring modulator needs a sound in both A and B: it multiplies them together.',
+  'modvca.in': 'The control signal you want to scale goes into the MOD VCA\'s IN.', 'modvca.cv': 'A signal in the MOD VCA\'s CV decides how much of IN gets through.',
+  'fold.in': 'Audio has to pass through the folder to be folded.', 'fold.cv': 'A signal in the folder\'s CV jack moves the fold amount.',
+  'lpg.in': 'Audio has to pass through the low-pass gate to be shaped by it.', 'lpg.cv': 'A signal in the LPG\'s CV opens volume and brightness together.',
   'reverb.in': 'Audio has to pass through the reverb to get the room sound.', 'drive.in': 'Audio has to pass through the drive to be distorted.',
 };
 const H = { card:null, pending:null, busy:false };

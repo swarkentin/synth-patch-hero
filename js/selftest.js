@@ -27,6 +27,8 @@ async function selftest(){
     ['build-square',[['h','h3',0.3]]],['build-square',[['h','h5',0]]],['metal-ring',[['m','semi',7]]],['fm-bell',[['m','semi',7]]],['epiano',[['me','d',1.2]]],
     ['slapback',[['d','time',0.16]]],['canyon',[['d','time',0.25]]],['chorus',[['d','modAmt',0.004]]],['fuzz',[['d','drive',1]]],['fuzz',[['d','drive',13]]],
     ['ks-string',[['d','tone',3000]]],['ks-string',[['d','fb',0.95]]],['robot',[['f','type','lowpass']]],
+    ['torn-edge',[['s','ratio',2]]],['sync-sweep',[['s','sweepAmt',2]]],['robot-voice',[['b','semi',5]]],['strike-once',[['f','fall',0.4]]],
+    ['late-vibrato',[['o','pitchAmt',60]]],['fold',[['f','fold',2.5]]],['fold',[['f','fold',3.3]]],['bonk',[['e','d',0.15]]],['bonk',[['e','d',0.27]]],['even-keel',[['f','track',0]]],
   ];
   for(const [id,ch] of cases){
     const L=lv(id); if(!L._tA) L._tA=analyze(await renderPatch(targetPatch(L),L));
