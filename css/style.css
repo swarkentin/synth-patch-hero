@@ -466,3 +466,5 @@ label.btn[aria-disabled="true"],label.palBtn[aria-disabled="true"],label.gig[ari
 .slotMenu label[role=button].x{grid-column:span 2;justify-content:center;color:var(--dim);background:transparent}
 @media (max-width:760px){ .choice label[role=button]{height:34px;max-width:56px} }
 label.kbClose,#btnHelp[role=button]{display:inline-flex;align-items:center;justify-content:center}
+.gig .nextTag{color:var(--amber);font-weight:600;letter-spacing:.08em}
+.gig.next{border-color:#6a5230}

@@ -50,7 +50,7 @@ Feedback that drove it: difficulty rises fast (especially the VCA lesson); playe
   - Compare strip: ▶ Target · ▶ Yours · % · Send · round **?** Help; hint clamped to 2 lines; shorter graph; no duplicate progress bar.
   - Toolbar: Brief · scrolling palette · fixed ♪ Keys and ⛶ Focus icons. Reset moved to Settings.
   - On phones the keyboard always starts hidden (the "keep open" preference is desktop-only), and it has its own × close.
-- **⚙ Settings** (everywhere): Haptics (a real iOS `switch`, with a Test button and the method in use), On-screen keyboard, Focus mode, Reset this rack.
+- **⚙ Settings** (everywhere): Haptics on/off (a real iOS `switch`), On-screen keyboard, Focus mode, Reset this rack. The temporary iPhone haptic tests and Test button were removed once the technique was settled.
 
 ## Feel: haptics and the end-of-gig jingle
 - **Haptics** (`js/haptics.js`, touch devices only, on/off switch on the gig board, saved): a knob tick at each step (stepped knobs) or every 5% (smooth knobs), and a firmer bump at an end stop. Cable plug = one solid pulse, unplug = double tap, add/move/remove a module = thunk, choice buttons and jack picks = light tick, on-screen keys = tiny tick, crossing 90% and Send = celebration pattern. Throttled so fast turns don't blur into one buzz.
@@ -79,7 +79,7 @@ OSC 2¢ (wave, oct, semi, fine, pitch mod amt) · NOISE 1¢ · FILTER 3¢ (LP/HP
 Yellow cables = audio, blue = control. Modulation depth lives on the destination (MOD AMT knobs). Knobs and jacks unlock per lesson.
 
 ## Curriculum (34 gigs in 7 chapters + Free Jam)
-Structure: **Basics** is a linear tutorial (7 gigs). Finishing it opens all six **themes** at once; within a theme, gigs unlock in order. Each theme ends in exactly one **challenge** gig (`challenge:true`). A challenge hides the parts list and the missing-part names, showing only "N/M modules", and its manual gives guiding questions instead of steps.
+Structure: **Basics** (7 gigs) is the suggested starting point, followed by six **themes**. **Every gig is open from the start** (playtest, 2026-11-22: let people explore and skip ahead); progress is still recorded per gig. The board suggests an order: each chapter marks its first unsolved gig as **NEXT**, and the ledger's "Next lesson" is the earliest unsolved gig. Each theme ends in exactly one **challenge** gig (`challenge:true`), which hides the parts list and missing-part names (showing only "N/M modules") and gives guiding questions instead of steps.
 - **Basics:** Dial Tone (oscillator, pitch, cables) · Shape of Sound (waveforms) · Pixel Knight (intervals) · Thin Walls (low-pass) · Curtain Call (VCA + envelope: sustain & release, with OSC → VCA → OUT pre-wired) · Pluck (all four ADSR stages, built from scratch) · Vibrato (LFO, modulation)
 - **Filter Lab:** Squelch (resonance) · Payphone (filter types) · Thin Air (high-pass) · Talk Box (formants) · ★ Acid Test
 - **Bass:** Sub Club (sub bass) · Wow Bass (filter envelope, presets) · Pluck Bass · Wobble (LFO → filter) · ★ Reese
@@ -90,7 +90,7 @@ Structure: **Basics** is a linear tutorial (7 gigs). Finishing it opens all six 
 
 **Features** (which knobs/jacks are visible): in Basics they unlock lesson by lesson (`unlock`). In themes the player gets everything from Basics plus waveform/resonance/filter type, plus whatever the chapter's gigs so far use (derived from their reference patches: `fine`, `noise`, `mod`, …).
 
-**Quality checks per gig** (`npm test`): the reference patch scores 100%; an untouched rack scores under 80%; ids are unique; every theme ends in one challenge; unlock order is correct. When authoring, also check that removing any module from the reference patch scores under 90%, so a gig can't be passed by skipping its lesson.
+**Quality checks per gig** (`npm test`): the reference patch scores 100%; an untouched rack scores under 80%; ids are unique; every theme ends in one challenge; every gig is open; NEXT points at each chapter's earliest unsolved gig, even when later gigs were solved out of order. When authoring, also check that removing any module from the reference patch scores under 90%, so a gig can't be passed by skipping its lesson.
 
 ## Matching
 Offline render at 22.05 kHz, then: spectrogram distance (per-frame normalized, loudness-weighted, 1/36-oct bands) 50%, average-spectrum tone 20%, perceptual loudness envelope 30%. Score = exp(-d/K) per part, geometric mean. Per-level `tol` widens tolerance for movement-based gigs (vibrato, wobble, detune = 3; fast LFO gigs Siren and Close Encounter = 5; percussive = 1.5). `tolShape` optionally sets a separate, stricter loudness-shape tolerance (1.2 on slow-movement pads/leads/FX), so a gig can't be passed by leaving out its volume envelope. Calibration: `index.html#selftest`, enforced by `npm test`.

@@ -8,16 +8,14 @@ const store = {
   set(k,v){ try{ localStorage.setItem('sph.'+k,JSON.stringify(v)); }catch(e){} },
   del(k){ try{ localStorage.removeItem('sph.'+k);}catch(e){} }
 };
-let progress = store.get('progress',{solved:{},unlockAll:false});
+let progress = store.get('progress',{solved:{}});
 const saveProgress = ()=>store.set('progress',progress);
 const chapterOf = i => CHAPTERS.find(c=>c.id===LEVELS[i].ch);
 const basicsDone = () => CHAPTERS[0].levels.every(i=>progress.solved[LEVELS[i].id]);
-function isUnlocked(i){
-  if(progress.unlockAll) return true;
-  const c=chapterOf(i), k=c.levels.indexOf(i);
-  if(c.id!=='basics'&&!basicsDone()) return false;
-  return k===0||!!progress.solved[LEVELS[c.levels[k-1]].id];
-}
+/* Every gig is open so players can explore and skip ahead. Progress is still recorded; the board suggests an order. */
+function isUnlocked(i){ return i>=0&&i<LEVELS.length; }
+/* The suggested next gig in a chapter: its first unsolved one. */
+function nextInChapter(c){ return c.levels.find(i=>!progress.solved[LEVELS[i].id]); }
 /* Features (which knobs/jacks show) needed by a gig's reference patch. */
 function autoFeatures(L){
   const f=new Set();

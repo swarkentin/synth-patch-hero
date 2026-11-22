@@ -14,21 +14,19 @@ function showBoard(){
   const earn = Object.values(progress.solved).length*85;
   $('#ledger').innerHTML=`<div class="row"><span>Gigs done</span><b>${solved} / ${LEVELS.length}</b></div>
     <div class="row"><span>Earned</span><b>$${earn}</b></div><div class="row"><span>Rent due</span><b>$${Math.max(0,1100-earn)}</b></div>
-    <div class="row"><span>Next lesson</span><b>${(LEVELS.find((l,i)=>!progress.solved[l.id]&&isUnlocked(i))||{concept:'Mastery'}).concept}</b></div>`;
+    <div class="row"><span>Next lesson</span><b>${(LEVELS.find(l=>!progress.solved[l.id])||{concept:'Mastery'}).concept}</b></div>`;
   const g=$('#gigs'); g.innerHTML='';
   CHAPTERS.forEach(c=>{
     const done=c.levels.filter(i=>progress.solved[LEVELS[i].id]).length;
-    const locked=c.id!=='basics'&&!basicsDone()&&!progress.unlockAll;
-    const sec=el('section',{class:'chapter'+(locked?' locked':'')});
-    sec.innerHTML=`<div class="chHead"><div><h2>${c.title}</h2><p>${c.blurb}</p></div><span class="chProg">${locked?'Finish Basics to open':done===c.levels.length?'✓ complete':done+' / '+c.levels.length}</span></div>`;
+    const sec=el('section',{class:'chapter'}), nxt=nextInChapter(c);
+    sec.innerHTML=`<div class="chHead"><div><h2>${c.title}</h2><p>${c.blurb}</p></div><span class="chProg">${done===c.levels.length?'✓ complete':done+' / '+c.levels.length}</span></div>`;
     const grid=el('div',{class:'gigs'});
     c.levels.forEach((i,k)=>{
-      const L=LEVELS[i], sv=progress.solved[L.id], open=isUnlocked(i);
-      let b=el('button',{class:'gig'+(sv?' solved':'')+(L.challenge?' challenge':'')});
-      b.disabled=!open;
+      const L=LEVELS[i], sv=progress.solved[L.id];
+      let b=el('button',{class:'gig'+(sv?' solved':'')+(L.challenge?' challenge':'')+(i===nxt?' next':'')});
       b.innerHTML=`<div class="num">${c.short} ${k+1}${L.challenge?' · <span class="chal">CHALLENGE</span>':''}</div><div class="title">${L.title}</div>
-        <div class="client">${open?L.client+' · '+L.role:locked?'Opens after Basics':'Finish the previous gig'}</div>
-        <div class="concept"><span class="tag">${L.concept}</span>${sv?`<span class="stamp">PAID · ${sv.cost}¢ · ${Math.round(sv.match)}%${progress.played&&progress.played[L.id]?' · ♪':''}${progress.helped&&progress.helped[L.id]?' · helped':''}</span>`:open?'<span style="color:var(--amber)">NEW</span>':''}</div>`;
+        <div class="client">${L.client} · ${L.role}</div>
+        <div class="concept"><span class="tag">${L.concept}</span>${sv?`<span class="stamp">PAID · ${sv.cost}¢ · ${Math.round(sv.match)}%${progress.played&&progress.played[L.id]?' · ♪':''}${progress.helped&&progress.helped[L.id]?' · helped':''}</span>`:i===nxt?'<span class="nextTag">NEXT</span>':''}</div>`;
       b=Haptics.upgrade(b); b.addEventListener('click',()=>openLevel(i)); grid.appendChild(b);
     });
     sec.appendChild(grid); g.appendChild(sec);
@@ -641,7 +639,7 @@ function openSettings(){
   const row=(label,sub,btn)=>`<div class="setRow"><div><b>${label}</b><span>${sub}</span></div>${btn}</div>`;
   const hapSub=!Haptics.available?'Not available on this device.':Haptics.continuous?'Ticks on knobs, cables and modules.':'iPhone: ticks when you tap buttons, jacks, keys, slots and knob steps (iOS 18+). iOS doesn\'t allow ticks while dragging.';
   sh.innerHTML=`<div class="sheetCard"><div class="shHead"><span class="shTitle">SETTINGS</span><button class="btn primary" id="shDone">Done</button></div>
-    ${row('Haptics',hapSub+(Haptics.available?`<br><small>Method: ${Haptics.method}</small>`:''),Haptics.available?`<span class="hapCtl"><button class="btn" id="stHapTest">Test</button><label class="nativeSw" title="Haptics on/off"><input type="checkbox" switch id="stHapSw" ${Haptics.enabled?'checked':''}></label></span>`:'')}
+    ${row('Haptics',hapSub,Haptics.available?`<label class="nativeSw" title="Haptics on/off"><input type="checkbox" switch id="stHapSw" ${Haptics.enabled?'checked':''}></label>`:'')}
     ${inLevel?row('On-screen keyboard','Find the client\'s note and play your patch.',`<button class="btn tgl" id="stKeys">${S.keysOpen?'Shown':'Hidden'}</button>`):''}
     ${inLevel?row('Focus mode','Bigger board, compact compare bar.',`<button class="btn tgl" id="stFocus">${S.focus?'On':'Off'}</button>`):''}
     ${inLevel?row('Reset this rack','Removes everything you added to this gig.','<button class="btn" id="stReset">Reset</button>'):''}</div>`;
@@ -649,7 +647,6 @@ function openSettings(){
   $('#shDone').onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); };
   // A real iOS switch: on iOS 18 the system itself ticks when it's flipped, so it doubles as a check that switch haptics work here.
   const hs=$('#stHapSw'); if(hs) hs.onchange=()=>{ Haptics.set(hs.checked); if(hs.checked) Haptics.select(); const fb=$('#btnHaptics'); if(fb&&fb.firstChild&&fb.firstChild.nodeType===3) fb.firstChild.nodeValue='Haptics: '+(Haptics.enabled?'on':'off'); };
-  let ht=$('#stHapTest'); if(ht) ht=Haptics.upgrade(ht); if(ht) ht.onclick=()=>{ if(!Haptics.enabled){ toast('Haptics are off. Flip the switch first.'); return; } Haptics.test(); toast(Haptics.continuous?'Buzz sent.':'Felt a tick? Then buttons, jacks, keys and knob steps will tick too.'); };
   if(inLevel){
     $('#stKeys').onclick=()=>{ close(); setKeysOpen(!S.keysOpen); };
     $('#stFocus').onclick=()=>{ close(); setFocus(!S.focus); };
@@ -661,8 +658,7 @@ $('#briefBtn').onclick=openSide; $('#sideClose').onclick=closeSide; $('#sideBack
 $('#midiChip').onclick=()=>{ if(MIDI.state==='on'){ toast('Connected: '+MIDI.names.join(', ')); return; } connectMIDI(false); };
 if(store.get('midiAuto',false)) connectMIDI(true);
 $('#btnHome').onclick=showBoard;
-$('#btnUnlock').onclick=()=>{ progress.unlockAll=true; saveProgress(); showBoard(); toast('All gigs unlocked'); };
 (function(){ if(!Haptics.available) return; let b=el('button',{class:'btn ghost',id:'btnHaptics'}); $('#btnReset').after(b); b=Haptics.upgrade(b);
   const lbl=()=>{ b.firstChild&&b.firstChild.nodeType===3?b.firstChild.nodeValue='Haptics: '+(Haptics.enabled?'on':'off'):b.prepend('Haptics: '+(Haptics.enabled?'on':'off')); }; lbl();
   b.onclick=()=>{ Haptics.set(!Haptics.enabled); lbl(); Haptics.select(); }; })();
-$('#btnReset').onclick=()=>{ const b=$('#btnReset'); if(b.dataset.armed){ progress={solved:{},unlockAll:false}; saveProgress(); LEVELS.concat([SANDBOX]).forEach(L=>{ store.del('draft.'+L.id); store.del('draft2.'+L.id); }); b.textContent='Wipe progress'; delete b.dataset.armed; showBoard(); toast('Progress wiped'); } else { b.dataset.armed=1; b.textContent='Click again to confirm'; setTimeout(()=>{ b.textContent='Wipe progress'; delete b.dataset.armed; },3000); } };
+$('#btnReset').onclick=()=>{ const b=$('#btnReset'); if(b.dataset.armed){ progress={solved:{}}; saveProgress(); LEVELS.concat([SANDBOX]).forEach(L=>{ store.del('draft.'+L.id); store.del('draft2.'+L.id); }); b.textContent='Wipe progress'; delete b.dataset.armed; showBoard(); toast('Progress wiped'); } else { b.dataset.armed=1; b.textContent='Click again to confirm'; setTimeout(()=>{ b.textContent='Wipe progress'; delete b.dataset.armed; },3000); } };

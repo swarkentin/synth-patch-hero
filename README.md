@@ -31,7 +31,7 @@ On phones, knobs, cables and modules give **haptic feedback** (Android fully; iP
 
 ## Curriculum
 
-**Basics** is a seven-lesson tutorial on the building blocks. Finishing it opens six **themes**, which you can play in any order. Each theme teaches its style through several lessons and ends with a **challenge**: no parts list, just the brief, the sound and how many modules the patch uses.
+**Basics** is a seven-lesson tutorial on the building blocks, followed by six **themes**. **Every gig is open**, so start with Basics or skip ahead; your progress is saved either way, and each chapter marks its next gig. Each theme teaches its style through several lessons and ends with a **challenge**: no parts list, just the brief, the sound and how many modules the patch uses.
 
 | Chapter | Gigs (★ = challenge) |
 |---|---|

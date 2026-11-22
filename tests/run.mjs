@@ -46,7 +46,7 @@ try {
     await page.open(URL, vp);
     await page.waitFor("document.querySelector('.gig')");
     const report = await page.evaluate(`(async()=>{
-      progress.unlockAll=true; const out=[];
+      const out=[];
       for(let i=-1;i<LEVELS.length;i++){
         LEVELS.concat([SANDBOX]).forEach(L=>store.del('draft2.'+L.id));
         openLevel(i); closeSide(); for(let t=0;t<100&&!S.mine;t++) await new Promise(r=>setTimeout(r,50));
@@ -64,7 +64,7 @@ try {
     console.log(`\nPhone layout · ${vp.name}`);
     await page.open(URL, vp);
     await page.waitFor("document.querySelector('.gig')");
-    const ph = await page.evaluate(`(async()=>{ store.set('keysOpen',true); progress.unlockAll=true; const res={}; const wide=()=>document.documentElement.scrollWidth<=innerWidth+1;
+    const ph = await page.evaluate(`(async()=>{ store.set('keysOpen',true); const res={}; const wide=()=>document.documentElement.scrollWidth<=innerWidth+1;
       res.boardFits=wide();
       for(const id of ['dial-tone','pluck','stadium']){ store.del('draft2.'+id); openLevel(LEVELS.findIndex(l=>l.id===id)); closeSide(); await new Promise(r=>setTimeout(r,300)); if(!wide()) res['noSideScroll_'+id]=false; }
       res.noSideScroll=Object.keys(res).every(k=>!k.startsWith('noSideScroll_')); Object.keys(res).filter(k=>k.startsWith('noSideScroll_')).forEach(k=>delete res[k]);
@@ -74,7 +74,7 @@ try {
       res.boardTall=document.querySelector('#viewport').clientHeight>=0.45*innerHeight;
       setKeysOpen(true); await new Promise(r=>setTimeout(r,200)); res.keysCloseInView=inView('#kbClose');
       document.querySelector('#kbClose').click(); res.keysClose=document.querySelector('#keysDock').hidden;
-      openSettings(); res.settingsHaptics=!!document.querySelector('#stHapSw')&&!!document.querySelector('#stHapTest')&&!!document.querySelector('#stKeys'); document.querySelector('#shDone').click();
+      openSettings(); res.settingsHaptics=!!document.querySelector('#stHapSw')&&!document.querySelector('#stHapTest')&&!!document.querySelector('#stKeys'); document.querySelector('#shDone').click();
       showBoard(); return res; })()`);
     for (const [k, v] of Object.entries(ph)) ok(v, `phone: ${k}`);
   }
@@ -83,7 +83,7 @@ try {
     console.log(`\nFocus mode · ${vp.name}`);
     await page.open(URL, vp);
     await page.waitFor("document.querySelector('.gig')");
-    const f = await page.evaluate(`(async()=>{ progress.unlockAll=true; store.del('draft2.wow-bass'); openLevel(LEVELS.findIndex(l=>l.id==='wow-bass')); closeSide();
+    const f = await page.evaluate(`(async()=>{ store.del('draft2.wow-bass'); openLevel(LEVELS.findIndex(l=>l.id==='wow-bass')); closeSide();
       for(let t=0;t<100&&!S.mine;t++) await new Promise(r=>setTimeout(r,50));
       const area0=S.view.s; setFocus(true); await new Promise(r=>setTimeout(r,400));
       const vis=(sel,w=100,h=30)=>{ const r=document.querySelector(sel).getBoundingClientRect(); return r.width>w&&r.height>h&&r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth; };
@@ -100,7 +100,7 @@ try {
   await page.open(URL, { width: 1280, height: 800 });
   await page.waitFor("document.querySelector('.gig')");
   const solved = await page.evaluate(`(async()=>{
-    progress.unlockAll=true; const out=[];
+    const out=[];
     for(let i=0;i<LEVELS.length;i++){
       store.del('draft2.'+LEVELS[i].id); openLevel(i); const L=S.L;
       if(!L._tA) L._tA=analyze(await renderPatch(targetPatch(L),L));
@@ -122,7 +122,7 @@ try {
   await page.open(URL, { width: 1280, height: 800 });
   await page.waitFor("document.querySelector('.gig')");
   const rescued = await page.evaluate(`(async()=>{
-    progress.unlockAll=true; const out=[];
+    const out=[];
     for(let i=0;i<LEVELS.length;i++){
       store.del('draft2.'+LEVELS[i].id); openLevel(i); const L=S.L;
       const need={}; L.target.mods.forEach(m=>need[m.type]=(need[m.type]||0)+1);
@@ -142,7 +142,7 @@ try {
       out.push({id:L.id,peak,nan,secs:x.length/SR}); }
     return out; })()`);
   for (const j of jingles) ok(!j.nan && j.peak > 0.01 && j.peak < 4, `${j.id.padEnd(13)} jingle peak ${j.peak.toFixed(2)} over ${j.secs.toFixed(1)}s`);
-  const modal = await page.evaluate(`(async()=>{ progress.unlockAll=true; const i=LEVELS.findIndex(l=>l.id==='pluck'); store.del('draft2.pluck'); openLevel(i);
+  const modal = await page.evaluate(`(async()=>{ const i=LEVELS.findIndex(l=>l.id==='pluck'); store.del('draft2.pluck'); openLevel(i);
     const t=targetPatch(S.L); let k=0; t.modules.forEach(m=>{ m.slot=m.type==='out'?S.slots-1:k++; }); S.patch=t; renderRack(); scheduleAnalyze();
     for(let n=0;n<60&&!(S.cmp&&S.cmp.overall>=PASS);n++) await new Promise(r=>setTimeout(r,50));
     submit(); await new Promise(r=>setTimeout(r,900));
@@ -154,7 +154,7 @@ try {
   await page.open(URL, { width: 390, height: 664, mobile: true });
   await page.waitFor("document.querySelector('.gig')");
   const hap = await page.evaluate(`(async()=>{ const calls=[]; navigator.vibrate=p=>{ calls.push(p); return true; }; const wait=ms=>new Promise(r=>setTimeout(r,ms));
-    progress.unlockAll=true; store.del('draft2.thin-walls'); openLevel(LEVELS.findIndex(l=>l.id==='thin-walls')); closeSide(); const res={available:Haptics.available};
+    store.del('draft2.thin-walls'); openLevel(LEVELS.findIndex(l=>l.id==='thin-walls')); closeSide(); const res={available:Haptics.available};
     let n=calls.length; addModule('osc'); await wait(120); res.addModule=calls.length>n;
     const o=S.patch.modules.find(m=>m.type==='osc'); n=calls.length;
     const tap=el=>{ const r=el.getBoundingClientRect(); const e={bubbles:true,clientX:r.left+6,clientY:r.top+6,pointerId:7,pointerType:'touch'}; el.dispatchEvent(new PointerEvent('pointerdown',e)); window.dispatchEvent(new PointerEvent('pointerup',e)); };
@@ -178,7 +178,7 @@ try {
   const ios1 = await page.evaluate(`(async()=>{ await new Promise(r=>setTimeout(r,6000)); const before=__sw; Haptics.select(); return {noVibrate:typeof navigator.vibrate!=='function', continuous:Haptics.continuous, noGesture:__sw===before}; })()`);
   ok(ios1.noVibrate && ios1.continuous === false, 'iPhone mode: no vibrate(), no continuous drag ticks');
   ok(ios1.noGesture, 'no haptic is attempted without a live user gesture');
-  const pal = await page.evaluate(`(async()=>{ progress.unlockAll=true; store.del('draft2.thin-walls'); openLevel(LEVELS.findIndex(l=>l.id==='thin-walls')); closeSide(); await new Promise(r=>setTimeout(r,300));
+  const pal = await page.evaluate(`(async()=>{ store.del('draft2.thin-walls'); openLevel(LEVELS.findIndex(l=>l.id==='thin-walls')); closeSide(); await new Promise(r=>setTimeout(r,300));
     const b=document.querySelector('.palBtn'); const r=b.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2,mods:S.patch.modules.length,checked:b.querySelector('input.hapSw').checked}; })()`);
   await page.tap(pal.x, pal.y); await new Promise(r => setTimeout(r, 400));
   const after = await page.evaluate(`(()=>{ const b=document.querySelector('.palBtn'), i=b&&b.querySelector('input.hapSw'); return {mods:S.patch.modules.length, sw:__swToggles}; })()`);
@@ -196,31 +196,33 @@ try {
   ok(cover.cards, 'gig cards carry a switch');
   ok(cover.sendOff, 'a disabled Send button does not tick');
   ok(cover.allOff && cover.someOn, 'turning haptics off disables every switch, and on re-enables them');
-  const ios2 = await page.evaluate(`(async()=>{ progress.unlockAll=true; store.del('draft2.thin-walls'); openLevel(LEVELS.findIndex(l=>l.id==='thin-walls')); closeSide(); addModule('filter'); await new Promise(r=>setTimeout(r,300));
+  const ios2 = await page.evaluate(`(async()=>{ store.del('draft2.thin-walls'); openLevel(LEVELS.findIndex(l=>l.id==='thin-walls')); closeSide(); addModule('filter'); await new Promise(r=>setTimeout(r,300));
     const f=S.patch.modules.find(m=>m.type==='filter'), k=document.querySelector('.module[data-id="'+f.id+'"] [data-param="cutoff"]'), r=k.getBoundingClientRect();
     k.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,clientX:r.left+20,clientY:r.top+20,pointerId:4,pointerType:'touch'})); k.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,clientX:r.left+20,clientY:r.top+20,pointerId:4,pointerType:'touch'}));
     const steps=[...document.querySelectorAll('.shBtns .shBtn')], stepsHaveSwitch=steps.length===4&&steps.every(l=>l.tagName==='LABEL'&&l.querySelector('input[switch]'));
     const c0=f.params.cutoff; steps[2].click(); await new Promise(r=>setTimeout(r,60)); const nudged=f.params.cutoff>c0; document.querySelector('#shDone').click();
-    openSettings(); const t=document.querySelector('#stHapTest'); const tests=!!t&&t.tagName==='LABEL'&&!!t.querySelector('input[switch]'); document.querySelector('#shDone').click();
+    openSettings(); const tests=!!document.querySelector('#stHapSw')&&!document.querySelector('#stHapTest'); document.querySelector('#shDone').click();
     store.del('draft2.thin-walls'); showBoard(); return {stepsHaveSwitch,nudged,tests}; })()`);
   ok(ios2.stepsHaveSwitch && ios2.nudged, 'knob editor −/+ are tap targets with a real switch under the finger, and still nudge');
-  ok(ios2.tests, 'Settings Test button is a tap target with a switch');
+  ok(ios2.tests, 'Settings haptics is a single on/off switch');
 
   console.log('\nCurriculum structure');
   const cur = await page.evaluate(`(()=>{
     const ids=LEVELS.map(l=>l.id), uniq=new Set(ids).size===ids.length;
     const themesEndInChallenge=CHAPTERS.slice(1).every(c=>LEVELS[c.levels[c.levels.length-1]].challenge&&c.levels.filter(i=>LEVELS[i].challenge).length===1);
     const every=CHAPTERS.reduce((n,c)=>n+c.levels.length,0)===LEVELS.length;
-    const saved=progress; progress={solved:{},unlockAll:false};
-    const openAtStart=LEVELS.map((l,i)=>isUnlocked(i)?l.id:null).filter(Boolean);
-    CHAPTERS[0].levels.forEach(i=>progress.solved[LEVELS[i].id]={cost:1,cables:1,match:95});
-    const openAfterBasics=CHAPTERS.slice(1).every(c=>isUnlocked(c.levels[0])&&!isUnlocked(c.levels[1]));
-    progress=saved; return {uniq,every,themesEndInChallenge,firstOnly:openAtStart.length===1&&openAtStart[0]===LEVELS[0].id,openAfterBasics,n:LEVELS.length,chapters:CHAPTERS.length};
+    const saved=progress; progress={solved:{}};
+    const allOpen=LEVELS.every((l,i)=>isUnlocked(i));
+    const nextStart=CHAPTERS.every(c=>nextInChapter(c)===c.levels[0]);
+    progress.solved[LEVELS[CHAPTERS[2].levels[2]].id]={cost:1,cables:1,match:95};
+    const skipAhead=nextInChapter(CHAPTERS[2])===CHAPTERS[2].levels[0]&&!!progress.solved[LEVELS[CHAPTERS[2].levels[2]].id];
+    progress=saved; return {uniq,every,themesEndInChallenge,allOpen,nextStart,skipAhead,n:LEVELS.length,chapters:CHAPTERS.length};
   })()`);
   ok(cur.uniq && cur.every, `${cur.n} gigs in ${cur.chapters} chapters, unique ids`);
   ok(cur.themesEndInChallenge, 'every theme ends with exactly one challenge');
-  ok(cur.firstOnly, 'a new player can only open the first Basics gig');
-  ok(cur.openAfterBasics, 'finishing Basics opens the first gig of every theme (and only the first)');
+  ok(cur.allOpen, 'every gig is open to a new player');
+  ok(cur.nextStart, 'each chapter suggests its first gig as NEXT');
+  ok(cur.skipAhead, 'solving a later gig out of order is recorded, and NEXT still points at the earliest unsolved one');
 } catch (e) {
   console.error(e); failures++;
 } finally {

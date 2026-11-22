@@ -10,7 +10,7 @@ const OUT = join(ROOT, 'docs', 'screenshots'); mkdirSync(OUT, { recursive: true 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // Gig 9 (Wow Bass), mid-solve: the filter is in, its envelope is not yet patched.
-const SETUP = `(async()=>{ progress.unlockAll=true; LEVELS.forEach(L=>store.del('draft2.'+L.id)); openLevel(LEVELS.findIndex(l=>l.id==='wow-bass')); closeSide();
+const SETUP = `(async()=>{ LEVELS.forEach(L=>store.del('draft2.'+L.id)); openLevel(LEVELS.findIndex(l=>l.id==='wow-bass')); closeSide();
   S.patch.cables=S.patch.cables.filter(c=>!(c.from.m==='p1'&&c.to.m==='p2'));
   addModule('filter',1); const f=S.patch.modules.find(m=>m.type==='filter');
   S.patch.cables.push({from:{m:'p1',p:'out'},to:{m:f.id,p:'in'}},{from:{m:f.id,p:'out'},to:{m:'p2',p:'in'}});

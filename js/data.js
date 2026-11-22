@@ -418,7 +418,7 @@ const LEVELS = [
 
 /* Chapters: Basics is a linear tutorial; every theme opens once Basics is done. */
 const CHAPTERS = [
-  {id:'basics', title:'Basics', short:'BASICS', blurb:'Your first week in the basement. Seven short lessons on the building blocks. Finish them to open the themes.'},
+  {id:'basics', title:'Basics', short:'BASICS', blurb:'Start here: seven short lessons on the building blocks. Everything is open, so skip ahead whenever you like.'},
   {id:'filters', title:'Filter Lab', short:'FILTERS', blurb:'Carve, shape and squelch. Make a synth talk.'},
   {id:'bass', title:'Bass', short:'BASS', blurb:'From clean sub bass to growling engines.'},
   {id:'pads', title:'Pads', short:'PADS', blurb:'Slow, wide, atmospheric beds of sound.'},
