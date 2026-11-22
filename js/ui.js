@@ -78,7 +78,7 @@ function openLevel(i){
   $('#crumbs').textContent=S.sandbox?'Free Jam':`${ch.title} ${ch.levels.indexOf(i)+1}/${ch.levels.length} · ${S.L.title} · ${S.L.challenge?'Challenge':S.L.concept}`;
   S.pick=null; S.wasOk=false; showPatchbar(); allNotesOff(); stopJingle();
   S.kbLo=null; S.kbFb=null; S.promptDone=S.sandbox||!!(progress.played&&progress.played[S.L.id]);
-  renderBrief(); renderPalette(); layoutBoard(); renderRack(); renderCompare(); renderPrompt(); renderMidiChip(); setKeysOpen(S.keysOpen);
+  renderBrief(); renderPalette(); layoutBoard(); renderRack(); renderCompare(); renderPrompt(); renderMidiChip(); setKeysOpen(S.mobile?false:store.get('keysOpen',false));
   S.userZoom=false;
   requestAnimationFrame(()=>{ fitView(); drawCables(); });
   if(!draft&&MQ2.matches) openSide(); else closeSide();
@@ -273,7 +273,7 @@ function setFocus(on){
 }
 document.addEventListener('fullscreenchange',()=>{ if(!document.fullscreenElement&&S.focus) setFocus(false); });
 function setKeysOpen(on){
-  S.keysOpen=on; store.set('keysOpen',on);
+  S.keysOpen=on; if(!S.mobile) store.set('keysOpen',on);   // phones never reopen the keyboard on their own
   $('#keysDock').hidden=!on; $('#keysBtn').classList.toggle('on',on);
   requestAnimationFrame(()=>{ if(on) renderKeys(); if(!S.userZoom) fitView(); else { clampView(); applyView(); } });
 }
@@ -457,7 +457,7 @@ function startCable(ev,portEl){
 function renderCompare(){
   const c=$('#compare'), sb=S.sandbox; c.classList.remove('expanded');
   c.innerHTML=`<div class="cmpTop">${sb?'':'<button class="playBtn t" id="pT"><span class="dot"></span>▶ TARGET</button>'}<button class="playBtn y" id="pY"><span class="dot"></span>▶ ${sb?'PLAY':'YOURS'}</button>
-    ${sb?'<div class="pctBox"><small>FREE JAM</small></div>':`<div class="pctBox"><b id="pct">–</b><small id="pctSub">need ${PASS}%</small></div><button class="btn primary" id="btnSubmit" disabled>Send</button><button class="btn" id="btnHelp" title="Stuck? Get a hint, or let Help patch a module or lock a knob">Help</button>`}</div>
+    ${sb?'<div class="pctBox"><small>FREE JAM</small></div>':`<div class="pctBox"><b id="pct">–</b><small id="pctSub">need ${PASS}%</small></div><button class="btn primary" id="btnSubmit" disabled>Send</button><button class="btn" id="btnHelp" title="Stuck? Get a hint, or let Help patch a module or lock a knob"><span class="lbl">Help</span><span class="ico">?</span></button>`}</div>
     ${sb?'':`<div class="bar"><i id="barAll"></i><span class="thr" style="left:${PASS}%"></span></div>`}
     <div class="cmpBody">
       ${sb?'':`<div class="subs"><div class="sub"><span>Spectrogram</span><div class="bar"><i id="barSpec"></i></div><span id="vSpec"></span></div>
@@ -519,7 +519,7 @@ function updateCompare(){
   }
   drawPlots();
 }
-function setupCanvas(cv){ const dpr=window.devicePixelRatio||1, w=cv.clientWidth; if(!cv.dataset.h) cv.dataset.h=cv.getAttribute('height'); const h=S.focus?(S.mobile?52:60):Math.round(+cv.dataset.h*(S.mobile?0.8:1));
+function setupCanvas(cv){ const dpr=window.devicePixelRatio||1, w=cv.clientWidth; if(!cv.dataset.h) cv.dataset.h=cv.getAttribute('height'); const h=S.focus?(S.mobile?52:60):Math.round(+cv.dataset.h*(S.mobile?0.66:1));
   cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); cv.style.height=h+'px'; const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); return {g,w,h}; }
 const cssv=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 function scopeSeg(x,start,len,period){
@@ -622,8 +622,33 @@ $('#kbDn').onclick=()=>{ S.kbLo-=12; renderKeys(); };
 $('#kbUp').onclick=()=>{ S.kbLo+=12; renderKeys(); };
 $('#keysBtn').onclick=()=>setKeysOpen(!S.keysOpen);
 $('#focusBtn').onclick=()=>setFocus(!S.focus);
+function resetRack(){ S.pick=null; showPatchbar(); freshPatch(); refreshRack(); scheduleAnalyze(); toast('Rack reset'); }
 $('#clearBtn').onclick=()=>{ const b=$('#clearBtn'); if(!b.dataset.armed){ b.dataset.armed=1; b.textContent='Sure?'; setTimeout(()=>{ b.textContent='Reset'; delete b.dataset.armed; },2500); return; }
-  delete b.dataset.armed; b.textContent='Reset'; S.pick=null; showPatchbar(); freshPatch(); refreshRack(); scheduleAnalyze(); toast('Rack reset'); };
+  delete b.dataset.armed; b.textContent='Reset'; resetRack(); };
+$('#kbClose').onclick=()=>setKeysOpen(false);
+/* ---------- settings sheet (⚙ in the top bar) ---------- */
+function openSettings(){
+  const sh=$('#sheet'); sh.hidden=false; sh.style.removeProperty('--sel');
+  const inLevel=!!S.L&&!$('#screenLevel').hidden;
+  const row=(label,sub,btn)=>`<div class="setRow"><div><b>${label}</b><span>${sub}</span></div>${btn}</div>`;
+  const hapSub=!Haptics.available?'Not available on this device.':Haptics.continuous?'Ticks on knobs, cables and modules.':'iPhone: ticks on taps and when you let go of a knob (iOS 18+).';
+  sh.innerHTML=`<div class="sheetCard"><div class="shHead"><span class="shTitle">SETTINGS</span><button class="btn primary" id="shDone">Done</button></div>
+    ${row('Haptics',hapSub+(Haptics.available?`<br><small>Method: ${Haptics.method}</small>`:''),Haptics.available?`<span class="hapCtl"><button class="btn" id="stHapTest">Test</button><label class="nativeSw" title="Haptics on/off"><input type="checkbox" switch id="stHapSw" ${Haptics.enabled?'checked':''}></label></span>`:'')}
+    ${inLevel?row('On-screen keyboard','Find the client\'s note and play your patch.',`<button class="btn tgl" id="stKeys">${S.keysOpen?'Shown':'Hidden'}</button>`):''}
+    ${inLevel?row('Focus mode','Bigger board, compact compare bar.',`<button class="btn tgl" id="stFocus">${S.focus?'On':'Off'}</button>`):''}
+    ${inLevel?row('Reset this rack','Removes everything you added to this gig.','<button class="btn" id="stReset">Reset</button>'):''}</div>`;
+  const close=()=>{ sh.hidden=true; sh.innerHTML=''; };
+  $('#shDone').onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); };
+  // A real iOS switch: on iOS 18 the system itself ticks when it's flipped, so it doubles as a check that switch haptics work here.
+  const hs=$('#stHapSw'); if(hs) hs.onchange=()=>{ Haptics.set(hs.checked); if(hs.checked) Haptics.select(); const fb=$('#btnHaptics'); if(fb) fb.textContent='Haptics: '+(Haptics.enabled?'on':'off'); };
+  const ht=$('#stHapTest'); if(ht) ht.onclick=()=>{ if(!Haptics.enabled){ toast('Haptics are off. Flip the switch first.'); return; } Haptics.test(); toast(Haptics.continuous?'Buzz sent.':'Tick sent. Felt nothing? Flip the switch next to it: if even that doesn\'t tick, this phone or browser has no web haptics.'); };
+  if(inLevel){
+    $('#stKeys').onclick=()=>{ close(); setKeysOpen(!S.keysOpen); };
+    $('#stFocus').onclick=()=>{ close(); setFocus(!S.focus); };
+    const rb=$('#stReset'); rb.onclick=()=>{ if(!rb.dataset.armed){ rb.dataset.armed=1; rb.textContent='Sure?'; return; } close(); resetRack(); };
+  }
+}
+$('#btnSettings').onclick=openSettings;
 $('#briefBtn').onclick=openSide; $('#sideClose').onclick=closeSide; $('#sideBackdrop').onclick=closeSide;
 $('#midiChip').onclick=()=>{ if(MIDI.state==='on'){ toast('Connected: '+MIDI.names.join(', ')); return; } connectMIDI(false); };
 if(store.get('midiAuto',false)) connectMIDI(true);

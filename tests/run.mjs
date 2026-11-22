@@ -60,6 +60,25 @@ try {
     const errs = page.errors(); ok(errs.length === 0, `no page errors${errs.length ? ': ' + errs.join(' | ') : ''}`);
   }
 
+  for (const vp of [{ name: 'iPhone 13', width: 390, height: 664, mobile: true }, { name: 'iPhone SE/mini', width: 375, height: 600, mobile: true }]) {
+    console.log(`\nPhone layout · ${vp.name}`);
+    await page.open(URL, vp);
+    await page.waitFor("document.querySelector('.gig')");
+    const ph = await page.evaluate(`(async()=>{ store.set('keysOpen',true); progress.unlockAll=true; const res={}; const wide=()=>document.documentElement.scrollWidth<=innerWidth+1;
+      res.boardFits=wide();
+      for(const id of ['dial-tone','pluck','stadium']){ store.del('draft2.'+id); openLevel(LEVELS.findIndex(l=>l.id===id)); closeSide(); await new Promise(r=>setTimeout(r,300)); if(!wide()) res['noSideScroll_'+id]=false; }
+      res.noSideScroll=Object.keys(res).every(k=>!k.startsWith('noSideScroll_')); Object.keys(res).filter(k=>k.startsWith('noSideScroll_')).forEach(k=>delete res[k]);
+      res.keysStartHidden=document.querySelector('#keysDock').hidden;
+      const inView=sel=>{ const r=document.querySelector(sel).getBoundingClientRect(); return r.width>0&&r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight; };
+      res.controlsInView=['#pT','#pY','#btnSubmit','#btnHelp','#keysBtn','#focusBtn','#briefBtn','#btnSettings','#btnHome'].every(inView);
+      res.boardTall=document.querySelector('#viewport').clientHeight>=0.45*innerHeight;
+      setKeysOpen(true); await new Promise(r=>setTimeout(r,200)); res.keysCloseInView=inView('#kbClose');
+      document.querySelector('#kbClose').click(); res.keysClose=document.querySelector('#keysDock').hidden;
+      openSettings(); res.settingsHaptics=!!document.querySelector('#stHapSw')&&!!document.querySelector('#stHapTest')&&!!document.querySelector('#stKeys'); document.querySelector('#shDone').click();
+      showBoard(); return res; })()`);
+    for (const [k, v] of Object.entries(ph)) ok(v, `phone: ${k}`);
+  }
+
   for (const vp of [{ name: 'desktop', width: 1280, height: 800 }, { name: 'phone', width: 390, height: 664, mobile: true }]) {
     console.log(`\nFocus mode · ${vp.name}`);
     await page.open(URL, vp);

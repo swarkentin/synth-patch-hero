@@ -39,10 +39,23 @@ Feedback that drove it: difficulty rises fast (especially the VCA lesson); playe
 - **Click/tap without dragging** opens the precise editor: big slider, − / + (about 0.25% of the range, or one step on stepped knobs) and −− / ++ (3%), ←/→ keys (Shift for bigger steps), Reset, ▶ Yours.
 - **Wheel/trackpad** follows the scroll distance (0.06% per pixel, Shift 0.015%). Coarse stepped knobs (OCT, SEMI, FINE) move one step per ~40px. This fixes trackpads sending dozens of events per swipe, which previously moved 1% per event.
 
+## Phone chrome (from iPhone playtest, 2026-11-22)
+- **Problems seen:**
+  - The page was wider than the screen, because the compare buttons couldn't wrap; it could be dragged sideways and edges were clipped.
+  - The on-screen keyboard reopened on every gig, and its toggle was off-screen.
+  - The haptics toggle was only at the bottom of the gig board.
+- **Now:**
+  - Nothing may exceed the screen width (tested at 390 and 375px).
+  - Top bar: title · **⚙ Settings** · ←.
+  - Compare strip: ▶ Target · ▶ Yours · % · Send · round **?** Help; hint clamped to 2 lines; shorter graph; no duplicate progress bar.
+  - Toolbar: Brief · scrolling palette · fixed ♪ Keys and ⛶ Focus icons. Reset moved to Settings.
+  - On phones the keyboard always starts hidden (the "keep open" preference is desktop-only), and it has its own × close.
+- **⚙ Settings** (everywhere): Haptics (a real iOS `switch`, with a Test button and the method in use), On-screen keyboard, Focus mode, Reset this rack.
+
 ## Feel: haptics and the end-of-gig jingle
 - **Haptics** (`js/haptics.js`, touch devices only, on/off switch on the gig board, saved): a knob tick at each step (stepped knobs) or every 5% (smooth knobs), and a firmer bump at an end stop. Cable plug = one solid pulse, unplug = double tap, add/move/remove a module = thunk, choice buttons and jack picks = light tick, on-screen keys = tiny tick, crossing 90% and Send = celebration pattern. Throttled so fast turns don't blur into one buzz.
   - Android and most browsers: `navigator.vibrate`.
-  - iPhone (Safari and Chrome, both WebKit) has no vibrate(). On iOS 18+ we click a hidden `<input type="checkbox" switch>`, which plays the system switch haptic. On older iOS nothing happens.
+  - iPhone (Safari and Chrome, both WebKit) has no vibrate(). On iOS 18+ we create a hidden `<input type="checkbox" switch>` inside a label, click it, and remove it straight away (a fresh one per tick, matching the known-working technique), which plays the system switch haptic. On older iOS nothing happens. This is unofficial; the Settings haptics control is itself a native switch, so flipping it shows whether switch haptics work on that phone/browser at all.
   - Playtest on iPhone (Chrome): haptics worked for a few seconds, then stopped. Cause: WebKit only plays the switch haptic right after a real tap or release (transient user activation); a finger sliding across a knob, timers and async work don't count. So on iOS we fire only while `navigator.userActivation.isActive`, use a single tick (no delayed pulses), and knobs tick once **on release** after turning instead of during the drag (`Haptics.continuous` is false). Tap-driven feedback still works: −/+ in the knob editor, plugging cables, adding modules, keys, Send. The "crossed 90%" buzz usually arrives after async analysis, so it won't fire on iPhone.
 - **Jingle:** on Send, the result screen plays a short phrase on the player's own patch (a copy, scheduled with the normal voice engine), shaped per chapter, with note markers that light in time and a Replay button. It stops when the dialog closes.
   - melodic "ta-da" arpeggio (Basics, Filters, Leads)

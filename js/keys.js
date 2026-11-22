@@ -106,7 +106,7 @@ async function connectMIDI(auto){
   }
 }
 function renderMidiChip(){
-  const c=$('#midiChip'); if(!c) return; c.className='midiChip';
+  const c=$('#midiChip'); if(!c) return; c.className='midiChip'; c.hidden=!navigator.requestMIDIAccess; // e.g. iPhone: no MIDI at all, so don't offer it
   const T={idle:['Connect USB keyboard','Use a USB/MIDI keyboard to play your patch'],
     unsupported:['No MIDI in this browser','This browser has no Web MIDI. Chrome, Edge, Opera, Firefox (desktop) and Chrome on Android do.'],
     blocked:['MIDI blocked · retry','The page or browser blocked MIDI ('+MIDI.err+'). Opening the game file directly in Chrome or Edge usually works.'],

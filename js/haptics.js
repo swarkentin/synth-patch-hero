@@ -8,15 +8,14 @@
 const Haptics = (() => {
   const touch = window.matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
   const canVibrate = typeof navigator.vibrate === 'function';
-  let enabled = store.get('haptics', true), last = 0, sw = null;
+  let enabled = store.get('haptics', true), last = 0;
+  // Same approach as the known-working iOS 18 technique: a fresh hidden switch per tick, clicked and removed at once.
   function iosTick() {
-    if (!sw) {
-      sw = document.createElement('label'); sw.setAttribute('aria-hidden', 'true');
-      sw.style.cssText = 'position:fixed;left:-200px;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none';
-      const i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); i.tabIndex = -1;
-      sw.appendChild(i); document.body.appendChild(sw);
-    }
-    try { sw.click(); } catch (_) {}
+    const lab = document.createElement('label'); lab.setAttribute('aria-hidden', 'true'); lab.style.display = 'none';
+    const i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); i.tabIndex = -1;
+    lab.appendChild(i); document.head.appendChild(lab);
+    try { lab.click(); } catch (_) {}
+    lab.remove();
   }
   const gestureLive = () => { const ua = navigator.userActivation; return !ua || ua.isActive; };
   // pattern: vibrate() pattern (ms on/off). minGap: throttle so fast knob turns don't blur into one buzz.
@@ -29,6 +28,8 @@ const Haptics = (() => {
   }
   return {
     available: touch,
+    method: canVibrate ? 'vibration' : touch ? 'iOS switch haptic (iOS 18+)' : 'none',
+    test() { const was = last; last = 0; fire([30], 0); if (!last) last = was; },
     continuous: canVibrate,             // false on iPhone: no ticks while a finger slides, only on taps/releases
     get enabled() { return enabled; },
     set(on) { enabled = on; store.set('haptics', on); },

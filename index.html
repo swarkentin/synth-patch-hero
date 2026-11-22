@@ -12,7 +12,8 @@
 <div class="topbar">
   <div class="brand">SYNTH PATCH <span>HERO</span></div>
   <div class="crumbs" id="crumbs">Gig board</div>
-  <button class="btn ghost" id="btnHome" hidden>← Gigs</button>
+  <button class="btn ghost" id="btnSettings" title="Settings"><span class="ico">⚙&#xFE0E;</span><span class="lbl"> Settings</span></button>
+  <button class="btn ghost" id="btnHome" hidden><span class="ico">←</span><span class="lbl"> Gigs</span></button>
 </div>
 
 <section id="screenBoard">
@@ -47,7 +48,7 @@
       <div id="palette" style="display:flex;gap:6px"></div>
       <span class="spacer"></span>
       <button class="btn ghost" id="focusBtn" title="Full-screen focus mode: big board, compact compare bar (Shift+F)"><span class="ico">⛶</span><span class="lbl"> Focus</span></button>
-      <button class="btn ghost" id="keysBtn" title="Show the keyboard (USB/MIDI keyboards work even when hidden)">♪ Keys</button>
+      <button class="btn ghost" id="keysBtn" title="Show the keyboard (USB/MIDI keyboards work even when hidden)"><span class="ico">♪</span><span class="lbl"> Keys</span></button>
       <button class="btn ghost" id="clearBtn" title="Remove everything you added">Reset</button>
     </div>
     <div class="viewport" id="viewport">
@@ -58,7 +59,7 @@
     <div class="keysDock" id="keysDock" hidden>
       <div class="kbBar"><div class="kbPrompt" id="kbPrompt"></div>
         <div class="kbCtl"><button class="oct" id="kbDn" title="Lower octaves">‹</button><span class="kbRange" id="kbRange"></span><button class="oct" id="kbUp" title="Higher octaves">›</button>
-        <button class="midiChip" id="midiChip"></button></div></div>
+        <button class="midiChip" id="midiChip"></button><button class="kbClose" id="kbClose" title="Hide the keyboard">×</button></div></div>
       <div class="kbWrap" id="kbWrap"></div>
     </div>
   </main>
