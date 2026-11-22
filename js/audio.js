@@ -12,6 +12,30 @@ function noiseBuffer(ctx){
   for(let i=0;i<d.length;i++){ s^=s<<13; s^=s>>>17; s^=s<<5; d[i]=((s>>>0)/4294967296)*2-1; }
   noiseCache.set(ctx,b); return b;
 }
+/* Deterministic helpers so the target and the player's patch render identically. */
+function seeded(seed){ let s=seed>>>0||1; return ()=>{ s^=s<<13; s^=s>>>17; s^=s<<5; return ((s>>>0)/4294967296)*2-1; }; }
+const irCache=new WeakMap();
+function reverbIR(ctx,size){
+  const key=size.toFixed(2); let m=irCache.get(ctx); if(!m){ m=new Map(); irCache.set(ctx,m); }
+  if(m.has(key)) return m.get(key);
+  const len=Math.max(64,Math.floor(ctx.sampleRate*size)), b=ctx.createBuffer(1,len,ctx.sampleRate), d=b.getChannelData(0), r=seeded(7919);
+  for(let i=0;i<len;i++){ const t=i/ctx.sampleRate; d[i]=r()*Math.exp(-6.9*t/size)*(i<ctx.sampleRate*0.004?i/(ctx.sampleRate*0.004):1); }
+  m.set(key,b); return b;
+}
+const curveCache=new Map();
+function driveCurve(k){
+  const key=k.toFixed(2); if(curveCache.has(key)) return curveCache.get(key);
+  const n=2048, c=new Float32Array(n), norm=Math.tanh(k); for(let i=0;i<n;i++){ const x=i/(n-1)*2-1; c[i]=Math.tanh(k*x)/norm; }
+  curveCache.set(key,c); return c;
+}
+const shCache=new WeakMap();
+function shBuffer(ctx,rate){
+  const key=rate.toFixed(3); let m=shCache.get(ctx); if(!m){ m=new Map(); shCache.set(ctx,m); }
+  if(m.has(key)) return m.get(key);
+  const steps=32, per=Math.max(1,Math.round(ctx.sampleRate/rate)), b=ctx.createBuffer(1,steps*per,ctx.sampleRate), d=b.getChannelData(0), r=seeded(4242);
+  for(let k=0;k<steps;k++){ const v=r(); d.fill(v,k*per,(k+1)*per); }
+  m.set(key,b); return b;
+}
 function envPoints(p,gate){
   const {a,d,s,r}=p;
   if(gate<=a) return [[0,0],[gate,gate/a],[gate+r,0]];
@@ -32,12 +56,13 @@ function buildVoice(ctx, patch, dest, t0, note, gate){
         const o=ctx.createOscillator(); o.type=P.wave;
         o.frequency.value=mtof(note)*Math.pow(2,P.oct+P.semi/12); o.detune.value=P.fine;
         const mg=ctx.createGain(); mg.gain.value=P.pitchAmt; mg.connect(o.detune);
-        n.ins.pitch=mg; n.outs.out=o; sources.push(o); break; }
+        const fg=ctx.createGain(); fg.gain.value=P.fmAmt||0; fg.connect(o.frequency);   // linear FM: audio in → ± fmAmt Hz
+        n.ins.pitch=mg; n.ins.fm=fg; n.outs.out=o; sources.push(o); break; }
       case 'noise': {
         const s=ctx.createBufferSource(); s.buffer=noiseBuffer(ctx); s.loop=true; n.outs.out=s; sources.push(s); break; }
       case 'filter': {
         const f=ctx.createBiquadFilter(); f.type=P.type; f.frequency.value=P.cutoff;
-        f.Q.value = P.type==='bandpass' ? 0.6+P.res*14 : -3+P.res*28;
+        f.Q.value = (P.type==='bandpass'||P.type==='notch') ? 0.6+P.res*14 : -3+P.res*28;
         const mg=ctx.createGain(); mg.gain.value=P.cutAmt; mg.connect(f.detune);
         n.ins.in=f; n.ins.cut=mg; n.outs.out=f; break; }
       case 'vca': {
@@ -49,6 +74,37 @@ function buildVoice(ctx, patch, dest, t0, note, gate){
         envs.push({param:c.offset,p:P}); maxR=Math.max(maxR,P.r); break; }
       case 'lfo': {
         const o=ctx.createOscillator(); o.type=P.wave; o.frequency.value=P.rate; n.outs.out=o; sources.push(o); break; }
+      case 'mixer': {
+        const sum=ctx.createGain(); n.outs.out=sum;
+        [1,2,3].forEach(k=>{ const g=ctx.createGain(); g.gain.value=P['l'+k]; g.connect(sum); n.ins['in'+k]=g; }); break; }
+      case 'harm': {
+        const o=ctx.createOscillator(), real=new Float32Array(7), imag=new Float32Array(7);
+        for(let k=1;k<=6;k++) imag[k]=P['h'+k]; if(imag.every(v=>v===0)) imag[1]=1e-6;
+        o.setPeriodicWave(ctx.createPeriodicWave(real,imag,{disableNormalization:true}));
+        o.frequency.value=mtof(note); const g=ctx.createGain(); g.gain.value=0.5; o.connect(g);
+        n.outs.out=g; sources.push(o); break; }
+      case 'delay': {
+        // in → dry ─────────────┐
+        // in → delay ⇄ (tone → feedback) → wet → out.   NOTE mode tunes the delay to the played note (plucked strings).
+        const inp=ctx.createGain(), out=ctx.createGain(), dry=ctx.createGain(), wet=ctx.createGain(), fb=ctx.createGain();
+        const d=ctx.createDelay(2), tone=ctx.createBiquadFilter(); tone.type='lowpass'; tone.frequency.value=P.tone; tone.Q.value=-6;   // Q is in dB for lowpass: keep it peak-free so loop gain stays < 1
+        const t=P.sync==='note'?1/mtof(note):P.time; d.delayTime.value=t;
+        dry.gain.value=1-P.mix; wet.gain.value=P.mix; fb.gain.value=P.fb;
+        inp.connect(dry); dry.connect(out); inp.connect(d); d.connect(tone); tone.connect(fb); fb.connect(d); tone.connect(wet); wet.connect(out);
+        const mg=ctx.createGain(); mg.gain.value=P.modAmt; mg.connect(d.delayTime);
+        n.ins.in=inp; n.ins.mod=mg; n.outs.out=out;
+        if(P.fb>0.001) maxR=Math.max(maxR,Math.min(4,t*Math.log(0.001)/Math.log(P.fb))); else maxR=Math.max(maxR,t);
+        break; }
+      case 'reverb': {
+        const inp=ctx.createGain(), out=ctx.createGain(), dry=ctx.createGain(), wet=ctx.createGain(), cv=ctx.createConvolver();
+        cv.buffer=reverbIR(ctx,P.size); dry.gain.value=1-P.mix; wet.gain.value=P.mix;
+        inp.connect(dry); dry.connect(out); inp.connect(cv); cv.connect(wet); wet.connect(out);
+        n.ins.in=inp; n.outs.out=out; maxR=Math.max(maxR,Math.min(4,P.size)); break; }
+      case 'drive': {
+        const ws=ctx.createWaveShaper(), g=ctx.createGain(); ws.curve=driveCurve(P.drive); ws.oversample='2x'; g.gain.value=P.level; ws.connect(g);
+        n.ins.in=ws; n.outs.out=g; break; }
+      case 'sh': {
+        const s=ctx.createBufferSource(); s.buffer=shBuffer(ctx,P.rate); s.loop=true; n.outs.out=s; sources.push(s); break; }
       case 'out': n.ins.in=dest; break;
     }
   }
@@ -124,8 +180,9 @@ const JINGLES = {
   pads:    { beat:1.0,  notes:[[5,0,1.15,.55],[9,0,1.15,.5],[12,0,1.15,.5],[0,1.25,1.7,.55],[4,1.25,1.7,.5],[7,1.25,1.7,.5],[12,1.25,1.7,.45]] },
   perc:    { beat:0.14, notes:[[0,0,.6,1],[0,2,.6,.7],[0,3,.6,.8],[0,4,.6,1],[0,5.5,.5,.6],[0,6,.6,.8],[0,7,.6,.9],[0,8,1,1]] },
   fx:      { beat:0.5,  notes:[[0,0,.9,.9],[-5,1.1,.9,.9],[7,2.2,1.4,1]] },
+  pluck:   { beat:0.16, notes:[[0,0,.5,.9],[-5,1,.5,.8],[-8,2,.5,.85],[-12,3,.5,.8],[-5,4,.5,.8],[0,5,3,1]] },
 };
-function jingleFor(L){ return JINGLES[{bass:'bass',pads:'pads',perc:'perc',fx:'fx'}[L.ch]||'melodic']; }
+function jingleFor(L){ return JINGLES[{bass:'bass',pads:'pads',perc:'perc',fx:'fx',strings:'pluck',fxrack:'pluck'}[L.ch]||'melodic']; }
 /* Schedule the jingle on ctx. Returns {events:[{t,dur,note}], end, stop(t)}. */
 function scheduleJingle(ctx, dest, patch, L, t0){
   const J=jingleFor(L), voices=[]; let end=0;

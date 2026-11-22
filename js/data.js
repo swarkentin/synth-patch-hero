@@ -17,22 +17,23 @@ const fmtPct = v => Math.round(v*100)+'%';
 
 const MT = {
   osc: {name:'OSC', long:'Oscillator', color:'var(--amber)', cost:2,
-    ins:[{id:'pitch',kind:'mod',label:'PITCH',req:'mod'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
+    ins:[{id:'pitch',kind:'mod',label:'PITCH',req:'mod'},{id:'fm',kind:'audio',label:'FM',req:'fm'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
     params:[
       {id:'wave',type:'choice',options:WAVES,def:'sine',req:'wave'},
       {id:'oct',label:'OCT',min:-3,max:3,step:1,def:0,fmt:fmtSigned},
       {id:'semi',label:'SEMI',min:-12,max:12,step:1,def:0,fmt:fmtSigned},
       {id:'fine',label:'FINE',min:-50,max:50,step:1,def:0,fmt:v=>fmtSigned(v)+'ct',req:'fine'},
-      {id:'pitchAmt',label:'MOD AMT',min:0,max:4800,step:5,def:0,fmt:v=>(v/100).toFixed(v<1000?2:1)+'st',req:'mod'},
+      {id:'pitchAmt',label:'MOD AMT',min:-4800,max:4800,step:5,def:0,fmt:v=>fmtSigned(+(v/100).toFixed(Math.abs(v)<1000?2:1))+'st',req:'mod',bipolar:true},
+      {id:'fmAmt',label:'FM AMT',min:0,max:3000,step:5,def:0,fmt:v=>Math.round(v)+'Hz',req:'fm'},
     ]},
   noise: {name:'NOISE', long:'Noise source', color:'var(--grey)', cost:1, ins:[], outs:[{id:'out',kind:'audio',label:'OUT'}], params:[]},
   filter: {name:'FILTER', long:'Filter', color:'var(--teal)', cost:3,
     ins:[{id:'in',kind:'audio',label:'IN'},{id:'cut',kind:'mod',label:'CUT',req:'mod'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
     params:[
-      {id:'type',type:'choice',options:['lowpass','highpass','bandpass'],labels:['LP','HP','BP'],def:'lowpass',req:'ftype'},
+      {id:'type',type:'choice',options:['lowpass','highpass','bandpass','notch'],labels:['LP','HP','BP','NT'],def:'lowpass',req:'ftype'},
       {id:'cutoff',label:'CUTOFF',min:40,max:12000,scale:'log',def:2000,fmt:fmtHz},
       {id:'res',label:'RES',min:0,max:1,step:0.01,def:0.1,fmt:fmtPct,req:'res'},
-      {id:'cutAmt',label:'MOD AMT',min:0,max:7200,step:10,def:0,fmt:v=>(v/1200).toFixed(2)+'oct',req:'mod'},
+      {id:'cutAmt',label:'MOD AMT',min:-7200,max:7200,step:10,def:0,fmt:v=>(v>0?'+':'')+(v/1200).toFixed(2)+'oct',req:'mod',bipolar:true},
     ]},
   vca: {name:'VCA', long:'Amplifier', color:'var(--red)', cost:1,
     ins:[{id:'in',kind:'audio',label:'IN'},{id:'gain',kind:'mod',label:'CV'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
@@ -49,9 +50,43 @@ const MT = {
       {id:'wave',type:'choice',options:WAVES,def:'sine'},
       {id:'rate',label:'RATE',min:0.1,max:20,scale:'log',def:2,fmt:v=>v.toFixed(v<10?2:1)+'Hz'},
     ]},
+  mixer: {name:'MIXER', long:'Mixer', color:'var(--sand)', cost:1,
+    ins:[{id:'in1',kind:'audio',label:'IN 1'},{id:'in2',kind:'audio',label:'IN 2'},{id:'in3',kind:'audio',label:'IN 3'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
+    params:[
+      {id:'l1',label:'LEVEL 1',min:0,max:1,step:0.01,def:0.8,fmt:fmtPct},
+      {id:'l2',label:'LEVEL 2',min:0,max:1,step:0.01,def:0.8,fmt:fmtPct},
+      {id:'l3',label:'LEVEL 3',min:0,max:1,step:0.01,def:0.8,fmt:fmtPct},
+    ]},
+  harm: {name:'HARMONIC', long:'Harmonic oscillator (drawbars)', color:'var(--pink)', cost:3,
+    ins:[], outs:[{id:'out',kind:'audio',label:'OUT'}],
+    params:[1,2,3,4,5,6].map(n=>({id:'h'+n,label:'H'+n,type:'bar',min:0,max:1,step:0.01,def:n===1?1:0,fmt:fmtPct}))},
+  delay: {name:'DELAY', long:'Delay / echo', color:'var(--blue)', cost:3,
+    ins:[{id:'in',kind:'audio',label:'IN'},{id:'mod',kind:'mod',label:'TIME',req:'mod'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
+    params:[
+      {id:'sync',type:'choice',options:['free','note'],labels:['MS','NOTE'],def:'free'},
+      {id:'time',label:'TIME',min:0.002,max:1,scale:'log',def:0.25,fmt:fmtT},
+      {id:'fb',label:'FDBK',min:0,max:0.99,step:0.005,def:0.3,fmt:fmtPct},
+      {id:'mix',label:'MIX',min:0,max:1,step:0.01,def:0.35,fmt:fmtPct},
+      {id:'tone',label:'TONE',min:300,max:12000,scale:'log',def:8000,fmt:fmtHz},
+      {id:'modAmt',label:'MOD',min:0,max:0.02,step:0.0001,def:0,fmt:v=>(v*1000).toFixed(1)+'ms',req:'mod'},
+    ]},
+  reverb: {name:'REVERB', long:'Reverb', color:'var(--sky)', cost:3,
+    ins:[{id:'in',kind:'audio',label:'IN'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
+    params:[
+      {id:'size',label:'SIZE',min:0.2,max:6,scale:'log',def:1.5,fmt:v=>v.toFixed(1)+'s'},
+      {id:'mix',label:'MIX',min:0,max:1,step:0.01,def:0.3,fmt:fmtPct},
+    ]},
+  drive: {name:'DRIVE', long:'Drive / distortion', color:'var(--orange)', cost:2,
+    ins:[{id:'in',kind:'audio',label:'IN'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
+    params:[
+      {id:'drive',label:'DRIVE',min:1,max:60,scale:'log',def:4,fmt:v=>v.toFixed(1)+'×'},
+      {id:'level',label:'LEVEL',min:0,max:1,step:0.01,def:0.7,fmt:fmtPct},
+    ]},
+  sh: {name:'S&H', long:'Sample & hold (random steps)', color:'var(--lime)', cost:2, ins:[], outs:[{id:'out',kind:'mod',label:'S&H'}],
+    params:[{id:'rate',label:'RATE',min:0.5,max:30,scale:'log',step:0.5,def:6,fmt:v=>v.toFixed(v<10?2:1)+'Hz'}]},
   out: {name:'OUTPUT', long:'Speaker', color:'var(--cream)', cost:0, ins:[{id:'in',kind:'audio',label:'IN'}], outs:[], params:[]},
 };
-const ALL_FEATURES = ['osc','wave','filter','res','ftype','vca','env','mod','lfo','fine','noise'];
+const ALL_FEATURES = ['osc','wave','filter','res','ftype','vca','env','mod','lfo','fine','noise','fm'];
 
 /* =====================================================================
    DATA: levels
@@ -175,6 +210,25 @@ const LEVELS = [
   <div class="tip">Sweep the cutoff slowly while listening. You'll hear "oo → oh → ah → eh → ee" go by.</div>`,
   target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{type:'bandpass',cutoff:950,res:0.5}}], cables:['o.out>f.in','f.out>out.in']},
   reply:`Aaaaah. The robot is HAPPY. We're calling the album "Shower Thoughts".`},
+{ id:'notch', ch:'filters', title:'The Scoop', concept:'Notch filter', client:'Marisol Duarte', role:'Late-night radio host',
+  unlock:['ftype'], palette:{osc:1,filter:1}, note:45, gate:1.2, dur:1.4,
+  brief:`My station ident sounds harsh right in the middle, like a kazoo in a tin can. I don't want it darker or thinner. Keep the lows, keep the sparkle, just scoop out that nasal middle.`,
+  manual:`<h4>The notch filter</h4>
+  <p>Low-pass, high-pass and band-pass all <i>keep</i> a region. A <b>notch</b> (NT) does the opposite: it removes one band and lets everything above and below through.</p>
+  <ul><li><b>CUTOFF</b> picks the centre of the hole.</li><li><b>RES</b> narrows the hole. Low resonance gives a wide scoop, high resonance gives a thin slice.</li></ul>
+  <div class="tip">Look for the dip in the target's spectrum. Line up your cutoff under it, then match its width.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{type:'notch',cutoff:1100,res:0}}], cables:['o.out>f.in','f.out>out.in']},
+  reply:`Smooth as late-night coffee. The kazoo has left the building.`},
+{ id:'swell', ch:'filters', title:'Upside Down', concept:'Inverted envelope', client:'Dex Moreau', role:'Shoegaze guitarist',
+  unlock:['mod'], palette:{osc:1,filter:1,env:1}, note:45, gate:1.3, dur:1.6,
+  brief:`Every synth I hear opens up bright and then closes. I want the reverse. Hit the note and the tone ducks dark, then slowly blooms back open while I hold it.`,
+  manual:`<h4>Negative modulation</h4>
+  <p>The filter's <b>MOD AMT</b> knob goes both ways. Turn it right and an envelope pushes the cutoff <b>up</b>. Turn it left of centre and the same envelope pushes the cutoff <b>down</b>.</p>
+  <ul><li>Set CUTOFF to where the sound should rest: fairly bright.</li><li>Patch an ENV into the filter's CUT jack and turn MOD AMT negative.</li><li>The envelope's attack is how fast it ducks. Its decay and sustain decide how far and how slowly it climbs back.</li></ul>
+  <div class="tip">On the spectrum, the target dips at the start and recovers. That recovery is the envelope's decay.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:3000,res:0.3,cutAmt:-4200}},{id:'e',type:'env',p:{a:0.02,d:0.9,s:0.15,r:0.3}}],
+    cables:['o.out>f.in','f.out>out.in','e.out>f.cut']},
+  reply:`It breathes in before it sings. My pedalboard is jealous.`},
 { id:'acid', ch:'filters', challenge:true, tol:1.5, title:'Acid Test', concept:'Challenge', client:'Acid Annie', role:'Back for more squelch',
   unlock:[], palette:{osc:1,filter:1,vca:1,env:2,lfo:1}, note:45, gate:0.5, dur:0.8,
   brief:`Remember me, darling? Now I want the real thing: a short, snappy note where the resonant filter <i>bites</i> open and snaps shut every time. Rubbery. Wet. Rude.`,
@@ -414,6 +468,316 @@ const LEVELS = [
   target:{mods:[{id:'o',type:'osc',p:{wave:'triangle',oct:1,pitchAmt:400}},{id:'l',type:'lfo',p:{wave:'triangle',rate:7}},{id:'f',type:'filter',p:{cutoff:1500,res:0.4}},{id:'v',type:'vca',p:{level:0.8}},{id:'e',type:'env',p:{a:0.5,d:0.3,s:0.9,r:0.6}}],
     cables:['o.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain','l.out>o.pitch']},
   reply:`Our listeners say it gives them goosebumps. Great, goosebumps are the brand.`},
+/* ---------------- MIX DESK ---------------- */
+{ id:'sub-layer', ch:'mix', title:'Sub Layer', concept:'Mixing sources', client:'Tamsin Okafor', role:'Bedroom pop producer',
+  unlock:[], palette:{osc:2,mixer:1}, note:45, gate:1.2, dur:1.4,
+  brief:`My saw bass sounds fizzy on laptop speakers and thin on the club system. Can you put a clean sine an octave below it, so it's got weight underneath? The saw should still be the star, just quieter.`,
+  manual:`<h4>The mixer</h4>
+  <p>Until now one cable carried one sound. A <b>MIXER</b> takes up to three signals and adds them together, each with its own <b>LEVEL</b> knob.</p>
+  <ul><li>Two oscillators into IN 1 and IN 2, then the mixer's OUT to OUTPUT.</li><li>A sine one octave down (OCT −1) is called a <b>sub</b>. It adds weight without adding buzz.</li><li>The level knobs set the <i>balance</i>. Listen for which layer is in front.</li></ul>
+  <div class="tip">In the spectrum, the sub is the lone peak to the left of the saw's comb. Match its height with that channel's level.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'s',type:'osc',p:{wave:'sine',oct:-1}},{id:'m',type:'mixer',p:{l1:0.45,l2:0.9,l3:0.8}}],
+    cables:['o.out>m.in1','s.out>m.in2','m.out>out.in']},
+  reply:`It finally sounds the same in my headphones and in the car. Witchcraft.`},
+{ id:'breath', ch:'mix', title:'Breath & Tone', concept:'Mixing noise', client:'Ana Lucía Ríos', role:'Ambient flautist',
+  unlock:['ftype'], palette:{osc:1,noise:1,filter:1,mixer:1}, note:69, gate:1.2, dur:1.4,
+  brief:`A real flute isn't a pure tone. There's air in it, a little hiss riding on top of the note. Give me a soft, pure tone with a thin breath of high air mixed underneath it.`,
+  manual:`<h4>Mixing noise with a tone</h4>
+  <p>Acoustic instruments are rarely one clean wave. A flute is a near-sine plus <b>breath noise</b>, and that noise is part of what makes it sound real.</p>
+  <ul><li>A soft wave for the tone.</li><li>NOISE through a <b>high-pass</b> FILTER keeps only the airy top end.</li><li>Mix them, with the breath much quieter than the tone.</li></ul>
+  <div class="tip">Start with the breath level at zero, match the tone, then bring the breath up until the spectrum's high hiss matches.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'triangle'}},{id:'n',type:'noise',p:{}},{id:'f',type:'filter',p:{type:'highpass',cutoff:3500,res:0.1}},{id:'m',type:'mixer',p:{l1:0.85,l2:0.18,l3:0.8}}],
+    cables:['o.out>m.in1','n.out>f.in','f.out>m.in2','m.out>out.in']},
+  reply:`I can hear the room in it. Recording the whole album this way.`},
+{ id:'layer-cake', ch:'mix', challenge:true, tol:3, tolShape:1.2, title:'Layer Cake', concept:'Challenge', client:'Tamsin Okafor', role:'Back with a bigger budget',
+  unlock:[], palette:{osc:3,mixer:1,filter:1,vca:1,env:1}, note:45, gate:0.9, dur:1.3,
+  brief:`Remember my sub trick? Now I want the whole cake. Two bright layers slightly out of tune with each other, a sub underneath, all of it softened a little and shaped into a punchy note that holds.`,
+  manual:`<h4>Challenge: build a layered voice</h4>
+  <p>No parts list. Things to listen for:</p>
+  <ul><li>How many layers? Which one is the sub?</li><li>"Slightly out of tune": a slow beating between the bright layers.</li><li>"Softened": the top end is rolled off <i>after</i> the layers meet.</li><li>"Punchy, holds": a volume shape.</li></ul>
+  <div class="tip">Mix first, then process the mix. One filter after the mixer treats every layer the same way.</div>`,
+  target:{mods:[{id:'a',type:'osc',p:{wave:'sawtooth',fine:-9}},{id:'b',type:'osc',p:{wave:'sawtooth',fine:9}},{id:'s',type:'osc',p:{wave:'sine',oct:-1}},{id:'m',type:'mixer',p:{l1:0.5,l2:0.5,l3:0.85}},
+      {id:'f',type:'filter',p:{cutoff:1300,res:0.15}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.005,d:0.3,s:0.65,r:0.2}}],
+    cables:['a.out>m.in1','b.out>m.in2','s.out>m.in3','m.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain']},
+  reply:`Three layers, one voice. The label wants to know who my new sound designer is.`},
+/* ---------------- HARMONICS LAB ---------------- */
+{ id:'octave-up', ch:'harm', tol:0.7, title:'Octave Up', concept:'Harmonics', client:'Prof. Ingrid Halvorsen', role:'Acoustics lecturer',
+  unlock:[], palette:{harm:1}, note:57, gate:1.2, dur:1.4,
+  brief:`I'm teaching first-years what a harmonic is. I need a pure tone, then the same tone with its second harmonic added at half strength, so they can hear the colour change without the pitch changing.`,
+  manual:`<h4>What a harmonic is</h4>
+  <p>Every pitched sound is a stack of sine waves. The lowest is the <b>fundamental</b> (H1), which is the note you hear. Above it sit <b>harmonics</b> at 2×, 3×, 4×… the frequency.</p>
+  <p>The <b>HARMONIC</b> oscillator gives you six drawbars, one per harmonic. Pull a bar up to add that sine.</p>
+  <ul><li>H2 is one octave above the note. H4 is two octaves up.</li><li>Adding harmonics changes the <b>timbre</b> (colour), not the pitch.</li></ul>
+  <div class="tip">Each bar is one peak in the spectrum. Match the heights of the peaks.</div>`,
+  target:{mods:[{id:'h',type:'harm',p:{h1:1,h2:0.5,h3:0,h4:0,h5:0,h6:0}}], cables:['h.out>out.in']},
+  reply:`Thirty students just said "ohhh" at the same time. Best lecture of the year.`},
+{ id:'build-square', ch:'harm', tol:0.7, title:'Build a Square', concept:'Odd harmonics', client:'Prof. Ingrid Halvorsen', role:'Acoustics lecturer, week 2',
+  unlock:[], palette:{harm:1}, note:57, gate:1.2, dur:1.4,
+  brief:`This week: why a square wave sounds hollow. Build me something square-ish from sines, using only the odd harmonics and letting each one get quieter as you go up.`,
+  manual:`<h4>Odd harmonics</h4>
+  <p>A square wave contains <b>only the odd harmonics</b>, H1, H3, H5…, and each one is quieter than the last: H3 at 1/3 strength, H5 at 1/5.</p>
+  <ul><li>H1 full, H3 about 33%, H5 about 20%.</li><li>Leave the even bars (H2, H4, H6) at zero.</li><li>Missing even harmonics are what makes a square sound <b>hollow</b> or woody, like a clarinet.</li></ul>
+  <div class="tip">Watch the scope as you add H3 and H5. The sine starts to flatten into a square.</div>`,
+  target:{mods:[{id:'h',type:'harm',p:{h1:1,h2:0,h3:0.33,h4:0,h5:0.2,h6:0}}], cables:['h.out>out.in']},
+  reply:`They saw the square appear on the scope. One student is now changing majors.`},
+{ id:'build-saw', ch:'harm', tol:0.7, title:'Build a Saw', concept:'Additive synthesis', client:'Prof. Ingrid Halvorsen', role:'Acoustics lecturer, week 3',
+  unlock:[], palette:{harm:1}, note:57, gate:1.2, dur:1.4,
+  brief:`Final lecture. Now use <i>every</i> harmonic, each one weaker than the last, and build the bright, buzzy one. The class will compare it to the real thing.`,
+  manual:`<h4>Additive synthesis</h4>
+  <p>A sawtooth contains <b>every</b> harmonic, each at 1/n strength: H2 at 1/2, H3 at 1/3, and so on. Building sounds by stacking sines like this is called <b>additive synthesis</b>.</p>
+  <ul><li>H1 100%, H2 50%, H3 33%, H4 25%, H5 20%, H6 17%.</li><li>Six bars is only the start of a saw. A real one keeps going forever, so yours will sound a little softer.</li></ul>
+  <div class="tip">So far you've started with a bright wave and filtered harmonics away. That's subtractive synthesis. This lab builds the sound up instead.</div>`,
+  target:{mods:[{id:'h',type:'harm',p:{h1:1,h2:0.5,h3:0.33,h4:0.25,h5:0.2,h6:0.17}}], cables:['h.out>out.in']},
+  reply:`Course evaluations are in: "would build a saw again." Thank you.`},
+{ id:'drawbar', ch:'harm', challenge:true, title:'Drawbar Organ', concept:'Challenge', client:'Rev. Clement Ashby', role:'Gospel organist',
+  unlock:[], palette:{harm:1,vca:1,env:1,reverb:1}, note:57, gate:1.1, dur:1.5,
+  brief:`Our old organ died on Sunday. I need its voice: strong fundamental, a lot of the octave above it, a hint of the bright stuff on top. It speaks instantly and stops the moment you let go.`,
+  manual:`<h4>Challenge: the organ</h4>
+  <p>No parts list. An organ is additive synthesis in a wooden box. Each drawbar is a pipe at a harmonic of the note.</p>
+  <ul><li>Read the spectrum peak by peak. Which harmonics are there, and how loud?</li><li>"Speaks instantly, stops the moment you let go": what volume shape is that?</li></ul>
+  <div class="tip">The loudness graph is a flat-topped box. That's your envelope.</div>`,
+  target:{mods:[{id:'h',type:'harm',p:{h1:0.9,h2:0.75,h3:0.2,h4:0.5,h5:0,h6:0.3}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.004,d:0.1,s:1,r:0.03}}],
+    cables:['h.out>v.in','v.out>out.in','e.out>v.gain']},
+  reply:`The choir didn't notice the organ had changed. Highest compliment I can give.`},
+/* ---------------- FM STUDIO ---------------- */
+{ id:'metal-ring', ch:'fm', title:'Metal Ring', concept:'Frequency modulation', client:'Juno Takahashi', role:'Industrial percussionist',
+  unlock:['fm'], palette:{osc:2}, note:57, gate:1.2, dur:1.4,
+  brief:`I hit sheet metal for a living. I need a synth sound that's clangy and inharmonic like that, but steady. A metallic drone I can play over.`,
+  manual:`<h4>FM: one oscillator wobbling another</h4>
+  <p>An LFO on the PITCH jack gives vibrato, a slow wobble. Plug an <b>audio-rate</b> oscillator into another oscillator's <b>FM</b> jack and the wobble is so fast you hear it as new tones called <b>sidebands</b>.</p>
+  <ul><li>The oscillator you hear is the <b>carrier</b>. The one plugged into its FM jack is the <b>modulator</b>.</li><li><b>FM AMT</b> on the carrier sets how hard it's wobbled. More gives more sidebands and more brightness.</li><li>The <b>ratio</b> of their pitches decides the flavour. Whole-number ratios sound musical. Odd ratios like +6 semitones sound metallic.</li></ul>
+  <div class="tip">Both are sines. All the complexity comes from the modulation.</div>`,
+  target:{mods:[{id:'c',type:'osc',p:{wave:'sine',fmAmt:350}},{id:'m',type:'osc',p:{wave:'sine',semi:6}}], cables:['m.out>c.fm','c.out>out.in']},
+  reply:`It sounds like a bridge humming in the wind. I'm building a whole set around it.`},
+{ id:'fm-bell', ch:'fm', title:'Bell Tower', concept:'FM bells', client:'Sister Perpetua', role:'Carillon restoration fund',
+  unlock:[], palette:{osc:2,vca:1,env:1}, note:69, gate:0.15, dur:2.4,
+  brief:`Our bells are being repaired for a year and the village misses them. We need a bell for the recordings: a bright metallic strike that rings out and fades slowly.`,
+  manual:`<h4>FM bells</h4>
+  <p>Bells have <b>inharmonic</b> overtones that don't line up with the note. FM makes these easily: use a modulator at a non-whole-number ratio above the carrier.</p>
+  <ul><li>Carrier: a sine at the note. Modulator: a sine well above it. Try +1 octave plus some semitones.</li><li>A VCA and envelope give the strike: instant attack, long decay, no sustain.</li></ul>
+  <div class="tip">Short gate, long ring. The decay and release do all the work after the strike.</div>`,
+  target:{mods:[{id:'c',type:'osc',p:{wave:'sine',fmAmt:700}},{id:'m',type:'osc',p:{wave:'sine',oct:1,semi:10}},{id:'v',type:'vca',p:{level:0.9}},{id:'e',type:'env',p:{a:0.002,d:2.2,s:0,r:2.2}}],
+    cables:['m.out>c.fm','c.out>v.in','v.out>out.in','e.out>v.gain']},
+  reply:`Old Mrs. Kowalski cried at the first strike. In a good way. We think.`},
+{ id:'epiano', ch:'fm', title:'Electric Piano', concept:'Modulation envelope', client:'Luther Banks', role:'Soul keys player',
+  unlock:['mod'], palette:{osc:2,vca:2,env:2}, note:57, gate:0.9, dur:1.6,
+  brief:`I need that glassy electric piano from 80s ballads. Bright and bell-like when you hit the key, then it mellows into a soft round tone as it rings.`,
+  manual:`<h4>Brightness that changes over time</h4>
+  <p>FM AMT is fixed. To make the brightness <b>move</b>, put a VCA between the modulator and the carrier's FM jack and drive that VCA with an envelope.</p>
+  <ul><li>The modulator at the same pitch as the carrier (ratio 1:1) gives a warm, harmonic tone.</li><li><b>Modulation envelope</b>: fast decay to zero, so the bright "tine" only happens on the strike.</li><li><b>Volume envelope</b>: a longer decay on the carrier's own VCA.</li></ul>
+  <div class="tip">Two envelopes, two jobs. Get the volume right first, then add the strike.</div>`,
+  target:{mods:[{id:'c',type:'osc',p:{wave:'sine',fmAmt:900}},{id:'m',type:'osc',p:{wave:'sine'}},{id:'mv',type:'vca',p:{level:1}},{id:'me',type:'env',p:{a:0.002,d:0.35,s:0,r:0.2}},
+      {id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.003,d:1.4,s:0.25,r:0.35}}],
+    cables:['m.out>mv.in','mv.out>c.fm','me.out>mv.gain','c.out>v.in','v.out>out.in','e.out>v.gain']},
+  reply:`Lights down, lighters up. That's the ballad sound. Thank you, friend.`},
+{ id:'gong', ch:'fm', challenge:true, tol:1.5, tolShape:1.2, title:'Temple Gong', concept:'Challenge', client:'Meridian Yoga', role:'Sound bath studio',
+  unlock:[], palette:{osc:2,vca:2,env:2}, note:40, gate:0.3, dur:2.8,
+  brief:`We open every class with a gong. Ours got stolen. I need one that's deep and metallic, and the shimmer should <i>swell</i> after the hit before it all fades away.`,
+  manual:`<h4>Challenge: the gong</h4>
+  <p>No parts list. You've built every piece of this in FM Studio.</p>
+  <ul><li>"Deep and metallic": what pitch, and what ratio?</li><li>"The shimmer swells after the hit": the brightness rises after the strike. Which envelope controls brightness, and what would make it rise slowly?</li><li>"Fades away": a long volume decay.</li></ul>
+  <div class="tip">Watch the spectrum: the target gets <i>brighter</i> for a moment after the strike. That's your clue.</div>`,
+  target:{mods:[{id:'c',type:'osc',p:{wave:'sine',fmAmt:500}},{id:'m',type:'osc',p:{wave:'sine',semi:6}},{id:'mv',type:'vca',p:{level:1}},{id:'me',type:'env',p:{a:0.5,d:1.5,s:0.2,r:1.5}},
+      {id:'v',type:'vca',p:{level:0.9}},{id:'e',type:'env',p:{a:0.004,d:2.5,s:0,r:2.5}}],
+    cables:['m.out>mv.in','mv.out>c.fm','me.out>mv.gain','c.out>v.in','v.out>out.in','e.out>v.gain']},
+  reply:`Thirty people breathed out at once. Namaste, and thank you.`},
+/* ---------------- EFFECTS RACK ---------------- */
+{ id:'slapback', ch:'fxrack', title:'Slapback', concept:'Delay', client:'Rusty Delgado', role:'Rockabilly revival',
+  unlock:[], palette:{osc:1,vca:1,env:1,delay:1}, note:52, gate:0.2, dur:1.1,
+  start:[{id:'o',type:'osc',slot:0,locked:1,p:{wave:'square'}},{id:'v',type:'vca',slot:1,locked:1,p:{level:0.85}},{id:'e',type:'env',slot:4,locked:1,p:{a:0.003,d:0.18,s:0,r:0.1}}],
+  startCables:['o.out>v.in','v.out>out.in','e.out>v.gain'],
+  presetNote:`Preset on your rack: a short plucked note. Your job is the <b>echo</b>: put a DELAY between the VCA and OUTPUT.`,
+  brief:`Fifties records had that quick single echo, like the note's bouncing off the back of a tiny room. Give my pluck one fast echo, right behind it.`,
+  manual:`<h4>Delay</h4>
+  <p>A <b>DELAY</b> records what comes in and plays it back a moment later.</p>
+  <ul><li><b>TIME</b>: how long until the echo. Around 100 ms is a quick "slap".</li><li><b>FDBK</b> (feedback): how much of the echo goes back in to echo again. Low means one echo.</li><li><b>MIX</b>: how loud the echoes are against the original (dry) sound.</li><li><b>TONE</b>: darkens each repeat.</li></ul>
+  <div class="tip">On the loudness graph each echo is its own bump. Measure the gap between bumps to find TIME.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'square'}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.003,d:0.18,s:0,r:0.1}},{id:'d',type:'delay',p:{time:0.11,fb:0.05,mix:0.45,tone:6000}}],
+    cables:['o.out>v.in','v.out>d.in','d.out>out.in','e.out>v.gain']},
+  reply:`Hot dang, that's the sound of a jukebox in 1956.`},
+{ id:'canyon', ch:'fxrack', title:'Canyon Echo', concept:'Feedback', client:'Wren Calloway', role:'Desert folk singer',
+  unlock:[], palette:{osc:1,vca:1,env:1,delay:1}, note:57, gate:0.15, dur:2.4,
+  brief:`I want a pluck that echoes like I'm calling across a canyon: a slow series of repeats, each one quieter and a little duller than the last.`,
+  manual:`<h4>Feedback and tone</h4>
+  <p>Raise <b>FDBK</b> and each echo feeds back into the delay to make another. The higher it goes, the more repeats you get. Near 100% they'd go on forever.</p>
+  <ul><li>Long TIME spaces the repeats out.</li><li>Lower <b>TONE</b> rolls off highs on every pass, so later echoes are darker, like sound fading through air.</li></ul>
+  <div class="tip">Count the repeats on the loudness graph to get the feedback, then match the spacing for TIME.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.003,d:0.15,s:0,r:0.08}},{id:'d',type:'delay',p:{time:0.32,fb:0.6,mix:0.5,tone:2000}}],
+    cables:['o.out>v.in','v.out>d.in','d.out>out.in','e.out>v.gain']},
+  reply:`Hello... hello... hello... That's the one. That's the album opener.`},
+{ id:'big-room', ch:'fxrack', title:'Big Room', concept:'Reverb', client:'Father Dominic Reyes', role:'Cathedral choir director',
+  unlock:[], palette:{osc:1,filter:1,vca:1,env:1,reverb:1}, note:57, gate:0.25, dur:2.6,
+  brief:`I want our synth parts to sound like they belong in the cathedral: a soft, short note that blooms into the stone and hangs in the air long after it's played.`,
+  manual:`<h4>Reverb</h4>
+  <p>In a real room, sound bounces off every surface thousands of times. Those reflections blur into a smooth tail: <b>reverb</b>.</p>
+  <ul><li><b>SIZE</b>: how long the tail lasts. A small room is under a second. A cathedral is several seconds.</li><li><b>MIX</b>: how much room you hear compared to the dry note.</li></ul>
+  <div class="tip">Get the dry note right first (MIX at 0), then match the tail on the loudness graph.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:1400,res:0.1}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.005,d:0.25,s:0,r:0.1}},{id:'r',type:'reverb',p:{size:3.5,mix:0.55}}],
+    cables:['o.out>f.in','f.out>v.in','v.out>r.in','r.out>out.in','e.out>v.gain']},
+  reply:`It sounds like we built it into the walls. Bless you.`},
+{ id:'chorus', ch:'fxrack', tol:3, title:'Chorus', concept:'Modulated delay', client:'Indigo Park', role:'Dream-pop duo',
+  unlock:['mod'], palette:{osc:1,delay:1,lfo:1}, note:57, gate:1.6, dur:1.8,
+  brief:`I want our synth to shimmer, like two players on the same part who aren't quite in sync. Wide, wobbly, watery. Not an echo.`,
+  manual:`<h4>Chorus: a very short, moving delay</h4>
+  <p>Set the delay <b>very</b> short, around 10–20 ms, and you no longer hear an echo. Then slowly move the delay time with an LFO. The copy's pitch drifts a little sharp, then a little flat, and beats against the original.</p>
+  <ul><li>Feedback at zero, MIX around half.</li><li>Patch an LFO into the delay's <b>TIME</b> jack. The delay's <b>MOD</b> knob sets how far the time moves.</li><li>A slow LFO, around one cycle per second.</li></ul>
+  <div class="tip">The spectrum's peaks will shimmer and smear. That smear is the chorus.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'d',type:'delay',p:{time:0.015,fb:0,mix:0.5,tone:12000,modAmt:0.008}},{id:'l',type:'lfo',p:{wave:'sine',rate:1.5}}],
+    cables:['o.out>d.in','d.out>out.in','l.out>d.mod']},
+  reply:`It's like swimming in it. We're naming the next EP after this patch.`},
+{ id:'fuzz', ch:'fxrack', title:'Fuzz Box', concept:'Distortion', client:'Bettie Krause', role:'Garage-punk bassist',
+  unlock:[], palette:{osc:1,drive:1,filter:1}, note:45, gate:1.2, dur:1.4,
+  brief:`Your synth sounds too polite. Take a plain, smooth tone and make it FUZZY. Crunchy, square-edged, angry. But not so fizzy it hurts.`,
+  manual:`<h4>Drive: making new harmonics</h4>
+  <p>Filters can only <i>remove</i> harmonics. <b>Distortion</b> creates new ones. DRIVE turns the signal up into a ceiling so the peaks get squashed flat.</p>
+  <ul><li>A sine pushed hard clips into something like a square: odd harmonics appear out of nowhere.</li><li><b>DRIVE</b> sets how hard it's pushed. <b>LEVEL</b> brings the volume back down.</li><li>A low-pass after the drive tames the fizz.</li></ul>
+  <div class="tip">Watch the scope while you raise DRIVE. The round sine flattens at the top and bottom.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sine'}},{id:'d',type:'drive',p:{drive:18,level:0.7}},{id:'f',type:'filter',p:{cutoff:1100,res:0.2}}],
+    cables:['o.out>d.in','d.out>f.in','f.out>out.in']},
+  reply:`My amp is scared of this patch. PERFECT.`},
+{ id:'dub-stab', ch:'fxrack', challenge:true, tolShape:1.2, title:'Dub Stab', concept:'Challenge', client:'Selector Marcia', role:'Dub sound-system operator',
+  unlock:[], palette:{osc:1,filter:1,vca:1,env:1,delay:1,reverb:1}, note:57, gate:0.12, dur:2.6,
+  brief:`One short chord stab, honky and nasal, then it echoes off into space, each repeat darker, all of it sitting in a big wet room. You know the sound. Make it.`,
+  manual:`<h4>Challenge: the dub stab</h4>
+  <p>No parts list. Listen for the layers:</p>
+  <ul><li>"Honky and nasal": a narrow slice of a bright wave.</li><li>"Short stab": a volume shape.</li><li>"Echoes off, each repeat darker": which effect, and which knob darkens it?</li><li>"Big wet room": one more effect at the end of the chain.</li></ul>
+  <div class="tip">Order matters. The echoes should be in the room too, so the room goes last.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{type:'bandpass',cutoff:900,res:0.45}},{id:'v',type:'vca',p:{level:0.9}},{id:'e',type:'env',p:{a:0.003,d:0.12,s:0,r:0.06}},
+      {id:'d',type:'delay',p:{time:0.375,fb:0.6,mix:0.45,tone:1500}},{id:'r',type:'reverb',p:{size:2.5,mix:0.3}}],
+    cables:['o.out>f.in','f.out>v.in','v.out>d.in','d.out>r.in','r.out>out.in','e.out>v.gain']},
+  reply:`Big up yourself. The bass bins are smiling.`},
+/* ---------------- STRINGS & PLUCKS ---------------- */
+{ id:'ks-string', ch:'strings', title:'Plucked String', concept:'Karplus–Strong', client:'Mirela Vasić', role:'Instrument maker',
+  unlock:[], palette:{noise:1,vca:1,env:1,delay:1}, note:48, gate:0.05, dur:1.6,
+  start:[{id:'n',type:'noise',slot:0,locked:1},{id:'v',type:'vca',slot:1,locked:1,p:{level:1}},{id:'e',type:'env',slot:4,locked:1,p:{a:0.001,d:0.02,s:0,r:0.01}}],
+  startCables:['n.out>v.in','e.out>v.gain'],
+  presetNote:`Preset on your rack: a tiny burst of noise, just a click. Run it through a DELAY tuned to the note and into OUTPUT, and it becomes a string.`,
+  brief:`I build guitars by hand, and I want to show my students that a string is just energy bouncing back and forth. Can you make a plucked string out of nothing but a click?`,
+  manual:`<h4>A string from a delay</h4>
+  <p>Pluck a string and a wave races to the end, bounces back, and does it again, hundreds of times a second. A <b>very short delay with high feedback</b> does the same thing.</p>
+  <ul><li>Set the DELAY to <b>NOTE</b>: its time becomes one cycle of the played note, so the echoes repeat fast enough to become a pitch.</li><li><b>FDBK</b> near the top keeps it ringing. That's the string's sustain.</li><li><b>TONE</b> darkens it on every pass, just as a real string loses its highs first.</li><li>MIX all the way up, so you hear only the string, not the click.</li></ul>
+  <div class="tip">This trick is decades old and still one of the best plucks in synthesis. Matching feedback sets the decay. Matching tone sets the brightness.</div>`,
+  target:{mods:[{id:'n',type:'noise',p:{}},{id:'v',type:'vca',p:{level:1}},{id:'e',type:'env',p:{a:0.001,d:0.02,s:0,r:0.01}},{id:'d',type:'delay',p:{sync:'note',fb:0.97,mix:1,tone:6000}}],
+    cables:['n.out>v.in','v.out>d.in','d.out>out.in','e.out>v.gain']},
+  reply:`My students went silent, then all tried to pluck the screen. Thank you.`},
+{ id:'nylon', ch:'strings', title:'Nylon', concept:'Damping', client:'Mirela Vasić', role:'Instrument maker, classical guitars',
+  unlock:[], palette:{noise:1,vca:1,env:1,delay:1}, note:45, gate:0.05, dur:2.0,
+  brief:`Steel strings are bright and quick. Nylon is warm and round, and it rings a little longer. Build me the nylon string from scratch this time.`,
+  manual:`<h4>Damping</h4>
+  <p>What a string is made of changes how fast its high harmonics die away. That's called <b>damping</b>.</p>
+  <ul><li><b>TONE</b> is the damping. Lower means a warmer, softer string.</li><li><b>FDBK</b> is how long the string rings.</li><li>The burst still has to be short. A longer burst sounds like a strum or a scrape.</li></ul>
+  <div class="tip">Same parts as last time, no presets. Build the click first, then the string.</div>`,
+  target:{mods:[{id:'n',type:'noise',p:{}},{id:'v',type:'vca',p:{level:1}},{id:'e',type:'env',p:{a:0.001,d:0.02,s:0,r:0.01}},{id:'d',type:'delay',p:{sync:'note',fb:0.985,mix:1,tone:1800}}],
+    cables:['n.out>v.in','v.out>d.in','d.out>out.in','e.out>v.gain']},
+  reply:`Warm as a fireplace. I'm putting this on the shop's website.`},
+{ id:'harp', ch:'strings', challenge:true, tol:1.5, title:'Harp', concept:'Challenge', client:'Seren Pryce', role:'Fantasy game composer',
+  unlock:[], palette:{noise:1,vca:1,env:1,delay:1,reverb:1}, note:50, gate:0.05, dur:2.4,
+  brief:`I need a harp for a fairy-forest scene. Bright but gentle strings that ring for ages, softly echoing around a big, magical space.`,
+  manual:`<h4>Challenge: the harp</h4>
+  <p>No parts list. A harp is a plucked string with:</p>
+  <ul><li>Long sustain: how much feedback?</li><li>"Bright but gentle": where does the damping sit?</li><li>"A big, magical space": one more effect after the string.</li></ul>
+  <div class="tip">Build the string first and match it with the room effect off. Then add the space.</div>`,
+  target:{mods:[{id:'n',type:'noise',p:{}},{id:'v',type:'vca',p:{level:1}},{id:'e',type:'env',p:{a:0.001,d:0.02,s:0,r:0.01}},{id:'d',type:'delay',p:{sync:'note',fb:0.99,mix:1,tone:3500}},{id:'r',type:'reverb',p:{size:3,mix:0.35}}],
+    cables:['n.out>v.in','v.out>d.in','d.out>r.in','r.out>out.in','e.out>v.gain']},
+  reply:`The fairies approve. So does my producer, which is rarer.`},
+/* ---------------- RANDOM & GENERATIVE ---------------- */
+{ id:'bleeps', ch:'random', tol:5, title:'Computer Bleeps', concept:'Sample & hold', client:'Dr. Felix Moreau', role:'Retro sci-fi film restorer',
+  unlock:['mod'], palette:{osc:1,sh:1}, note:69, gate:2.0, dur:2.0,
+  brief:`The computer in our 1970s film was supposed to beep and burble randomly, but the original tape is lost. Make it think out loud: random notes, a steady patter.`,
+  manual:`<h4>Sample & hold</h4>
+  <p>An LFO moves smoothly. A <b>S&amp;H</b> (sample and hold) jumps to a <b>new random value</b> at every tick and holds it until the next one.</p>
+  <ul><li>Patch it into the OSC's PITCH jack for random notes.</li><li><b>RATE</b>: how many new values per second.</li><li>The OSC's <b>MOD AMT</b>: how wide the random notes spread.</li></ul>
+  <div class="tip">The S&amp;H here uses the same random sequence every time, so the target is repeatable. Count the steps per second on the spectrum.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'square',pitchAmt:1200}},{id:'s',type:'sh',p:{rate:8}}], cables:['s.out>o.pitch','o.out>out.in']},
+  reply:`BEEP BOOP. The computer lives again. Film festival in March!`},
+{ id:'rand-filter', ch:'random', tol:5, title:'Random Filter', concept:'Random modulation', client:'Kit Sørensen', role:'Modular synth streamer',
+  unlock:['mod','res'], palette:{osc:1,filter:1,sh:1}, note:45, gate:2.0, dur:2.0,
+  brief:`My chat loves the "random filter" sound. Same note held, but the filter jumps somewhere new at every step: squelchy, bubbly, never the same twice. Well, the same twice for you, so you can match it.`,
+  manual:`<h4>Random modulation</h4>
+  <p>S&amp;H can drive anything an LFO can. Into a resonant filter's CUT jack, it makes the classic bubbling sound.</p>
+  <ul><li>Resonance makes each new cutoff "ping".</li><li>The filter's MOD AMT sets how far the random jumps reach.</li><li>The S&amp;H RATE sets the tempo of the bubbles.</li></ul>
+  <div class="tip">Same note, changing tone. The pitch line in the spectrum stays put while the bright region jumps around.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:700,res:0.7,cutAmt:3000}},{id:'s',type:'sh',p:{rate:6}}],
+    cables:['o.out>f.in','f.out>out.in','s.out>f.cut']},
+  reply:`Chat is spamming bubble emojis. You've made it.`},
+{ id:'robot', ch:'random', challenge:true, tol:5, tolShape:1.2, title:'Robot Babble', concept:'Challenge', client:'Gadget & Gizmo', role:'Kids\' cartoon studio',
+  unlock:[], palette:{osc:1,filter:1,sh:1,vca:1,env:1}, note:52, gate:1.6, dur:2.0,
+  brief:`Our robot character "talks" in babble. Same buzzy voice pitch, but the vowels keep changing randomly, like nonsense words. It should start and stop like a sentence.`,
+  manual:`<h4>Challenge: robot speech</h4>
+  <p>No parts list. You've learned the pieces:</p>
+  <ul><li>Vowels are formants: a resonant band of frequencies. Which filter type?</li><li>"Vowels keep changing randomly": what moves that band, and how fast?</li><li>"Starts and stops like a sentence": a volume shape.</li></ul>
+  <div class="tip">The voice's pitch stays put. Only the vowel jumps around.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{type:'bandpass',cutoff:900,res:0.55,cutAmt:2400}},{id:'s',type:'sh',p:{rate:9}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.03,d:0.2,s:0.85,r:0.15}}],
+    cables:['o.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain','s.out>f.cut']},
+  reply:`Blip-blorp-bleep means "thank you" in Robot. We checked.`},
+/* ---------------- REPAIR SHOP ---------------- */
+{ id:'no-signal', ch:'repair', title:'No Signal', concept:'Signal flow', client:'Hank Pruitt', role:'Pawn shop owner',
+  unlock:[], palette:{osc:1,filter:1,vca:1,env:1}, note:45, gate:0.6, dur:1.0,
+  start:[{id:'o',type:'osc',slot:0,p:{wave:'sawtooth'}},{id:'f',type:'filter',slot:1,p:{cutoff:1800,res:0.2}},{id:'v',type:'vca',slot:2,p:{level:0}},{id:'e',type:'env',slot:4,p:{a:0.005,d:0.3,s:0.5,r:0.2}}],
+  startCables:['o.out>f.in','f.out>v.in','e.out>v.gain'],
+  presetNote:`Someone traded in this patch. It's all there, but it makes no sound. Find the <b>two</b> faults.`,
+  brief:`Fella traded this synth patch in and swore it worked. I hear nothing. Supposed to be a plain buzzy note with a bit of shape to it. Can you get it going so I can sell it?`,
+  manual:`<h4>Repair: follow the signal</h4>
+  <p>When a patch is silent, trace the sound from where it starts to the speaker, one module at a time.</p>
+  <ul><li>Is every module connected to the next one?</li><li>Does the chain actually reach OUTPUT?</li><li>Is any level or amount turned all the way down?</li></ul>
+  <div class="tip">Press ▶ Yours after each fix. Silence to sound is the first clue you're on the right track.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:1800,res:0.2}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.005,d:0.3,s:0.5,r:0.2}}],
+    cables:['o.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain']},
+  reply:`It sings! Sold it in ten minutes. Here's your cut.`},
+{ id:'muffled', ch:'repair', title:'Muffled Mess', concept:'Diagnosing tone', client:'Hank Pruitt', role:'Pawn shop owner, again',
+  unlock:['res'], palette:{osc:1,filter:1,vca:1,env:1}, note:45, gate:0.6, dur:1.0,
+  start:[{id:'o',type:'osc',slot:0,p:{wave:'sawtooth'}},{id:'f',type:'filter',slot:1,p:{cutoff:120,res:0.9}},{id:'v',type:'vca',slot:2,p:{level:0.85}},{id:'e',type:'env',slot:4,p:{a:0.005,d:0.3,s:0.5,r:0.2}}],
+  startCables:['o.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain'],
+  presetNote:`This one makes a sound, but it's all wrong: a dull, boomy whistle. Compare it with the target and fix what's off.`,
+  brief:`Another one. This one works, but it sounds like it's under a pillow and whistling. The fella said it's meant to be the same as the last one: bright and buzzy.`,
+  manual:`<h4>Repair: read the difference</h4>
+  <p>When a patch sounds <i>wrong</i> rather than silent, compare the graphs.</p>
+  <ul><li>Target has highs that yours doesn't? Something is cutting them.</li><li>A sharp peak that the target doesn't have? Something is resonating.</li></ul>
+  <div class="tip">Change one thing at a time and check the match after each change.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:1800,res:0.2}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.005,d:0.3,s:0.5,r:0.2}}],
+    cables:['o.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain']},
+  reply:`Clear as a bell. You're cheaper than the repair guy across the street.`},
+{ id:'wrong-jack', ch:'repair', title:'Wrong Jack', concept:'Audio vs. control', client:'Hank Pruitt', role:'Pawn shop owner, getting suspicious',
+  unlock:['mod'], palette:{osc:1,filter:1,vca:1,env:1}, note:45, gate:0.4, dur:1.0,
+  start:[{id:'o',type:'osc',slot:0,p:{wave:'sawtooth'}},{id:'f',type:'filter',slot:1,p:{cutoff:1200,res:0.2,cutAmt:2400}},{id:'v',type:'vca',slot:2,p:{level:0.85}},{id:'e',type:'env',slot:4,p:{a:0.003,d:0.2,s:0,r:0.1}}],
+  startCables:['o.out>f.in','f.out>v.in','v.out>out.in','e.out>f.cut'],
+  presetNote:`It makes a sound, but it drones on forever. The envelope is doing <i>something</i>, just not the right job.`,
+  brief:`This one's supposed to be a short pluck. Instead it hums forever and goes "wow" at the start. Same parts as a working one, I swear.`,
+  manual:`<h4>Repair: control goes where?</h4>
+  <p>An envelope does whatever its jack tells it to. Plugged into the filter's CUT, it moves the tone. Plugged into the VCA's CV, it shapes the volume.</p>
+  <ul><li>Does the target stop on its own? Then something is shaping its volume.</li><li>Does the target's tone sweep? If not, the filter doesn't need the envelope.</li></ul>
+  <div class="tip">Tap a cable's end to unplug it, then drag it to a new jack.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:1200,res:0.2}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.003,d:0.2,s:0,r:0.1}}],
+    cables:['o.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain']},
+  reply:`Plink. That's a pluck. You're on retainer now.`},
+{ id:'seasick', ch:'repair', tol:3, title:'Seasick', concept:'Modulation depth', client:'Hank Pruitt', role:'Pawn shop owner, feeling queasy',
+  unlock:['mod'], palette:{osc:1,lfo:1,vca:1,env:1}, note:57, gate:1.4, dur:1.6,
+  start:[{id:'o',type:'osc',slot:0,p:{wave:'triangle',pitchAmt:900}},{id:'l',type:'lfo',slot:4,p:{wave:'sine',rate:1.2}},{id:'v',type:'vca',slot:1,p:{level:0.85}},{id:'e',type:'env',slot:5,p:{a:0.05,d:0.3,s:0.8,r:0.3}}],
+  startCables:['o.out>v.in','v.out>out.in','e.out>v.gain','l.out>o.pitch'],
+  presetNote:`It's meant to be a gentle vibrato lead. Right now it lurches up and down like a ship. Tame the wobble.`,
+  brief:`This one makes me seasick. It's supposed to be a sweet little lead with a gentle vibrato, like a singer. Right now it's like a siren after three beers.`,
+  manual:`<h4>Repair: how much, how fast</h4>
+  <p>Every modulation has two questions: <b>how far</b> (the amount knob at the destination) and <b>how fast</b> (the source's rate).</p>
+  <ul><li>Vibrato is narrow: a fraction of a semitone.</li><li>Vibrato is quick: around five or six wobbles per second.</li></ul>
+  <div class="tip">The pitch line in the spectrum shows how wide the wobble is. The scope's movement shows how fast.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'triangle',pitchAmt:35}},{id:'l',type:'lfo',p:{wave:'sine',rate:5.5}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.05,d:0.3,s:0.8,r:0.3}}],
+    cables:['o.out>v.in','v.out>out.in','e.out>v.gain','l.out>o.pitch']},
+  reply:`My stomach thanks you. So does the customer who bought it.`},
+{ id:'total-wreck', ch:'repair', challenge:true, tolShape:1.2, title:'Total Wreck', concept:'Challenge', client:'Hank Pruitt', role:'Pawn shop owner, final boss',
+  unlock:['ftype','res','mod'], palette:{osc:1,filter:1,vca:1,env:2,delay:1}, note:45, gate:0.35, dur:1.8,
+  start:[{id:'o',type:'osc',slot:0,p:{wave:'sine'}},{id:'f',type:'filter',slot:1,p:{type:'highpass',cutoff:600,res:0.6,cutAmt:2400}},{id:'v',type:'vca',slot:2,p:{level:0.85}},{id:'e',type:'env',slot:4,p:{a:1.2,d:0.25,s:0.3,r:0.15}},
+    {id:'e2',type:'env',slot:5,p:{a:0.003,d:0.2,s:0,r:0.1}},{id:'d',type:'delay',slot:3,p:{time:0.3,fb:0.92,mix:0.3,tone:3000}}],
+  startCables:['o.out>f.in','f.out>v.in','v.out>d.in','d.out>out.in','e.out>v.gain'],
+  presetNote:`An acid pluck with an echo, run through a blender. Several things are broken. You find them.`,
+  brief:`Last one, I promise. Guy said it was an acid pluck with an echo. Now it fades in slow, sounds thin, never stops echoing and the squelch is gone. It's a wreck. Fix it all.`,
+  manual:`<h4>Challenge: everything's broken</h4>
+  <p>No list of faults. Work through the patch the way a tech would:</p>
+  <ul><li>Source: is the raw wave right?</li><li>Filter: right type? Is anything moving it?</li><li>Volume shape: does the note start when it should?</li><li>Effect: do the echoes die away like the target's?</li></ul>
+  <div class="tip">Fix the biggest problem first. The score jumps the most when you fix the fault that matters most.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:600,res:0.6,cutAmt:2400}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.003,d:0.25,s:0.3,r:0.15}},
+      {id:'e2',type:'env',p:{a:0.003,d:0.2,s:0,r:0.1}},{id:'d',type:'delay',p:{time:0.3,fb:0.4,mix:0.3,tone:3000}}],
+    cables:['o.out>f.in','f.out>v.in','v.out>d.in','d.out>out.in','e.out>v.gain','e2.out>f.cut']},
+  reply:`You fixed it ALL? I'm giving you the shop keys. Kidding. Mostly.`},
 ];
 
 /* Chapters: Basics is a linear tutorial; every theme opens once Basics is done. */
@@ -425,5 +789,12 @@ const CHAPTERS = [
   {id:'leads', title:'Leads', short:'LEADS', blurb:'Melody voices that cut through and sing.'},
   {id:'perc', title:'Percussion', short:'DRUMS', blurb:'Drums from nothing but oscillators, noise and envelopes.'},
   {id:'fx', title:'Sound FX', short:'FX', blurb:'Lasers, sirens, wind, and things from outer space.'},
+  {id:'mix', title:'Mix Desk', short:'MIX', blurb:'Layer sources together and balance them into one voice.'},
+  {id:'harm', title:'Harmonics Lab', short:'HARMONICS', blurb:'What a timbre is made of. Build waves from pure sines.'},
+  {id:'fm', title:'FM Studio', short:'FM', blurb:'Oscillators modulating oscillators: bells, metal and glassy keys.'},
+  {id:'fxrack', title:'Effects Rack', short:'EFFECTS', blurb:'Delay, reverb, chorus and drive: the space and grit around a sound.'},
+  {id:'strings', title:'Strings & Plucks', short:'STRINGS', blurb:'Turn a click and a delay into a real-sounding string.'},
+  {id:'random', title:'Random & Generative', short:'RANDOM', blurb:'Sample & hold: controlled chaos that still repeats.'},
+  {id:'repair', title:'Repair Shop', short:'REPAIR', blurb:'Broken patches come in. Diagnose them and get them working.'},
 ];
 CHAPTERS.forEach(c=>{ c.levels=LEVELS.map((L,i)=>L.ch===c.id?i:-1).filter(i=>i>=0); });

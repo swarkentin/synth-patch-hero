@@ -2,7 +2,7 @@
 
 <p align="center"><a href="https://swarkentin.github.io/synth-patch-hero/"><b>▶&nbsp;&nbsp;PLAY NOW: swarkentin.github.io/synth-patch-hero</b></a><br><sub>Runs in your browser on desktop or phone. Headphones recommended.</sub></p>
 
-**A puzzle game about building synth patches.** You're a broke musician taking gigs from artists who want very specific sounds. Each gig hands you a reference sound and a rack. Patch oscillators, filters, envelopes and LFOs together until your sound matches theirs. Every gig teaches one new piece of synthesis.
+**A puzzle game about building synth patches.** You're a broke musician taking gigs from artists who want very specific sounds. Each gig hands you a reference sound and a rack. Patch oscillators, filters, envelopes, LFOs, FM, effects and more together until your sound matches theirs. Every gig teaches one new piece of synthesis.
 
 ![Desktop: brief on the left, slot board in the middle, compare panel with oscilloscope on the right](docs/screenshots/desktop.png)
 
@@ -25,23 +25,30 @@ There's no build step and there are no dependencies: it's plain HTML, CSS and Ja
 6. **Stuck?** Press **Help**. It first points out missing modules or cables (and can patch them for you), then names the knob that matters most and explains it. Press again and it can **lock** that knob at the client's value. Tap a locked knob to see why, or to unlock it.
 7. **Send** at a 90% match or better. Your patch plays a short **jingle** to celebrate. Then come back and beat par on cost.
 
-On phones, knobs, cables and modules give **haptic feedback** (Android fully; iPhone on iOS 18+). Switch it off from the gig board.
+On phones, knobs, cables and modules give **haptic feedback** (Android fully; iPhone on iOS 18+). Switch it off in ⚙ Settings.
 
 **Keyboards:** open **♪ Keys** for an on-screen keyboard that shows the client's note to find. USB/MIDI keyboards work in Chrome, Edge, Opera and Firefox on desktop, and Chrome on Android (velocity and sustain pedal included). Computer keys `A`–`K` play too, `Z`/`X` shift the octave, `Space` plays yours and `Shift+T` plays the target. The board zooms with `+` `-` `0`, Ctrl+scroll or pinch.
 
 ## Curriculum
 
-**Basics** is a seven-lesson tutorial on the building blocks, followed by six **themes**. **Every gig is open**, so start with Basics or skip ahead; your progress is saved either way, and each chapter marks its next gig. Each theme teaches its style through several lessons and ends with a **challenge**: no parts list, just the brief, the sound and how many modules the patch uses.
+**Basics** is a seven-lesson tutorial on the building blocks, followed by thirteen **themes**. **Every gig is open**, so start with Basics or skip ahead; your progress is saved either way, and each chapter marks its next gig. Each theme teaches its style through several lessons and ends with a **challenge**: no parts list, just the brief, the sound and how many modules the patch uses.
 
 | Chapter | Gigs (★ = challenge) |
 |---|---|
 | **Basics** | Dial Tone (oscillator, pitch, cables) · Shape of Sound (waveforms) · Pixel Knight (intervals) · Thin Walls (low-pass) · Curtain Call (VCA + envelope) · Pluck (attack & decay) · Vibrato (LFO, modulation) |
-| **Filter Lab** | Squelch (resonance) · Payphone (filter types) · Thin Air (high-pass) · Talk Box (formants) · ★ Acid Test |
+| **Filter Lab** | Squelch (resonance) · Payphone (filter types) · Thin Air (high-pass) · Talk Box (formants) · The Scoop (notch) · Upside Down (inverted envelope) · ★ Acid Test |
 | **Bass** | Sub Club (sub bass) · Wow Bass (filter envelope) · Pluck Bass · Wobble (LFO → filter) · ★ Reese |
 | **Pads** | Slow Bloom (pad envelopes) · Glass Pad (layering) · Breathing Pad (slow LFO) · ★ String Section |
 | **Leads** | Brass Stab (filter attack) · Neon Avenue (detune) · Night Flute (expressive lead) · ★ Stadium Lead |
 | **Percussion** | Kick It (pitch envelope) · Floor Tom (tuning drums) · Snare Crack (noise) · Hi-Hat (short envelopes) · ★ Cowbell |
 | **Sound FX** | Laser Zap (pitch sweeps) · Siren (square LFO) · Wind (filtered noise) · ★ Close Encounter |
+| **Mix Desk** | Sub Layer (mixing sources) · Breath & Tone (mixing noise) · ★ Layer Cake |
+| **Harmonics Lab** | Octave Up (harmonics) · Build a Square (odd harmonics) · Build a Saw (additive synthesis) · ★ Drawbar Organ |
+| **FM Studio** | Metal Ring (frequency modulation) · Bell Tower (FM bells) · Electric Piano (modulation envelope) · ★ Temple Gong |
+| **Effects Rack** | Slapback (delay) · Canyon Echo (feedback) · Big Room (reverb) · Chorus (modulated delay) · Fuzz Box (distortion) · ★ Dub Stab |
+| **Strings & Plucks** | Plucked String (Karplus–Strong) · Nylon (damping) · ★ Harp |
+| **Random & Generative** | Computer Bleeps (sample & hold) · Random Filter · ★ Robot Babble |
+| **Repair Shop** | No Signal (signal flow) · Muffled Mess (diagnosing tone) · Wrong Jack (audio vs. control) · Seasick (modulation depth) · ★ Total Wreck |
 
 Plus **Free Jam**, a sandbox with everything unlocked.
 
@@ -53,7 +60,7 @@ The target and your patch are both rendered offline (`OfflineAudioContext`, 22.0
 - **Tone (20%):** the time-averaged spectrum shape.
 - **Shape (30%):** the loudness envelope on a perceptual scale.
 
-Each distance becomes a score with `exp(-d/K)`, and the scores are combined with a weighted geometric mean. Gigs built on movement (vibrato, wobble, detune) get a wider tolerance. Because matching listens to the audio, any patch that sounds right passes, not just the reference patch. Hints (pitch in semitones, brighter/darker, attack, length, missing parts) come from pitch detection, spectral centroid and envelope features.
+Each distance becomes a score with `exp(-d/K)`, and the scores are combined with a weighted geometric mean. Gigs built on movement (vibrato, wobble, detune, chorus, random steps) get a wider tolerance. Because matching listens to the audio, any patch that sounds right passes, not just the reference patch. Hints (pitch in semitones, brighter/darker, attack, length, missing parts) come from pitch detection, spectral centroid and envelope features.
 
 ## Project layout
 

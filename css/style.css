@@ -2,6 +2,7 @@
   --bg:#13100e; --panel:#1d1916; --panel2:#26211d; --line:#3a322b; --line2:#4d433a;
   --text:#efe6d8; --dim:#a09482; --faint:#6d6356;
   --amber:#f2a541; --teal:#4fb3a9; --red:#e0604f; --violet:#a58be8; --green:#8cc152; --grey:#b5ada3; --cream:#efe6d8;
+  --sand:#cbb894; --pink:#e58fb4; --blue:#6fa8dc; --sky:#8fc6e6; --orange:#e07a3f; --lime:#c4d65a;
   --audio:#f2c14e; --mod:#7fb2f0; --good:#8cc152; --bad:#e0604f;
   --mono:'IBM Plex Mono',ui-monospace,monospace; --head:'Chakra Petch',system-ui,sans-serif; --sans:'IBM Plex Sans',system-ui,sans-serif;
   --topH:48px;
@@ -468,3 +469,17 @@ label.btn[aria-disabled="true"],label.palBtn[aria-disabled="true"],label.gig[ari
 label.kbClose,#btnHelp[role=button]{display:inline-flex;align-items:center;justify-content:center}
 .gig .nextTag{color:var(--amber);font-weight:600;letter-spacing:.08em}
 .gig.next{border-color:#6a5230}
+/* dense modules (5+ knobs): three knobs per row */
+.module.dense .knob{width:40px}
+.module.dense .knob svg{width:32px;height:28px}
+.module.dense .choice{padding-bottom:1px}
+.module.dense .choice label[role=button],.module.dense .choice button{height:18px}
+.module.dense .knob .kl{font-size:7.5px;letter-spacing:.02em}
+.module.dense .knob .kv{font-size:9px}
+/* drawbar sliders */
+.module.bars .params{gap:0 1px;flex-wrap:nowrap}
+.knob.bar{width:20px}
+.knob.bar svg{width:16px;height:58px}
+.knob.bar .kl{font-size:7.5px;margin-top:2px}
+.knob.bar .kv{font-size:7.5px;color:var(--dim)}
+@media (max-width:760px){ .module.dense .knob{width:40px} .knob.bar{width:20px} }

@@ -23,6 +23,10 @@ async function selftest(){
     ['kick',[['o','pitchAmt',2400]]],['kick',[['e2','d',0.12]]],['kick',[['o','pitchAmt',0]]],
     ['snare',[['f','cutoff',2500]]],
     ['air',[['f','type','lowpass']]],['hat',[['f','type','lowpass']]],['breathing',[['e','a',0.5]]],['cowbell',[['o2','semi',0]]],['sub',[['e','a',0.03]]],['ufo',[['l','rate',7.1]]],['snare',[['e','d',0.25]]],['snare',[['f','type','lowpass']]],
+    ['notch',[['f','type','bandpass']]],['notch',[['f','cutoff',700]]],['swell',[['f','cutAmt',4200]]],['sub-layer',[['m','l2',0.5]]],
+    ['build-square',[['h','h3',0.3]]],['build-square',[['h','h5',0]]],['metal-ring',[['m','semi',7]]],['fm-bell',[['m','semi',7]]],['epiano',[['me','d',1.2]]],
+    ['slapback',[['d','time',0.16]]],['canyon',[['d','time',0.25]]],['chorus',[['d','modAmt',0.004]]],['fuzz',[['d','drive',1]]],['fuzz',[['d','drive',13]]],
+    ['ks-string',[['d','tone',3000]]],['ks-string',[['d','fb',0.95]]],['robot',[['f','type','lowpass']]],
   ];
   for(const [id,ch] of cases){
     const L=lv(id); if(!L._tA) L._tA=analyze(await renderPatch(targetPatch(L),L));

@@ -27,6 +27,11 @@ const BANDS = {
   // new chapters
   'air|f.type=lowpass': [0, 30], 'hat|f.type=lowpass': [0, 30], 'cowbell|o2.semi=0': [0, 45],
   'breathing|e.a=0.5': [90, 100], 'sub|e.a=0.03': [90, 100], 'ufo|l.rate=7.1': [80, 95], 'wobble|l.rate=3.3': [60, 89.9], 'supersaw|o.fine=0,o2.fine=0': [60, 89.9],
+  // mixer, harmonics, FM, effects, strings, random
+  'notch|f.type=bandpass': [0, 40], 'notch|f.cutoff=700': [65, 89.9], 'swell|f.cutAmt=4200': [0, 75], 'sub-layer|m.l2=0.5': [0, 75],
+  'build-square|h.h3=0.3': [93, 100], 'build-square|h.h5=0': [40, 85], 'metal-ring|m.semi=7': [0, 35], 'fm-bell|m.semi=7': [0, 35], 'epiano|me.d=1.2': [0, 60],
+  'slapback|d.time=0.16': [0, 65], 'canyon|d.time=0.25': [0, 50], 'chorus|d.modAmt=0.004': [40, 85], 'fuzz|d.drive=1': [0, 60], 'fuzz|d.drive=13': [90, 100],
+  'ks-string|d.tone=3000': [0, 70], 'ks-string|d.fb=0.95': [70, 89.9], 'robot|f.type=lowpass': [0, 65],
 };
 
 const { page, close } = await launch();

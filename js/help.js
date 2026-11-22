@@ -18,6 +18,21 @@ const PARAM_HELP = {
   'env.r': 'RELEASE is how long it takes to fade to zero after the key is let go.',
   'lfo.wave': 'The LFO shape decides how it moves: smoothly (sine, triangle), jumping between two values (square), or in ramps (saw).',
   'lfo.rate': 'RATE is the LFO speed in cycles per second.',
+  'osc.fmAmt': 'FM AMT sets how hard audio patched into FM bends this oscillator\'s frequency, in Hz. More FM = more (and more clangy) harmonics.',
+  'mixer.l1': 'LEVEL 1 is how loud input 1 is in the mix.', 'mixer.l2': 'LEVEL 2 is how loud input 2 is in the mix.', 'mixer.l3': 'LEVEL 3 is how loud input 3 is in the mix.',
+  'harm.h1': 'H1 is the fundamental: the note itself.', 'harm.h2': 'H2 is the 2nd harmonic: one octave up.', 'harm.h3': 'H3 is the 3rd harmonic: an octave and a fifth up.',
+  'harm.h4': 'H4 is the 4th harmonic: two octaves up.', 'harm.h5': 'H5 is the 5th harmonic: two octaves and a major third up.', 'harm.h6': 'H6 is the 6th harmonic: two octaves and a fifth up.',
+  'delay.sync': 'MS sets the delay time yourself. NOTE tunes the delay to the played note, which turns a feedback delay into a plucked string.',
+  'delay.time': 'TIME is how long before the echo comes back.',
+  'delay.fb': 'FDBK (feedback) sends the echo back into the delay, so it repeats. More feedback = more repeats (or a longer-ringing string).',
+  'delay.mix': 'MIX balances the original (dry) sound against the echoes (wet).',
+  'delay.tone': 'TONE darkens each repeat. Low settings make echoes fade into warmth, and make plucked strings mellow.',
+  'delay.modAmt': 'MOD sets how far a signal in the TIME jack wobbles the delay time. Small wobbles make chorus and flanger sounds.',
+  'reverb.size': 'SIZE is how long the room rings: small room to cathedral.',
+  'reverb.mix': 'MIX balances the dry sound against the room.',
+  'drive.drive': 'DRIVE pushes the signal into soft clipping, adding harmonics. Higher = grittier.',
+  'drive.level': 'LEVEL is the output volume after the drive.',
+  'sh.rate': 'RATE is how many random steps per second.',
 };
 const MODULE_WHY = {
   osc: 'An oscillator is the sound source.',
@@ -26,6 +41,12 @@ const MODULE_WHY = {
   vca: 'A VCA lets another module control the loudness.',
   env: 'An envelope is a shape that plays once per note. It makes something change over the course of the note.',
   lfo: 'An LFO is a slow, repeating movement.',
+  mixer: 'A mixer combines several sounds with a level for each, so layers can be balanced.',
+  harm: 'A harmonic oscillator builds a tone from individual sine harmonics, like the drawbars on an organ.',
+  delay: 'A delay repeats the sound after a short time: echoes, or (with feedback tuned to the note) a plucked string.',
+  reverb: 'A reverb adds the sound of a room around the sound.',
+  drive: 'Drive clips the signal softly, adding harmonics and grit.',
+  sh: 'Sample & hold jumps to a new random value at a steady rate: classic computer bleeps.',
 };
 const PORT_WHY = {
   'out.in': 'That is what sends it to the speakers.',
@@ -34,6 +55,10 @@ const PORT_WHY = {
   'osc.pitch': 'A signal in the oscillator\'s PITCH jack moves the pitch.',
   'filter.in': 'Audio has to pass through the filter to be shaped by it.',
   'vca.in': 'Audio has to pass through the VCA to be controlled by it.',
+  'osc.fm': 'Audio in the FM jack bends this oscillator\'s frequency hundreds of times a second. That\'s FM synthesis.',
+  'mixer.in1': 'Each mixer input has its own level knob.', 'mixer.in2': 'Each mixer input has its own level knob.', 'mixer.in3': 'Each mixer input has its own level knob.',
+  'delay.in': 'Audio has to pass through the delay to be echoed.', 'delay.mod': 'A signal in the delay\'s TIME jack wobbles the delay time.',
+  'reverb.in': 'Audio has to pass through the reverb to get the room sound.', 'drive.in': 'Audio has to pass through the drive to be distorted.',
 };
 const H = { card:null, pending:null, busy:false };
 const modOf = (p,id) => p.modules.find(m=>m.id===id);

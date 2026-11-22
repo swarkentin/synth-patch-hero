@@ -22,7 +22,7 @@ function autoFeatures(L){
   L.target.mods.forEach(m=>{ f.add(m.type);
     if(m.type==='filter'){ f.add('res'); if(m.p.type&&m.p.type!=='lowpass') f.add('ftype'); }
     if(m.type==='osc'&&m.p.fine) f.add('fine'); });
-  L.target.cables.forEach(c=>{ if(/\.(pitch|cut)$/.test(c)) f.add('mod'); });
+  L.target.cables.forEach(c=>{ if(/\.(pitch|cut|mod)$/.test(c)) f.add('mod'); if(/\.fm$/.test(c)) f.add('fm'); });
   return f;
 }
 /* Basics unlocks features one lesson at a time; themes get everything from Basics plus what their gigs use. */

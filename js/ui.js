@@ -174,7 +174,9 @@ function renderRack(){
     const body=el('div',{class:'mbody'}), ins=el('div',{class:'ins'}), prm=el('div',{class:'params'}), outs=el('div',{class:'outs'});
     T.ins.filter(p=>!p.req||S.feats.has(p.req)).forEach(p=>ins.appendChild(makePort(m,p,'in')));
     T.outs.forEach(p=>outs.appendChild(makePort(m,p,'out')));
-    T.params.filter(p=>!p.req||S.feats.has(p.req)).forEach(p=>prm.appendChild(p.type==='choice'?makeChoice(m,p):makeKnob(m,p)));
+    const vis=T.params.filter(p=>!p.req||S.feats.has(p.req)), knobs=vis.filter(p=>!p.type).length;
+    if(knobs>4) d.classList.add('dense'); if(vis.some(p=>p.type==='bar')) d.classList.add('bars');
+    vis.forEach(p=>prm.appendChild(p.type==='choice'?makeChoice(m,p):makeKnob(m,p)));
     if(m.type==='out') prm.innerHTML='<div class="outBox"><div class="spk"></div>to speakers</div>';
     if(m.type==='noise') prm.innerHTML='<div class="outBox" style="font-family:var(--mono)">∿∿ white ∿∿</div>';
     body.append(ins,prm,outs); d.appendChild(body); box.appendChild(d);
@@ -284,19 +286,23 @@ const toN=(d,v)=>d.scale==='log'?Math.log(v/d.min)/Math.log(d.max/d.min):(v-d.mi
 function fromN(d,n){ n=Math.min(1,Math.max(0,n)); let v=d.scale==='log'?d.min*Math.pow(d.max/d.min,n):d.min+n*(d.max-d.min);
   if(d.step) v=Math.round(v/d.step)*d.step; else if(d.scale==='log') v=+v.toPrecision(3); return +v.toFixed(6); }
 function arc(cx,cy,r,a0,a1){ const p=a=>[cx+r*Math.cos(a),cy+r*Math.sin(a)]; const [x0,y0]=p(a0),[x1,y1]=p(a1); return `M${x0} ${y0} A${r} ${r} 0 ${a1-a0>Math.PI?1:0} 1 ${x1} ${y1}`; }
-function knobSVG(n,color){
-  const A0=Math.PI*0.75, A1=Math.PI*2.25, a=A0+(A1-A0)*n;
+function knobSVG(n,color,bipolar){
+  const A0=Math.PI*0.75, A1=Math.PI*2.25, a=A0+(A1-A0)*n, mid=(A0+A1)/2;
+  // Bipolar knobs (amounts that can go negative) fill from the centre: left = negative, right = positive.
+  const fill=bipolar?(Math.abs(n-0.5)>0.002?`<path d="${arc(20,19,15,Math.min(mid,a),Math.max(mid,a)+0.001)}" stroke="${color}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`:'')
+    :(n>0.002?`<path d="${arc(20,19,15,A0,Math.max(A0+0.01,a))}" stroke="${color}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`:'');
   return `<svg width="40" height="36" viewBox="0 0 40 36"><path d="${arc(20,19,15,A0,A1)}" stroke="#3a322b" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-  ${n>0.002?`<path d="${arc(20,19,15,A0,Math.max(A0+0.01,a))}" stroke="${color}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`:''}
+  ${fill}${bipolar?`<line x1="20" y1="2" x2="20" y2="5" stroke="#6d6356" stroke-width="1.5"/>`:''}
   <circle cx="20" cy="19" r="10" fill="#16120f" stroke="#4d433a"/><line x1="20" y1="19" x2="${20+9*Math.cos(a)}" y2="${19+9*Math.sin(a)}" stroke="#efe6d8" stroke-width="2" stroke-linecap="round"/></svg>`;
 }
 function makeKnob(m,d){
   const color=MT[m.type].color.replace('var(','').replace(')','');
   const col=getComputedStyle(document.documentElement).getPropertyValue(color).trim()||'#f2a541';
   const locked=!!(m.locks&&m.locks[d.id]);
-  const k=el('label',{class:'knob'+(locked?' locked':''),'data-param':d.id,title:locked?`${d.label} is locked by Help. Tap to see why, or to unlock it.`:`${d.label} · drag up/down (Shift = fine) · click for precise control`});
+  const k=el('label',{class:'knob'+(d.type==='bar'?' bar':'')+(locked?' locked':''),'data-param':d.id,title:locked?`${d.label} is locked by Help. Tap to see why, or to unlock it.`:`${d.label} · drag up/down (Shift = fine) · click for precise control`});
   const kc=el('span',{class:'kc'}); k.appendChild(kc); Haptics.addSwitch(k);
-  const draw=()=>{ kc.innerHTML=knobSVG(toN(d,m.params[d.id]),col)+`<span class="kl">${d.label}</span><span class="kv">${d.fmt(m.params[d.id])}</span>`; };
+  const barSVG=n=>`<svg width="16" height="58" viewBox="0 0 16 58"><rect x="4" y="1" width="8" height="56" rx="3" fill="#0f0c0a" stroke="#4d433a"/><rect x="5" y="${2+54*(1-n)}" width="6" height="${54*n}" rx="2" fill="${col}"/><rect x="1" y="${Math.min(52,Math.max(0,54*(1-n)))}" width="14" height="5" rx="1.5" fill="#efe6d8"/></svg>`;
+  const draw=()=>{ const n=toN(d,m.params[d.id]); kc.innerHTML=(d.type==='bar'?barSVG(n):knobSVG(n,col,d.bipolar))+`<span class="kl">${d.label}</span><span class="kv">${d.fmt(m.params[d.id])}</span>`; };
   draw();
   const steps=d.step?(d.max-d.min)/d.step:0, notch=n=>steps&&steps<=60?Math.round(n*steps):Math.floor(n*20+1e-9);
   const set=v=>{ const old=m.params[d.id]; if(v===old) return; m.params[d.id]=v; draw(); scheduleAnalyze();
