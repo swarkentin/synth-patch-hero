@@ -63,7 +63,7 @@ function renderKeys(){
   whites.forEach((n,i)=>{ const b=n+1; if(b<=hi&&isBlack(b)){ const x=(i+1)*ww-bw/2;
     h+=`<rect class="bk${b===t?tgtCls:''}" data-n="${b}" x="${x}" y="0" width="${bw}" height="${bh}" rx="2"/>`;
     if(b===t&&!S.sandbox) h+=`<rect class="tpill" x="${x+bw/2-15}" y="${bh-22}" width="30" height="16" rx="8"/><text class="ttxt" x="${x+bw/2}" y="${bh-10}" text-anchor="middle">${noteName(b)}</text>`; } });
-  h+='</svg>'; wrap.innerHTML=h;
+  h+='</svg>'; wrap.innerHTML=h; Haptics.addSwitch(wrap);
   $('#kbRange').textContent=`C${lo/12-1}–C${hi/12-1}`;
   paintLit();
 }

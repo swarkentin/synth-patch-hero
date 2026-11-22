@@ -1,5 +1,7 @@
 /* Synth Patch Hero · Gig board, level screen, slot board, knobs, cables, compare panel. */
 'use strict';
+/* iPhone: these become tap targets with a switch under the finger (see js/haptics.js). Must run before handlers are attached. */
+['#briefBtn','#keysBtn','#focusBtn','#btnSettings','#btnHome','#kbClose'].forEach(sel=>Haptics.upgrade(document.querySelector(sel)));
 /* =====================================================================
    BOARD
    ===================================================================== */
@@ -22,19 +24,19 @@ function showBoard(){
     const grid=el('div',{class:'gigs'});
     c.levels.forEach((i,k)=>{
       const L=LEVELS[i], sv=progress.solved[L.id], open=isUnlocked(i);
-      const b=el('button',{class:'gig'+(sv?' solved':'')+(L.challenge?' challenge':''),onclick:()=>openLevel(i)});
+      let b=el('button',{class:'gig'+(sv?' solved':'')+(L.challenge?' challenge':'')});
       b.disabled=!open;
       b.innerHTML=`<div class="num">${c.short} ${k+1}${L.challenge?' · <span class="chal">CHALLENGE</span>':''}</div><div class="title">${L.title}</div>
         <div class="client">${open?L.client+' · '+L.role:locked?'Opens after Basics':'Finish the previous gig'}</div>
         <div class="concept"><span class="tag">${L.concept}</span>${sv?`<span class="stamp">PAID · ${sv.cost}¢ · ${Math.round(sv.match)}%${progress.played&&progress.played[L.id]?' · ♪':''}${progress.helped&&progress.helped[L.id]?' · helped':''}</span>`:open?'<span style="color:var(--amber)">NEW</span>':''}</div>`;
-      grid.appendChild(b);
+      b=Haptics.upgrade(b); b.addEventListener('click',()=>openLevel(i)); grid.appendChild(b);
     });
     sec.appendChild(grid); g.appendChild(sec);
   });
   const jam=el('section',{class:'chapter'}); jam.innerHTML='<div class="chHead"><div><h2>After hours</h2><p>No clients, no rent. Just you and the rack.</p></div></div>';
-  const jg=el('div',{class:'gigs'}); const j=el('button',{class:'gig jam',onclick:()=>openLevel(-1)});
+  const jg=el('div',{class:'gigs'}); let j=el('button',{class:'gig jam'});
   j.innerHTML=`<div class="num">SANDBOX</div><div class="title">Free Jam</div><div class="client">All modules, no target. Play it like an instrument.</div><div class="concept"><span class="tag">Sandbox</span></div>`;
-  jg.appendChild(j); jam.appendChild(jg); g.appendChild(jam);
+  j=Haptics.upgrade(j); j.addEventListener('click',()=>openLevel(-1)); jg.appendChild(j); jam.appendChild(jg); g.appendChild(jam);
 }
 
 
@@ -113,9 +115,9 @@ function renderPalette(){
   const miss=new Set(isChallenge()?[]:missing().map(x=>x[0])), free=emptySlots().length;
   Object.entries(S.palette).forEach(([t,max])=>{
     const left=max-countType(t);
-    const b=el('button',{class:'palBtn'+(miss.has(t)?' need':''),title:`${MT[t].long}${miss.has(t)?' · this sound needs one':''}`,onclick:()=>addModule(t)},
+    let b=el('button',{class:'palBtn'+(miss.has(t)?' need':''),title:`${MT[t].long}${miss.has(t)?' · this sound needs one':''}`},
       `<span class="sw" style="background:${MT[t].color}"></span><b>${MT[t].name}</b><small>${MT[t].cost}¢·${left}</small>`);
-    b.disabled=left<=0||free===0; p.appendChild(b);
+    b.disabled=left<=0||free===0; p.appendChild(b); b=Haptics.upgrade(b); b.addEventListener('click',()=>Haptics.later(()=>addModule(t)));
   });
 }
 function renderParts(){
@@ -150,16 +152,17 @@ function renderRack(){
   const wanted=needsMore();
   for(let i=0;i<S.slots-1;i++){
     const [x,y]=slotXY(i), occ=occupant(i);
-    const s=el('div',{class:'slot'+(occ?' filled':' empty'+(wanted?' wanted':'')),'data-slot':i}); s.style.left=x+'px'; s.style.top=y+'px';
+    const s=el(!occ&&S.slotMenu!==i?'label':'div',{class:'slot'+(occ?' filled':' empty'+(wanted?' wanted':'')),'data-slot':i}); s.style.left=x+'px'; s.style.top=y+'px';
     if(!occ){
       if(S.slotMenu===i){
         const avail=Object.entries(S.palette).filter(([t,max])=>max-countType(t)>0);
         s.innerHTML=`<div class="slotMenu"><div class="t">ADD TO THIS SLOT</div>${avail.map(([t])=>`<button data-t="${t}"><i style="background:${MT[t].color}"></i>${MT[t].name}</button>`).join('')}<button class="x">Cancel</button></div>`;
-        s.querySelectorAll('button').forEach(b=>{ b.addEventListener('pointerdown',e=>e.stopPropagation());
-          b.addEventListener('click',e=>{ e.stopPropagation(); if(b.dataset.t) addModule(b.dataset.t,i); else { S.slotMenu=null; renderRack(); } }); });
+        s.querySelectorAll('button').forEach(b0=>{ const b=Haptics.upgrade(b0); b.addEventListener('pointerdown',e=>e.stopPropagation());
+          b.addEventListener('click',e=>{ e.stopPropagation(); Haptics.later(()=>{ if(b.dataset.t) addModule(b.dataset.t,i); else { S.slotMenu=null; renderRack(); } }); }); });
       } else {
         s.innerHTML=`<div class="plus">+</div><div>${wanted?'NEEDS A MODULE':'ADD MODULE'}</div>`;
-        s.addEventListener('click',()=>{ if(emptySlots().length&&Object.entries(S.palette).some(([t,max])=>max-countType(t)>0)){ S.slotMenu=i; renderRack(); } else toast('No more modules available for this gig.'); });
+        Haptics.addSwitch(s);
+        s.addEventListener('click',()=>Haptics.later(()=>{ if(emptySlots().length&&Object.entries(S.palette).some(([t,max])=>max-countType(t)>0)){ S.slotMenu=i; renderRack(); } else toast('No more modules available for this gig.'); }));
       }
     }
     slotsEl.appendChild(s);
@@ -185,9 +188,10 @@ function renderRack(){
   requestAnimationFrame(()=>drawCables());
 }
 function makePort(m,p,dir){
-  const e=el('div',{class:`port ${p.kind} ${dir}`,'data-mod':m.id,'data-port':p.id,'data-dir':dir,'data-kind':p.kind,
+  const e=el('label',{class:`port ${p.kind} ${dir}`,'data-mod':m.id,'data-port':p.id,'data-dir':dir,'data-kind':p.kind,
     title:`${MT[m.type].name} ${p.label} (${p.kind==='audio'?'audio':'control'} ${dir==='in'?'input':'output'}). Drag or tap to patch.`},
-    `<span class="jack"></span><label>${p.label}</label>`);
+    `<span class="jack"></span><span class="plabel">${p.label}</span>`);
+  Haptics.addSwitch(e);
   e.addEventListener('pointerdown',ev=>startCable(ev,e));
   return e;
 }
@@ -264,7 +268,7 @@ function revealSlot(i){
 })();
 function setFocus(on){
   S.focus=on; document.body.classList.toggle('focus',on);
-  const b=$('#focusBtn'); b.innerHTML=on?'<span class="ico">✕</span><span class="lbl"> Exit focus</span>':'<span class="ico">⛶</span><span class="lbl"> Focus</span>'; b.classList.toggle('on',on);
+  const b=$('#focusBtn'); b.innerHTML=on?'<span class="ico">✕</span><span class="lbl"> Exit focus</span>':'<span class="ico">⛶</span><span class="lbl"> Focus</span>'; b.classList.toggle('on',on); Haptics.addSwitch(b);
   const de=document.documentElement;
   try{ if(on&&de.requestFullscreen&&!document.fullscreenElement){ const p=de.requestFullscreen(); if(p&&p.catch) p.catch(()=>{}); }
        if(!on&&document.fullscreenElement){ const p=document.exitFullscreen(); if(p&&p.catch) p.catch(()=>{}); } }catch(_){}
@@ -292,8 +296,9 @@ function makeKnob(m,d){
   const color=MT[m.type].color.replace('var(','').replace(')','');
   const col=getComputedStyle(document.documentElement).getPropertyValue(color).trim()||'#f2a541';
   const locked=!!(m.locks&&m.locks[d.id]);
-  const k=el('div',{class:'knob'+(locked?' locked':''),'data-param':d.id,title:locked?`${d.label} is locked by Help. Tap to see why, or to unlock it.`:`${d.label} · drag up/down (Shift = fine) · click for precise control`});
-  const draw=()=>{ k.innerHTML=knobSVG(toN(d,m.params[d.id]),col)+`<div class="kl">${d.label}</div><div class="kv">${d.fmt(m.params[d.id])}</div>`; };
+  const k=el('label',{class:'knob'+(locked?' locked':''),'data-param':d.id,title:locked?`${d.label} is locked by Help. Tap to see why, or to unlock it.`:`${d.label} · drag up/down (Shift = fine) · click for precise control`});
+  const kc=el('span',{class:'kc'}); k.appendChild(kc); Haptics.addSwitch(k);
+  const draw=()=>{ kc.innerHTML=knobSVG(toN(d,m.params[d.id]),col)+`<span class="kl">${d.label}</span><span class="kv">${d.fmt(m.params[d.id])}</span>`; };
   draw();
   const steps=d.step?(d.max-d.min)/d.step:0, notch=n=>steps&&steps<=60?Math.round(n*steps):Math.floor(n*20+1e-9);
   const set=v=>{ const old=m.params[d.id]; if(v===old) return; m.params[d.id]=v; draw(); scheduleAnalyze();
@@ -322,10 +327,11 @@ function makeChoice(m,d){
   const locked=!!(m.locks&&m.locks[d.id]);
   const w=el('div',{class:'choice'+(locked?' locked':''),'data-param':d.id}); w.style.setProperty('--sel',MT[m.type].color);
   const draw=()=>{ w.innerHTML=''; d.options.forEach((o,i)=>{
-    const b=el('button',{class:m.params[d.id]===o?'on':'',title:o},
+    let b=el('button',{class:m.params[d.id]===o?'on':'',title:o},
       WAVE_PATH[o]?`<svg width="28" height="18" viewBox="0 0 28 18"><path d="${WAVE_PATH[o]}" stroke="#a09482" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg>`:(d.labels?d.labels[i]:o));
+    b=Haptics.upgrade(b);
     b.addEventListener('pointerdown',e=>e.stopPropagation());
-    b.addEventListener('click',()=>{ if(locked){ showLockInfo(m,d); return; } if(m.params[d.id]!==o) Haptics.select(); m.params[d.id]=o; draw(); scheduleAnalyze(); });
+    b.addEventListener('click',()=>Haptics.later(()=>{ if(locked){ showLockInfo(m,d); return; } if(m.params[d.id]!==o) Haptics.select(); m.params[d.id]=o; draw(); scheduleAnalyze(); }));
     w.appendChild(b); }); };
   draw(); return w;
 }
@@ -371,8 +377,9 @@ function showPatchbar(){
   const m=S.patch.modules.find(x=>x.id===S.pick.mid), T=MT[m.type], port=[...T.ins,...T.outs].find(q=>q.id===S.pick.pid), n=pickConns().length;
   const col=S.pick.kind==='audio'?'yellow':'blue';
   b.innerHTML=`<span class="msg"><b>${T.name} ${port.label}</b><br><span style="color:var(--dim)">Tap a ${col} ${S.pick.dir==='out'?'input':'output'} to patch</span></span>${n?`<button class="btn" id="pbUn">Unplug${n>1?' '+n:''}</button>`:''}<button class="btn ghost" id="pbX">Done</button>`;
-  $('#pbX').onclick=clearPick;
-  if(n) $('#pbUn').onclick=()=>{ Haptics.unplug(); const kill=new Set(pickConns()); S.patch.cables=S.patch.cables.filter(c=>!kill.has(c)); clearPick(); drawCables(); scheduleAnalyze(); };
+  ['#pbX','#pbUn'].forEach(sel=>Haptics.upgrade(b.querySelector(sel)));
+  $('#pbX').onclick=()=>Haptics.later(clearPick);
+  if(n) $('#pbUn').onclick=()=>Haptics.later(()=>{ Haptics.unplug(); const kill=new Set(pickConns()); S.patch.cables=S.patch.cables.filter(c=>!kill.has(c)); clearPick(); drawCables(); scheduleAnalyze(); });
 }
 
 /* ---------- value sheet (tap a knob) ---------- */
@@ -473,6 +480,7 @@ function renderCompare(){
       </div>
       <div class="stats" id="stats"></div>
     </div>`;
+  ['#pT','#pY','#btnHelp','#btnSubmit'].forEach(sel=>Haptics.upgrade(c.querySelector(sel)));
   if(!sb){ $('#pT').onclick=()=>playFixed(targetPatch(S.L),S.L,'pT'); $('#btnSubmit').onclick=submit; $('#btnHelp').onclick=requestHelp;
     $('#hints').addEventListener('click',()=>{ if(S.mobile) toggleExpanded(); }); }
   $('#pY').onclick=()=>playFixed(S.patch,S.L,'pY');
@@ -631,9 +639,8 @@ function openSettings(){
   const sh=$('#sheet'); sh.hidden=false; sh.style.removeProperty('--sel');
   const inLevel=!!S.L&&!$('#screenLevel').hidden;
   const row=(label,sub,btn)=>`<div class="setRow"><div><b>${label}</b><span>${sub}</span></div>${btn}</div>`;
-  const hapSub=!Haptics.available?'Not available on this device.':Haptics.continuous?'Ticks on knobs, cables and modules.':'iPhone: ticks on taps and when you let go of a knob (iOS 18+).';
+  const hapSub=!Haptics.available?'Not available on this device.':Haptics.continuous?'Ticks on knobs, cables and modules.':'iPhone: ticks when you tap buttons, jacks, keys, slots and knob steps (iOS 18+). iOS doesn\'t allow ticks while dragging.';
   sh.innerHTML=`<div class="sheetCard"><div class="shHead"><span class="shTitle">SETTINGS</span><button class="btn primary" id="shDone">Done</button></div>
-    ${!Haptics.continuous&&Haptics.available?row('iPhone haptic test','Tap each one. Which ones tick?','<span class="hapTests" id="hapTests"></span>'):''}
     ${row('Haptics',hapSub+(Haptics.available?`<br><small>Method: ${Haptics.method}</small>`:''),Haptics.available?`<span class="hapCtl"><button class="btn" id="stHapTest">Test</button><label class="nativeSw" title="Haptics on/off"><input type="checkbox" switch id="stHapSw" ${Haptics.enabled?'checked':''}></label></span>`:'')}
     ${inLevel?row('On-screen keyboard','Find the client\'s note and play your patch.',`<button class="btn tgl" id="stKeys">${S.keysOpen?'Shown':'Hidden'}</button>`):''}
     ${inLevel?row('Focus mode','Bigger board, compact compare bar.',`<button class="btn tgl" id="stFocus">${S.focus?'On':'Off'}</button>`):''}
@@ -641,13 +648,8 @@ function openSettings(){
   const close=()=>{ sh.hidden=true; sh.innerHTML=''; };
   $('#shDone').onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); };
   // A real iOS switch: on iOS 18 the system itself ticks when it's flipped, so it doubles as a check that switch haptics work here.
-  const hs=$('#stHapSw'); if(hs) hs.onchange=()=>{ Haptics.set(hs.checked); if(hs.checked) Haptics.select(); const fb=$('#btnHaptics'); if(fb) fb.textContent='Haptics: '+(Haptics.enabled?'on':'off'); };
-  const tw=$('#hapTests');
-  if(tw){ const b1=el('button',{class:'btn'},'1'); b1.onclick=()=>{ Haptics.testHidden(); toast('Test 1 sent (code-only trick).'); };
-    const b2=el('button',{class:'btn'},'2'); b2.onclick=()=>{ Haptics.testVisible(); toast('Test 2 sent (on-screen switch from code).'); };
-    const b3=Haptics.tapTarget('3','btn',()=>toast('Test 3: switch under your finger.'));
-    tw.append(b1,b2,b3); }
-  const ht=$('#stHapTest'); if(ht) ht.onclick=()=>{ if(!Haptics.enabled){ toast('Haptics are off. Flip the switch first.'); return; } Haptics.test(); toast(Haptics.continuous?'Buzz sent.':'Tick sent. Felt nothing? Flip the switch next to it: if even that doesn\'t tick, this phone or browser has no web haptics.'); };
+  const hs=$('#stHapSw'); if(hs) hs.onchange=()=>{ Haptics.set(hs.checked); if(hs.checked) Haptics.select(); const fb=$('#btnHaptics'); if(fb&&fb.firstChild&&fb.firstChild.nodeType===3) fb.firstChild.nodeValue='Haptics: '+(Haptics.enabled?'on':'off'); };
+  let ht=$('#stHapTest'); if(ht) ht=Haptics.upgrade(ht); if(ht) ht.onclick=()=>{ if(!Haptics.enabled){ toast('Haptics are off. Flip the switch first.'); return; } Haptics.test(); toast(Haptics.continuous?'Buzz sent.':'Felt a tick? Then buttons, jacks, keys and knob steps will tick too.'); };
   if(inLevel){
     $('#stKeys').onclick=()=>{ close(); setKeysOpen(!S.keysOpen); };
     $('#stFocus').onclick=()=>{ close(); setFocus(!S.focus); };
@@ -660,6 +662,7 @@ $('#midiChip').onclick=()=>{ if(MIDI.state==='on'){ toast('Connected: '+MIDI.nam
 if(store.get('midiAuto',false)) connectMIDI(true);
 $('#btnHome').onclick=showBoard;
 $('#btnUnlock').onclick=()=>{ progress.unlockAll=true; saveProgress(); showBoard(); toast('All gigs unlocked'); };
-(function(){ if(!Haptics.available) return; const b=el('button',{class:'btn ghost',id:'btnHaptics'}); const lbl=()=>b.textContent='Haptics: '+(Haptics.enabled?'on':'off'); lbl();
-  b.onclick=()=>{ Haptics.set(!Haptics.enabled); lbl(); Haptics.select(); }; $('#btnReset').after(b); })();
+(function(){ if(!Haptics.available) return; let b=el('button',{class:'btn ghost',id:'btnHaptics'}); $('#btnReset').after(b); b=Haptics.upgrade(b);
+  const lbl=()=>{ b.firstChild&&b.firstChild.nodeType===3?b.firstChild.nodeValue='Haptics: '+(Haptics.enabled?'on':'off'):b.prepend('Haptics: '+(Haptics.enabled?'on':'off')); }; lbl();
+  b.onclick=()=>{ Haptics.set(!Haptics.enabled); lbl(); Haptics.select(); }; })();
 $('#btnReset').onclick=()=>{ const b=$('#btnReset'); if(b.dataset.armed){ progress={solved:{},unlockAll:false}; saveProgress(); LEVELS.concat([SANDBOX]).forEach(L=>{ store.del('draft.'+L.id); store.del('draft2.'+L.id); }); b.textContent='Wipe progress'; delete b.dataset.armed; showBoard(); toast('Progress wiped'); } else { b.dataset.armed=1; b.textContent='Click again to confirm'; setTimeout(()=>{ b.textContent='Wipe progress'; delete b.dataset.armed; },3000); } };

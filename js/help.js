@@ -125,8 +125,8 @@ function lockParam(c){
 function helpCard(html,actions){
   let c=$('#helpCard'); if(!c){ c=el('div',{id:'helpCard'}); $('#viewport').appendChild(c); c.addEventListener('pointerdown',e=>e.stopPropagation()); }
   c.innerHTML=`<div class="hcHead"><b>HELP</b><span>${progressHelpCount()}</span><button class="hcX" title="Close">×</button></div><div class="hcBody">${html}</div><div class="hcBtns"></div>`;
-  c.querySelector('.hcX').onclick=closeHelp;
-  const bw=c.querySelector('.hcBtns'); (actions||[]).forEach(a=>{ const b=el('button',{class:'btn'+(a.primary?' primary':'')},a.label); b.onclick=a.run; bw.appendChild(b); });
+  Haptics.upgrade(c.querySelector('.hcX')); c.querySelector('.hcX').onclick=closeHelp;
+  const bw=c.querySelector('.hcBtns'); (actions||[]).forEach(a=>{ const b=Haptics.upgrade(el('button',{class:'btn'+(a.primary?' primary':'')},a.label)); b.onclick=()=>Haptics.later(a.run); bw.appendChild(b); });
   c.hidden=false;
 }
 function closeHelp(){ const c=$('#helpCard'); if(c) c.hidden=true; H.pending=null; }

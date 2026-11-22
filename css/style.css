@@ -145,7 +145,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .port.mod .jack{border-color:#4d6a91}
 .port:hover .jack,.port.hot .jack{border-color:var(--text)}
 .port.out .jack{background:#2b2520}
-.port label{font-family:var(--mono);font-size:8.5px;color:var(--dim);letter-spacing:.04em;pointer-events:none}
+.port .plabel{font-family:var(--mono);font-size:8.5px;color:var(--dim);letter-spacing:.04em;pointer-events:none}
 .port.picked .jack{border-color:var(--text);animation:pulse 1s ease-in-out infinite}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 2px rgba(239,230,216,.35),inset 0 0 0 3px #1a1613}50%{box-shadow:0 0 0 8px rgba(239,230,216,.06),inset 0 0 0 3px #1a1613}}
 .knob{width:60px;display:flex;flex-direction:column;align-items:center;cursor:ns-resize;touch-action:none}
@@ -214,7 +214,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .midiChip:hover{border-color:var(--text)}
 .midiChip.on{border-color:#4a6331;color:var(--good)}
 .midiChip.warn{border-color:#6b3a31;color:#e9a191}
-.kbWrap{height:86px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.kbWrap{display:block;height:86px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .kbWrap svg{display:block;width:100%;height:100%}
 .wk{fill:#e8dfd0;stroke:#13100e;stroke-width:1}
 .bk{fill:#1f1a17;stroke:#13100e;stroke-width:1}
@@ -451,5 +451,18 @@ body.focus .work{flex:1}
 label.btn,label.shBtn{position:relative;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;-webkit-user-select:none;user-select:none}
 .shBtns label.shBtn{height:48px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);font-family:var(--mono);font-size:16px;font-weight:600}
 .shBtns label.shBtn:active{background:#3a322b}
-.hapTests{display:flex;gap:6px}
-.hapTests .btn{min-width:40px;padding:9px 0;justify-content:center}
+/* iPhone tap targets are <label role=button>; keep them looking like the buttons they replace */
+label[role=button]{cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+label.btn{display:inline-flex;align-items:center;justify-content:center}
+label.btn[aria-disabled="true"],label.palBtn[aria-disabled="true"],label.gig[aria-disabled="true"]{opacity:.42;cursor:not-allowed}
+.btn.primary[aria-disabled="true"]{background:var(--panel2);color:var(--faint);border-color:var(--line);opacity:1}
+.choice label[role=button]{flex:1;max-width:32px;height:22px;background:#16120f;border:1px solid var(--line2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9.5px;color:var(--dim)}
+.choice label[role=button].on{border-color:var(--sel,var(--amber));color:var(--text);background:#2f2822}
+.choice label[role=button].on svg path{stroke:var(--sel,var(--amber))}
+.knob .kc{display:contents}
+.knob .kl,.knob .kv{display:block}
+.slotMenu label[role=button]{display:flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:7px 8px;font-family:var(--head);font-weight:600;font-size:11.5px;letter-spacing:.06em}
+.slotMenu label[role=button] i{width:6px;height:14px;border-radius:2px;display:inline-block}
+.slotMenu label[role=button].x{grid-column:span 2;justify-content:center;color:var(--dim);background:transparent}
+@media (max-width:760px){ .choice label[role=button]{height:34px;max-width:56px} }
+label.kbClose,#btnHelp[role=button]{display:inline-flex;align-items:center;justify-content:center}

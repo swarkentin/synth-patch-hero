@@ -171,24 +171,40 @@ try {
 
   console.log('\nHaptics on iPhone (no vibrate(): switch haptic only during a real gesture)');
   await page.addInitScript(`Object.defineProperty(Navigator.prototype,'vibrate',{value:undefined,configurable:true});
-    window.__sw=0; const oc=HTMLLabelElement.prototype.click; HTMLLabelElement.prototype.click=function(){ if(this.querySelector('input[switch]')) window.__sw++; return oc.call(this); };`);
+    window.__sw=0; const oc=HTMLLabelElement.prototype.click; HTMLLabelElement.prototype.click=function(){ if(this.querySelector('input[switch]')) window.__sw++; return oc.call(this); };
+    window.__swToggles=0; document.addEventListener('change',e=>{ if(e.target.classList&&e.target.classList.contains('hapSw')) window.__swToggles++; },true);`);
   await page.open(URL, { width: 390, height: 664, mobile: true });
   await page.waitFor("document.querySelector('.gig')");
   const ios1 = await page.evaluate(`(async()=>{ await new Promise(r=>setTimeout(r,6000)); const before=__sw; Haptics.select(); return {noVibrate:typeof navigator.vibrate!=='function', continuous:Haptics.continuous, noGesture:__sw===before}; })()`);
   ok(ios1.noVibrate && ios1.continuous === false, 'iPhone mode: no vibrate(), no continuous drag ticks');
   ok(ios1.noGesture, 'no haptic is attempted without a live user gesture');
-  const btn = await page.evaluate(`(()=>{ const b=document.querySelector('#btnHaptics'); b.scrollIntoView(); const r=b.getBoundingClientRect(); return [r.left+r.width/2, r.top+r.height/2]; })()`);
-  const sw0 = await page.evaluate('__sw'); await page.tap(btn[0], btn[1]); await page.tap(btn[0], btn[1]);
-  ok((await page.evaluate('__sw')) > sw0, 'a real tap on the haptics switch fires the iOS switch haptic');
+  const pal = await page.evaluate(`(async()=>{ progress.unlockAll=true; store.del('draft2.thin-walls'); openLevel(LEVELS.findIndex(l=>l.id==='thin-walls')); closeSide(); await new Promise(r=>setTimeout(r,300));
+    const b=document.querySelector('.palBtn'); const r=b.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2,mods:S.patch.modules.length,checked:b.querySelector('input.hapSw').checked}; })()`);
+  await page.tap(pal.x, pal.y); await new Promise(r => setTimeout(r, 400));
+  const after = await page.evaluate(`(()=>{ const b=document.querySelector('.palBtn'), i=b&&b.querySelector('input.hapSw'); return {mods:S.patch.modules.length, sw:__swToggles}; })()`);
+  ok(after.mods === pal.mods + 1, 'a real tap on a module button adds exactly one module (no double click)');
+  ok(after.sw >= 1, 'that tap flips the hidden switch under the finger (what makes iOS tick)');
+  const cover = await page.evaluate(`(async()=>{ await new Promise(r=>setTimeout(r,300)); const has=sel=>{ const e=document.querySelector(sel); return !!e&&e.tagName==='LABEL'&&!!e.querySelector(':scope > input.hapSw'); };
+    const sels=['#pT','#pY','#btnHelp','#btnSubmit','#briefBtn','#keysBtn','#focusBtn','#btnSettings','#btnHome','.palBtn','.port','.knob','.choice label','.slot.empty'];
+    const missing=sels.filter(s=>!has(s));
+    setKeysOpen(true); await new Promise(r=>setTimeout(r,200)); if(!has('#kbWrap')) missing.push('#kbWrap'); if(!has('#kbClose')) missing.push('#kbClose'); setKeysOpen(false);
+    const send=document.querySelector('#btnSubmit'), sendOff=send.getAttribute('aria-disabled')==='true'&&send.querySelector('input.hapSw').disabled;
+    Haptics.set(false); const allOff=[...document.querySelectorAll('input.hapSw')].every(i=>i.disabled); Haptics.set(true);
+    const someOn=[...document.querySelectorAll('input.hapSw')].some(i=>!i.disabled);
+    store.del('draft2.thin-walls'); showBoard(); const cards=has('.gig'); return {missing,sendOff,allOff,someOn,cards}; })()`);
+  ok(cover.missing.length === 0, `every tap target carries a switch${cover.missing.length ? ' (missing: ' + cover.missing.join(', ') + ')' : ''}`);
+  ok(cover.cards, 'gig cards carry a switch');
+  ok(cover.sendOff, 'a disabled Send button does not tick');
+  ok(cover.allOff && cover.someOn, 'turning haptics off disables every switch, and on re-enables them');
   const ios2 = await page.evaluate(`(async()=>{ progress.unlockAll=true; store.del('draft2.thin-walls'); openLevel(LEVELS.findIndex(l=>l.id==='thin-walls')); closeSide(); addModule('filter'); await new Promise(r=>setTimeout(r,300));
     const f=S.patch.modules.find(m=>m.type==='filter'), k=document.querySelector('.module[data-id="'+f.id+'"] [data-param="cutoff"]'), r=k.getBoundingClientRect();
     k.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,clientX:r.left+20,clientY:r.top+20,pointerId:4,pointerType:'touch'})); k.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,clientX:r.left+20,clientY:r.top+20,pointerId:4,pointerType:'touch'}));
     const steps=[...document.querySelectorAll('.shBtns .shBtn')], stepsHaveSwitch=steps.length===4&&steps.every(l=>l.tagName==='LABEL'&&l.querySelector('input[switch]'));
-    const c0=f.params.cutoff; steps[2].click(); const nudged=f.params.cutoff>c0; document.querySelector('#shDone').click();
-    openSettings(); const t=[...document.querySelectorAll('#hapTests > *')]; const tests=t.length===3&&!!t[2].querySelector('input[switch]'); document.querySelector('#shDone').click();
+    const c0=f.params.cutoff; steps[2].click(); await new Promise(r=>setTimeout(r,60)); const nudged=f.params.cutoff>c0; document.querySelector('#shDone').click();
+    openSettings(); const t=document.querySelector('#stHapTest'); const tests=!!t&&t.tagName==='LABEL'&&!!t.querySelector('input[switch]'); document.querySelector('#shDone').click();
     store.del('draft2.thin-walls'); showBoard(); return {stepsHaveSwitch,nudged,tests}; })()`);
   ok(ios2.stepsHaveSwitch && ios2.nudged, 'knob editor −/+ are tap targets with a real switch under the finger, and still nudge');
-  ok(ios2.tests, 'Settings offers three iPhone haptic tests');
+  ok(ios2.tests, 'Settings Test button is a tap target with a switch');
 
   console.log('\nCurriculum structure');
   const cur = await page.evaluate(`(()=>{
