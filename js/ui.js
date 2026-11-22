@@ -5,6 +5,17 @@
 /* =====================================================================
    BOARD
    ===================================================================== */
+/* Gig board preview: ▶ on each card plays the client's target sound; tap again (or another ▶) to stop. */
+let previewing=null;
+function stopPreview(){ if(!previewing) return; clearTimeout(previewing.t); previewing.b.classList.remove('lit'); previewing.b.setAttribute('aria-label','Preview '+previewing.L.title); previewing.b.querySelector('.pvIcon').textContent='▶'; previewing=null; stopOneShots(); }
+function previewButton(L){
+  let b=el('button',{class:'gigPv',title:'Hear the target sound','aria-label':'Preview '+L.title}); b.innerHTML='<span class="pvIcon">▶</span>';
+  b=Haptics.upgrade(b);
+  b.addEventListener('click',e=>{ e.stopPropagation(); const mine=previewing&&previewing.b===b; stopPreview(); if(mine) return;
+    playFixed(targetPatch(L),L,null); b.classList.add('lit'); b.querySelector('.pvIcon').textContent='■'; b.setAttribute('aria-label','Stop preview');
+    previewing={b,L,t:setTimeout(stopPreview,(L.dur+0.1)*1000)}; Haptics.select(); });
+  return b;
+}
 function showBoard(){
   allNotesOff(); stopOneShots(); S.pick=null; showPatchbar(); $('#sheet').hidden=true;
   S.li=-1; S.L=null; S.patch=null;
@@ -27,7 +38,8 @@ function showBoard(){
       b.innerHTML=`<div class="num">${c.short} ${k+1}${L.challenge?' · <span class="chal">CHALLENGE</span>':''}</div><div class="title">${L.title}</div>
         <div class="client">${L.client} · ${L.role}</div>
         <div class="concept"><span class="tag">${L.concept}</span>${sv?`<span class="stamp">PAID · ${sv.cost}¢ · ${Math.round(sv.match)}%${progress.played&&progress.played[L.id]?' · ♪':''}${progress.helped&&progress.helped[L.id]?' · helped':''}</span>`:i===nxt?'<span class="nextTag">NEXT</span>':''}</div>`;
-      b=Haptics.upgrade(b); b.addEventListener('click',()=>openLevel(i)); grid.appendChild(b);
+      b=Haptics.upgrade(b); b.addEventListener('click',()=>{ stopPreview(); openLevel(i); });
+      const w=el('div',{class:'gigWrap'}); w.appendChild(b); w.appendChild(previewButton(L)); grid.appendChild(w);
     });
     sec.appendChild(grid); g.appendChild(sec);
   });

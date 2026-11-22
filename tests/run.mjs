@@ -228,6 +228,21 @@ try {
   ok(cur.allOpen, 'every gig is open to a new player');
   ok(cur.nextStart, 'each chapter suggests its first gig as NEXT');
   ok(cur.skipAhead, 'solving a later gig out of order is recorded, and NEXT still points at the earliest unsolved one');
+
+  console.log('\nGig board preview');
+  const pv = await page.evaluate(`(async()=>{
+    showBoard(); const cards=document.querySelectorAll('.gigWrap'), btns=document.querySelectorAll('.gigWrap > .gigPv');
+    const b=btns[3]; b.click(); await new Promise(r=>setTimeout(r,80));
+    const playing=oneShots.length===1&&b.classList.contains('lit'), stayed=!$('#screenBoard').hidden&&S.L===null;
+    b.click(); const stopped=oneShots.length===0&&!b.classList.contains('lit');
+    btns[0].click(); btns[1].click(); const switched=oneShots.length===1&&!btns[0].classList.contains('lit')&&btns[1].classList.contains('lit');
+    cards[0].querySelector('.gig').click(); await new Promise(r=>setTimeout(r,50)); const opened=S.L&&S.L.id===LEVELS[0].id&&!btns[1].classList.contains('lit');
+    const all=btns.length===LEVELS.length; showBoard(); return {all,playing,stayed,stopped,switched,opened}; })()`);
+  ok(pv.all, 'every gig card has a ▶ preview button');
+  ok(pv.playing && pv.stayed, 'preview plays the target sound without opening the gig');
+  ok(pv.stopped, 'tapping ▶ again stops the preview');
+  ok(pv.switched, 'starting another preview stops the first');
+  ok(pv.opened, 'opening a gig stops the preview');
 } catch (e) {
   console.error(e); failures++;
 } finally {

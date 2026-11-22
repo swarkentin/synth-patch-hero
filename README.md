@@ -17,7 +17,7 @@ There's no build step and there are no dependencies: it's plain HTML, CSS and Ja
 
 ## How it plays
 
-1. **Pick a gig.** Read the client's brief and the manual page for that lesson.
+1. **Pick a gig.** Tap ▶ on any gig card to hear what the client wants before you take it on. Then open it and read the brief and the manual page for that lesson.
 2. **Fill the board.** OUTPUT sits in the top-right slot, and some gigs start with **preset** modules already wired. Tap an empty slot (or a palette button) to add a module. The **Parts** chips (`FILTER 0/1`) tell you what's still missing.
 3. **Patch.** Drag from jack to jack, or tap one jack and then another. Yellow cables carry audio, blue cables carry control signals. Click a cable to unplug it.
 4. **Tune.** Drag knobs up and down (Shift for fine control), or **click a knob** for a precise editor with fine −/+ steps and arrow keys.
