@@ -9,7 +9,18 @@ const Haptics = (() => {
   const touch = window.matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
   const canVibrate = typeof navigator.vibrate === 'function';
   let enabled = store.get('haptics', true), last = 0;
-  // Same approach as the known-working iOS 18 technique: a fresh hidden switch per tick, clicked and removed at once.
+  // Technique 2: a persistent switch kept on screen (1px, nearly transparent), clicked from code.
+  let vis = null;
+  function iosTickVisible() {
+    if (!vis) {
+      vis = document.createElement('label'); vis.setAttribute('aria-hidden', 'true');
+      vis.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;overflow:hidden;opacity:0.02;pointer-events:none;z-index:2147483647';
+      const i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); i.tabIndex = -1;
+      vis.appendChild(i); document.body.appendChild(vis);
+    }
+    try { vis.click(); } catch (_) {}
+  }
+  // Technique 1: the published iOS 18 trick: a fresh hidden switch per tick, clicked from code and removed at once.
   function iosTick() {
     const lab = document.createElement('label'); lab.setAttribute('aria-hidden', 'true'); lab.style.display = 'none';
     const i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); i.tabIndex = -1;
@@ -30,6 +41,16 @@ const Haptics = (() => {
     available: touch,
     method: canVibrate ? 'vibration' : touch ? 'iOS switch haptic (iOS 18+)' : 'none',
     test() { const was = last; last = 0; fire([30], 0); if (!last) last = was; },
+    testHidden: () => iosTick(),
+    testVisible: () => iosTickVisible(),
+    /* Technique 3: a tap target that is a <label> wrapping an invisible switch. The finger's own tap toggles the switch
+       natively (trusted), so iOS plays its tick, and the label's click still runs fn. Works for taps, not drags. */
+    tapTarget(html, cls, fn) {
+      const l = document.createElement('label'); l.className = cls; l.setAttribute('role', 'button'); l.innerHTML = html;
+      if (!canVibrate && touch) { const i = document.createElement('input'); i.type = 'checkbox'; i.setAttribute('switch', ''); i.className = 'hapSw'; i.tabIndex = -1; i.setAttribute('aria-hidden', 'true'); l.appendChild(i); }
+      l.addEventListener('click', e => { if (e.target.tagName === 'INPUT') return; if (canVibrate) fire(10, 0); fn(e); });
+      return l;
+    },
     continuous: canVibrate,             // false on iPhone: no ticks while a finger slides, only on taps/releases
     get enabled() { return enabled; },
     set(on) { enabled = on; store.set('haptics', on); },

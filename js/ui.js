@@ -391,7 +391,7 @@ function openSheet(m,d,knobEl){
   const set=v=>{ knobEl._set(v); sync(); };
   sync();
   R.addEventListener('input',()=>set(fromN(d,R.value/1000)));
-  sh.querySelectorAll('.shBtns button').forEach(b=>b.addEventListener('click',()=>nudge(parseFloat(b.dataset.d))));
+  sh.querySelectorAll('.shBtns button').forEach(b=>{ const t=Haptics.tapTarget(b.innerHTML,'shBtn',()=>nudge(parseFloat(b.dataset.d))); b.replaceWith(t); });
   $('#shReset').onclick=()=>set(d.def);
   $('#shPlay').onclick=()=>playFixed(S.patch,S.L,'mY');
   const nudge=delta=>{ let v=m.params[d.id], nv=fromN(d,toN(d,v)+delta); if(nv===v&&!fineSteps) nv=fromN(d,toN(d,v)+2*delta); set(nv); };
@@ -633,6 +633,7 @@ function openSettings(){
   const row=(label,sub,btn)=>`<div class="setRow"><div><b>${label}</b><span>${sub}</span></div>${btn}</div>`;
   const hapSub=!Haptics.available?'Not available on this device.':Haptics.continuous?'Ticks on knobs, cables and modules.':'iPhone: ticks on taps and when you let go of a knob (iOS 18+).';
   sh.innerHTML=`<div class="sheetCard"><div class="shHead"><span class="shTitle">SETTINGS</span><button class="btn primary" id="shDone">Done</button></div>
+    ${!Haptics.continuous&&Haptics.available?row('iPhone haptic test','Tap each one. Which ones tick?','<span class="hapTests" id="hapTests"></span>'):''}
     ${row('Haptics',hapSub+(Haptics.available?`<br><small>Method: ${Haptics.method}</small>`:''),Haptics.available?`<span class="hapCtl"><button class="btn" id="stHapTest">Test</button><label class="nativeSw" title="Haptics on/off"><input type="checkbox" switch id="stHapSw" ${Haptics.enabled?'checked':''}></label></span>`:'')}
     ${inLevel?row('On-screen keyboard','Find the client\'s note and play your patch.',`<button class="btn tgl" id="stKeys">${S.keysOpen?'Shown':'Hidden'}</button>`):''}
     ${inLevel?row('Focus mode','Bigger board, compact compare bar.',`<button class="btn tgl" id="stFocus">${S.focus?'On':'Off'}</button>`):''}
@@ -641,6 +642,11 @@ function openSettings(){
   $('#shDone').onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); };
   // A real iOS switch: on iOS 18 the system itself ticks when it's flipped, so it doubles as a check that switch haptics work here.
   const hs=$('#stHapSw'); if(hs) hs.onchange=()=>{ Haptics.set(hs.checked); if(hs.checked) Haptics.select(); const fb=$('#btnHaptics'); if(fb) fb.textContent='Haptics: '+(Haptics.enabled?'on':'off'); };
+  const tw=$('#hapTests');
+  if(tw){ const b1=el('button',{class:'btn'},'1'); b1.onclick=()=>{ Haptics.testHidden(); toast('Test 1 sent (code-only trick).'); };
+    const b2=el('button',{class:'btn'},'2'); b2.onclick=()=>{ Haptics.testVisible(); toast('Test 2 sent (on-screen switch from code).'); };
+    const b3=Haptics.tapTarget('3','btn',()=>toast('Test 3: switch under your finger.'));
+    tw.append(b1,b2,b3); }
   const ht=$('#stHapTest'); if(ht) ht.onclick=()=>{ if(!Haptics.enabled){ toast('Haptics are off. Flip the switch first.'); return; } Haptics.test(); toast(Haptics.continuous?'Buzz sent.':'Tick sent. Felt nothing? Flip the switch next to it: if even that doesn\'t tick, this phone or browser has no web haptics.'); };
   if(inLevel){
     $('#stKeys').onclick=()=>{ close(); setKeysOpen(!S.keysOpen); };

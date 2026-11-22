@@ -163,7 +163,7 @@ try {
     const k=document.querySelector('.module[data-id="'+o.id+'"] [data-param="oct"]'); const r=k.getBoundingClientRect();
     k.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,clientX:r.left+20,clientY:r.top+20,pointerId:8,pointerType:'touch'}));
     k.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,clientX:r.left+20,clientY:r.top+20,pointerId:8,pointerType:'touch'}));
-    n=calls.length; for(let q=0;q<3;q++){ document.querySelectorAll('.shBtns button')[2].click(); await wait(60); } res.knob=calls.length>=n+3&&o.params.oct===3;
+    n=calls.length; for(let q=0;q<3;q++){ document.querySelectorAll('.shBtns .shBtn')[2].click(); await wait(60); } res.knob=calls.length>=n+3&&o.params.oct===3;
     document.querySelector('#shDone').click(); for(let q=0;q<60&&!S.cmp;q++) await wait(50); await wait(400); n=calls.length; S.wasOk=false; S.cmp={...S.cmp,overall:95}; updateCompare(); res.pass=calls.length>n;
     Haptics.set(false); n=calls.length; addModule('filter'); await wait(80); res.toggleOff=calls.length===n; Haptics.set(true);
     store.del('draft2.thin-walls'); showBoard(); return res; })()`);
@@ -180,6 +180,15 @@ try {
   const btn = await page.evaluate(`(()=>{ const b=document.querySelector('#btnHaptics'); b.scrollIntoView(); const r=b.getBoundingClientRect(); return [r.left+r.width/2, r.top+r.height/2]; })()`);
   const sw0 = await page.evaluate('__sw'); await page.tap(btn[0], btn[1]); await page.tap(btn[0], btn[1]);
   ok((await page.evaluate('__sw')) > sw0, 'a real tap on the haptics switch fires the iOS switch haptic');
+  const ios2 = await page.evaluate(`(async()=>{ progress.unlockAll=true; store.del('draft2.thin-walls'); openLevel(LEVELS.findIndex(l=>l.id==='thin-walls')); closeSide(); addModule('filter'); await new Promise(r=>setTimeout(r,300));
+    const f=S.patch.modules.find(m=>m.type==='filter'), k=document.querySelector('.module[data-id="'+f.id+'"] [data-param="cutoff"]'), r=k.getBoundingClientRect();
+    k.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,clientX:r.left+20,clientY:r.top+20,pointerId:4,pointerType:'touch'})); k.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,clientX:r.left+20,clientY:r.top+20,pointerId:4,pointerType:'touch'}));
+    const steps=[...document.querySelectorAll('.shBtns .shBtn')], stepsHaveSwitch=steps.length===4&&steps.every(l=>l.tagName==='LABEL'&&l.querySelector('input[switch]'));
+    const c0=f.params.cutoff; steps[2].click(); const nudged=f.params.cutoff>c0; document.querySelector('#shDone').click();
+    openSettings(); const t=[...document.querySelectorAll('#hapTests > *')]; const tests=t.length===3&&!!t[2].querySelector('input[switch]'); document.querySelector('#shDone').click();
+    store.del('draft2.thin-walls'); showBoard(); return {stepsHaveSwitch,nudged,tests}; })()`);
+  ok(ios2.stepsHaveSwitch && ios2.nudged, 'knob editor −/+ are tap targets with a real switch under the finger, and still nudge');
+  ok(ios2.tests, 'Settings offers three iPhone haptic tests');
 
   console.log('\nCurriculum structure');
   const cur = await page.evaluate(`(()=>{
