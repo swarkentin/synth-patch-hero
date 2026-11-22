@@ -1,6 +1,9 @@
 /* Synth Patch Hero · Haptic feedback on touch devices.
-   Android and most browsers: navigator.vibrate. iPhone Safari has no vibrate(), so on iOS 18+ we toggle a hidden
-   <input type="checkbox" switch>, which makes the system play its switch haptic. Older iOS: silently does nothing. */
+   Android and most browsers: navigator.vibrate. iPhone (Safari and Chrome, both WebKit) has no vibrate(), so on iOS 18+
+   we toggle a hidden <input type="checkbox" switch>, which plays the system switch haptic. WebKit only does that right
+   after a real tap/release (transient user activation): a finger sliding across a knob does not count, and neither do
+   timers or async work. So on iOS we fire only while activation is live (one tick, no delayed pulses), and knobs give a
+   tick on release instead of during the drag. Older iOS: silently does nothing. */
 'use strict';
 const Haptics = (() => {
   const touch = window.matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
@@ -15,19 +18,22 @@ const Haptics = (() => {
     }
     try { sw.click(); } catch (_) {}
   }
+  const gestureLive = () => { const ua = navigator.userActivation; return !ua || ua.isActive; };
   // pattern: vibrate() pattern (ms on/off). minGap: throttle so fast knob turns don't blur into one buzz.
   function fire(pattern, minGap = 30) {
     if (!enabled || !touch) return;
+    if (!canVibrate && !gestureLive()) return;      // iOS would ignore it anyway
     const t = performance.now(); if (t - last < minGap) return; last = t;
     if (canVibrate) { try { navigator.vibrate(pattern); } catch (_) {} return; }
-    const pulses = Array.isArray(pattern) ? Math.ceil(pattern.length / 2) : 1;
-    iosTick(); for (let k = 1; k < Math.min(pulses, 4); k++) setTimeout(iosTick, k * 90);
+    iosTick();
   }
   return {
     available: touch,
+    continuous: canVibrate,             // false on iPhone: no ticks while a finger slides, only on taps/releases
     get enabled() { return enabled; },
     set(on) { enabled = on; store.set('haptics', on); },
     detent: () => fire(9, 35),          // knob passes a step / notch
+    release: () => fire(12, 0),         // finger lifts off a knob after turning it (the iPhone-friendly knob tick)
     edge: () => fire(22, 40),           // knob hits its end stop
     select: () => fire(12, 50),         // choice button, jack picked
     plug: () => fire([16], 60),         // cable plugged in

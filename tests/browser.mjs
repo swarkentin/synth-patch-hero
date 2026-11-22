@@ -56,6 +56,13 @@ export async function launch() {
       while (Date.now() - t0 < timeout) { try { const v = await page.evaluate(expr); if (v) return v; } catch {} await sleep(100); }
       throw new Error('Timed out waiting for: ' + expr);
     },
+    // Run src before any page script on every navigation (e.g. to mimic a browser without navigator.vibrate).
+    async addInitScript(src) { await send('Page.addScriptToEvaluateOnNewDocument', { source: src }); },
+    // A real touch tap through Chrome's input pipeline, so the page gets genuine user activation.
+    async tap(x, y) {
+      await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+      await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    },
     async screenshot() { const r = await send('Page.captureScreenshot', { format: 'png' }); return Buffer.from(r.result.data, 'base64'); },
     errors: () => errors.slice(),
   };

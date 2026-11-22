@@ -305,6 +305,7 @@ function makeKnob(m,d){
     const mv=ev=>{ if(S.pinching) return; if(!moved&&Math.abs(y0-ev.clientY)<(touch?6:2)) return; if(!moved){ moved=true; y0=ev.clientY; }
       const sens=ev.shiftKey?(touch?0.0008:0.0007):(touch?0.0022:0.0035); set(fromN(d,n0+(y0-ev.clientY)*sens)); };
     const up=ev=>{ k.removeEventListener('pointermove',mv); k.removeEventListener('pointerup',up); k.removeEventListener('pointercancel',up);
+      if(moved&&ev.type==='pointerup'&&touch) Haptics.release();
       if(!moved&&ev.type==='pointerup') openSheet(m,d,k); };
     k.addEventListener('pointermove',mv); k.addEventListener('pointerup',up); k.addEventListener('pointercancel',up); });
   // Wheel / trackpad: follow the real scroll distance. Coarse stepped knobs (OCT, SEMI…) move one step per ~40px of scroll.

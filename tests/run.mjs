@@ -150,6 +150,18 @@ try {
     store.del('draft2.thin-walls'); showBoard(); return res; })()`);
   for (const [k, v] of Object.entries(hap)) ok(v, `haptics: ${k}`);
 
+  console.log('\nHaptics on iPhone (no vibrate(): switch haptic only during a real gesture)');
+  await page.addInitScript(`Object.defineProperty(Navigator.prototype,'vibrate',{value:undefined,configurable:true});
+    window.__sw=0; const oc=HTMLLabelElement.prototype.click; HTMLLabelElement.prototype.click=function(){ if(this.querySelector('input[switch]')) window.__sw++; return oc.call(this); };`);
+  await page.open(URL, { width: 390, height: 664, mobile: true });
+  await page.waitFor("document.querySelector('.gig')");
+  const ios1 = await page.evaluate(`(async()=>{ await new Promise(r=>setTimeout(r,6000)); const before=__sw; Haptics.select(); return {noVibrate:typeof navigator.vibrate!=='function', continuous:Haptics.continuous, noGesture:__sw===before}; })()`);
+  ok(ios1.noVibrate && ios1.continuous === false, 'iPhone mode: no vibrate(), no continuous drag ticks');
+  ok(ios1.noGesture, 'no haptic is attempted without a live user gesture');
+  const btn = await page.evaluate(`(()=>{ const b=document.querySelector('#btnHaptics'); b.scrollIntoView(); const r=b.getBoundingClientRect(); return [r.left+r.width/2, r.top+r.height/2]; })()`);
+  const sw0 = await page.evaluate('__sw'); await page.tap(btn[0], btn[1]); await page.tap(btn[0], btn[1]);
+  ok((await page.evaluate('__sw')) > sw0, 'a real tap on the haptics switch fires the iOS switch haptic');
+
   console.log('\nCurriculum structure');
   const cur = await page.evaluate(`(()=>{
     const ids=LEVELS.map(l=>l.id), uniq=new Set(ids).size===ids.length;
