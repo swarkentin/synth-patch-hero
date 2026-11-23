@@ -75,14 +75,7 @@ Feedback that drove it: difficulty rises fast (especially the VCA lesson); playe
       - Disabled targets (e.g. Send below 90%) and the Haptics off switch disable the hidden switches.
       - Tests drive real taps through Chrome's input pipeline to check one tap = one action, the switch flips, and every target carries a switch.
   - Playtest on iPhone (Chrome): haptics worked for a few seconds, then stopped. Cause: WebKit only plays the switch haptic right after a real tap or release (transient user activation); a finger sliding across a knob, timers and async work don't count. So on iOS we fire only while `navigator.userActivation.isActive`, use a single tick (no delayed pulses), and knobs tick once **on release** after turning instead of during the drag (`Haptics.continuous` is false). Tap-driven feedback still works: −/+ in the knob editor, plugging cables, adding modules, keys, Send. The "crossed 90%" buzz usually arrives after async analysis, so it won't fire on iPhone.
-- **Jingle:** on Send, the result screen plays a short phrase on the player's own patch (a copy, scheduled with the normal voice engine), shaped per chapter, with note markers that light in time and a Replay button. It stops when the dialog closes.
-  - melodic "ta-da" arpeggio (Basics, Filters, Leads)
-  - funky riff (Bass)
-  - IV → I chords (Pads)
-  - drum fill on one pitch (Percussion)
-  - three hits at different pitches (Sound FX)
-  - falling plucked arpeggio (Effects Rack, Strings & Plucks), so delay tails and string decays get room
-  - Test: every gig's jingle, rendered offline on its reference patch, is audible and finite.
+- **Jingle = the demo song** (playtest 2026-11-23: "be able to test the song jingle while building"). On Send, the result screen plays the gig's demo song on the player's own patch (a copy), with note markers that light in time (one per note, or one per beat for busy songs) and a ♫ Replay song button. It stops when the dialog closes. It's the same song ♫ Song mode plays on ▶ Yours while building, so players can preview exactly what they'll hear when paid. The separate per-chapter jingle phrases were removed. Test: jingle and song render identically.
 
 ## Browser history and links
 - Playtest, 2026-11-22: pressing Back left the site. Now each screen has an address:
@@ -121,10 +114,10 @@ Playtest, 2026-11-23: "the ideas are right, but most sound like a pretty cheap o
 - **Classic** is the browser's stock parts: OscillatorNode, a 12 dB BiquadFilter, and linear envelopes.
 - **Studio** replaces the voice core:
   - **Oscillators:** PolyBLEP band-limited oscillators (AudioWorklet `va-osc`) with a slow, seeded analog drift of a few cents. The seed comes from the oscillator's settings, the note and its ordinal, so identical patches render identically and scoring stays exact.
-  - **Filter:** a 4-pole zero-delay-feedback ladder low-pass (`ladder`), 2× oversampled, with tanh saturation in the feedback loop. Resonance runs up to near self-oscillation. Makeup gain of 1 + 1.25·res keeps loudness within about ±20% of Classic. HP/BP/notch still use the biquad for now.
+  - **Filter:** 12 dB/oct by default (the A/B on Neon Avenue preferred it: a supersaw needs its bright top). A 4-pole zero-delay-feedback ladder low-pass (`ladder`) is used only on gigs marked `studio:'ladder'` (Acid Test: the squelch is the ladder's job). The ladder is 2× oversampled, with tanh saturation in the feedback loop. Resonance runs up to near self-oscillation. Makeup gain of 1 + 1.25·res keeps loudness within about ±20% of Classic. HP/BP/notch still use the biquad for now.
   - **Envelopes:** an RC-style attack that curves up to full at A, then exponential decay and release (time constant = knob time / 3.5, so ~97% of the way by the knob's time).
 - **Studio finish:** live playback only, never scoring. Gentle tanh saturation, glue compression (2.5:1), and a short seeded stereo room at 16%. It's applied equally to ▶ Target, ▶ Yours, songs and previews.
-- **Scope:** Studio is offered only on gigs marked `studio:true` (Acid Test and Neon Avenue so far) and in Free Jam. There, the ◆/◇ toolbar button switches engines; the choice is saved as `engine`, default Studio. Switching re-renders and re-scores the target, so matching stays fair on either engine. Every other gig plays and scores on Classic until it's been calibrated on Studio.
+- **Scope:** Studio is offered only on gigs marked `studio:true` (Acid Test and Neon Avenue so far) and in Free Jam. There, the ◆/◇ toolbar button switches engines; the choice is saved as `engine`, default Studio. Switching re-renders and re-scores the target, so matching stays fair on either engine. Every other gig plays and scores on Classic until it's been calibrated on Studio. `STUDIO` in audio.js switches Studio parts (ladder, drift, finish) one at a time for listening tests.
 - **Acid Test on Studio:** reference 100, untouched 1, cutoff +0.2 oct 86, square wave 38. Help rescues it in 12 steps.
 - **Neon Avenue (supersaw) on Studio:** reference 100. Stricter on detune than Classic: no detune scores 58 (Classic 79), ±5 cents 80, ±12 cents 83. One saw 78, cutoff 1300 Hz 85.
 - **Studio processors** (`va-osc`, `ladder`, `sync-osc`) get their note's start time and sleep until then. `stop(t)` sends `{stopAt:t}` and the processor returns false at exactly t. Without this, a demo song's dozens of pre-created voices all ran from the first beat, which wasted CPU and silenced songs after a bar (test: long Studio songs have no silent stretches).

@@ -271,7 +271,7 @@ const LEVELS = [
   target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:3000,res:0.3,cutAmt:-4200}},{id:'e',type:'env',p:{a:0.02,d:0.9,s:0.15,r:0.3}}],
     cables:['o.out>f.in','f.out>out.in','e.out>f.cut']},
   reply:`It breathes in before it sings. My pedalboard is jealous.`},
-{ id:'acid', ch:'filters', studio:true, challenge:true, tol:1.5, title:'Acid Test', concept:'Challenge', client:'Acid Annie', role:'Back for more squelch',
+{ id:'acid', ch:'filters', studio:'ladder', challenge:true, tol:1.5, title:'Acid Test', concept:'Challenge', client:'Acid Annie', role:'Back for more squelch',
   unlock:[], palette:{osc:1,filter:1,vca:1,env:2,lfo:1}, note:45, gate:0.5, dur:0.8,
   brief:`Remember me, darling? Now I want the real thing: a short, snappy note where the resonant filter <i>bites</i> open and snaps shut every time. Rubbery. Wet. Rude.`,
   manual:`<h4>Challenge: the acid line</h4>

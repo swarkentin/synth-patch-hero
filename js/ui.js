@@ -608,7 +608,7 @@ function paintPlotTabs(){ document.querySelectorAll('.plotTabs button').forEach(
 S.enginePref=store.get('engine','studio');
 const studioOK=L=>!!L&&(L.studio||S.sandbox);
 function engineFor(L){ return studioOK(L)?S.enginePref:'classic'; }
-function applyEngine(L){ const e=engineFor(L); if(e!==ENGINE){ setEngine(e); LEVELS.forEach(l=>{ delete l._tX; delete l._tA; }); } }
+function applyEngine(L){ const e=engineFor(L), lad=!!(L&&L.studio==='ladder'); if(lad!==STUDIO.ladder){ STUDIO.ladder=lad; LEVELS.forEach(l=>{ delete l._tX; delete l._tA; }); } if(e!==ENGINE){ setEngine(e); LEVELS.forEach(l=>{ delete l._tX; delete l._tA; }); } }
 function renderEngineBtn(){ const b=$('#engBtn'); if(!b) return; const on=S.enginePref==='studio', show=studioOK(S.L);
   b.hidden=!show; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on);
   b.querySelector('.ico').textContent=on?'◆':'◇'; b.querySelector('.lbl').textContent=on?' Studio':' Classic';
@@ -721,14 +721,14 @@ function submit(){
       <div class="res"><b>${mods}</b><span>Added</span><em>modules</em></div>
       <div class="res"><b>${cab}</b><span>Cables</span><em>best ${best.cables}</em></div>
     </div>
-    <div class="jingle"><button class="btn ghost" id="mJingle">♪ Replay jingle</button><span class="jDots" id="jDots"></span><span class="jLbl">your patch takes a bow</span></div>
+    <div class="jingle"><button class="btn ghost" id="mJingle">♫ Replay song</button><span class="jDots" id="jDots"></span><span class="jLbl">your patch plays the client's song</span></div>
     <div class="modalBtns"><button class="btn" id="mStay">Keep tweaking</button><button class="btn" id="mBoard">Gig board</button>${next!=null?'<button class="btn primary" id="mNext">Next gig →</button>':''}</div></div>`;
   const leave=fn=>()=>{ stopJingle(); clearTimeout(S.jT); m.hidden=true; fn&&fn(); };
   $('#mStay').onclick=leave(); $('#mBoard').onclick=leave(showBoard);
   if(next!=null) $('#mNext').onclick=leave(()=>openLevel(next));
   const patch=JSON.parse(JSON.stringify(S.patch));
   const runJingle=()=>{ const j=playJingle(patch,L), dots=$('#jDots'); if(!dots) return;
-    const starts=[...new Set(j.events.map(e=>e.t))];
+    let starts=[...new Set(j.events.map(e=>e.t))]; if(starts.length>16) starts=[...new Set(j.events.map(e=>e.beat))].map(b=>b*j.beat);   // busy songs: one marker per beat
     dots.innerHTML=starts.map(()=>'<i></i>').join(''); (S.jTs||[]).forEach(clearTimeout);
     S.jTs=starts.map((t,k)=>setTimeout(()=>{ const d=dots.children[k]; if(d){ d.classList.add('on'); setTimeout(()=>d.classList.remove('on'),220); } },80+t*1000)); };
   $('#mJingle').onclick=runJingle;

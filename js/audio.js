@@ -62,11 +62,11 @@ function rng(seed){ let a=seed>>>0||1; return ()=>{ a=(a+0x6D2B79F5)>>>0; let t=
 function blep(t,dt){ if(t<dt){ t/=dt; return t+t-t*t-1; } if(t>1-dt){ t=(t-1)/dt; return t*t+t+t+1; } return 0; }
 class VaOsc extends AudioWorkletProcessor{
   static get parameterDescriptors(){ return [{name:'freq',defaultValue:220,automationRate:'a-rate'},{name:'detune',defaultValue:0,automationRate:'a-rate'}]; }
-  constructor(o){ super(); const op=o.processorOptions||{}; this.w=op.wave||'sawtooth'; this.r=rng(op.seed||1); this.ph=this.r(); this.drift=(this.r()*2-1)*2; this.dt=this.drift; this.n=0; this.t0=op.t0||0; this.t1=Infinity; this.port.onmessage=e=>{ this.t1=(e.data&&e.data.stopAt!=null)?e.data.stopAt:-1; }; }
+  constructor(o){ super(); const op=o.processorOptions||{}; this.w=op.wave||'sawtooth'; this.r=rng(op.seed||1); this.ph=this.r(); this.ds=op.drift==null?1:op.drift; this.drift=(this.r()*2-1)*2*this.ds; this.dt=this.drift; this.n=0; this.t0=op.t0||0; this.t1=Infinity; this.port.onmessage=e=>{ this.t1=(e.data&&e.data.stopAt!=null)?e.data.stopAt:-1; }; }
   process(ins,outs,P){
     if(currentTime>=this.t1) return false; const out=outs[0][0]; if(!out||currentTime+128/sampleRate<this.t0) return true; const F=P.freq, D=P.detune, w=this.w;
     for(let i=0;i<out.length;i++){
-      if((this.n++&511)===0) this.dt=(this.r()*2-1)*3;            // a new drift target every ~10 ms…
+      if((this.n++&511)===0) this.dt=(this.r()*2-1)*3*this.ds;            // a new drift target every ~10 ms…
       this.drift+=(this.dt-this.drift)*0.0004;                     // …approached very slowly: a few cents of wander
       const f=(F.length>1?F[i]:F[0])*Math.pow(2,((D.length>1?D[i]:D[0])+this.drift)/1200); const dt=Math.min(0.49,Math.abs(f)/sampleRate);
       let p=this.ph, y;
@@ -115,6 +115,8 @@ function ensureWorklets(ctx){
 /* ENGINE: 'classic' (the browser's stock audio parts) or 'studio' (analog-style oscillators, ladder filter, curved
    envelopes). Both scoring renders and playback use the same engine, so matching stays fair either way. */
 let ENGINE='classic';
+/* Studio engine parts, switchable one at a time for A/B listening and tuning. */
+const STUDIO={ladder:false, drift:1, finish:true};   // ladder: set per gig (studio:'ladder')
 const usesWorklet = patch => ENGINE==='studio'||patch.modules.some(m=>m.type==='sync');
 /* Studio envelopes: an RC-style attack (curving up to full at A), then decay and release that fall fast and trail off. */
 const EXP_K=3.5;   // time constants per D/R: ~97% of the way there by the knob's time
@@ -156,7 +158,7 @@ function buildVoice(ctx, patch, dest, t0, note, gate){
         let o, freq, det, out;
         if(ENGINE==='studio'&&ctx.__studio){
           const key=`${P.wave}|${P.oct}|${P.semi}|${P.fine}`; seen[key]=(seen[key]||0)+1;
-          o=new AudioWorkletNode(ctx,'va-osc',{numberOfInputs:0,outputChannelCount:[1],processorOptions:{wave:P.wave,seed:oscSeed(P,note,seen[key]),t0}});
+          o=new AudioWorkletNode(ctx,'va-osc',{numberOfInputs:0,outputChannelCount:[1],processorOptions:{wave:P.wave,seed:oscSeed(P,note,seen[key]),t0,drift:STUDIO.drift}});
           freq=o.parameters.get('freq'); det=o.parameters.get('detune'); workers.push(o); out=o;
         } else { o=ctx.createOscillator(); o.type=P.wave; freq=o.frequency; det=o.detune; sources.push(o); out=o; }
         freq.value=mtof(note)*Math.pow(2,P.oct+P.semi/12); det.value=P.fine;
@@ -167,7 +169,7 @@ function buildVoice(ctx, patch, dest, t0, note, gate){
       case 'noise': {
         const s=ctx.createBufferSource(); s.buffer=noiseBuffer(ctx); s.loop=true; n.outs.out=s; sources.push(s); break; }
       case 'filter': {
-        if(ENGINE==='studio'&&ctx.__studio&&P.type==='lowpass'){
+        if(ENGINE==='studio'&&ctx.__studio&&STUDIO.ladder&&P.type==='lowpass'){
           const f=new AudioWorkletNode(ctx,'ladder',{numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[1],channelCount:1,channelCountMode:'explicit',processorOptions:{t0}});
           f.parameters.get('cutoff').value=P.cutoff*Math.pow(2,(P.track||0)*(note-60)/12); f.parameters.get('res').value=P.res;
           const mg=ctx.createGain(); mg.gain.value=P.cutAmt; mg.connect(f.parameters.get('cents')); workers.push(f);
@@ -355,30 +357,11 @@ function allNotesOff(){ Object.keys(held).forEach(noteOff); if(S.idNote){ S.idNo
 
 /* ---- End-of-gig jingle: a short phrase played on the player's own patch, shaped to suit the chapter ---- */
 // Each event: [semitones from the gig's note, start (beats), length (beats), velocity]. Chords share a start.
-const JINGLES = {
-  melodic: { beat:0.15, notes:[[0,0,.8,.9],[4,1,.8,.85],[7,2,.8,.9],[4,3,.8,.8],[12,4,3.5,1]] },
-  bass:    { beat:0.17, notes:[[0,0,.7,1],[0,1,.6,.8],[12,1.5,.45,.9],[0,2,.7,.9],[10,3,.6,.85],[7,3.5,.6,.85],[0,4.5,2.5,1]] },
-  pads:    { beat:1.0,  notes:[[5,0,1.15,.55],[9,0,1.15,.5],[12,0,1.15,.5],[0,1.25,1.7,.55],[4,1.25,1.7,.5],[7,1.25,1.7,.5],[12,1.25,1.7,.45]] },
-  perc:    { beat:0.14, notes:[[0,0,.6,1],[0,2,.6,.7],[0,3,.6,.8],[0,4,.6,1],[0,5.5,.5,.6],[0,6,.6,.8],[0,7,.6,.9],[0,8,1,1]] },
-  fx:      { beat:0.5,  notes:[[0,0,.9,.9],[-5,1.1,.9,.9],[7,2.2,1.4,1]] },
-  pluck:   { beat:0.16, notes:[[0,0,.5,.9],[-5,1,.5,.8],[-8,2,.5,.85],[-12,3,.5,.8],[-5,4,.5,.8],[0,5,3,1]] },
-};
-function jingleFor(L){ return JINGLES[{bass:'bass',pads:'pads',perc:'perc',fx:'fx',strings:'pluck',fxrack:'pluck'}[L.ch]||'melodic']; }
-/* Schedule the jingle on ctx. Returns {events:[{t,dur,note}], end, stop(t)}. */
-function scheduleJingle(ctx, dest, patch, L, t0){
-  const J=jingleFor(L), voices=[]; let end=0;
-  const events=J.notes.map(([rel,at,len,vel])=>{
-    const t=t0+at*J.beat, dur=len*J.beat, oc=outChain(ctx,dest,t,vel);
-    const v=buildVoice(ctx,patch,oc.node,t,L.note+rel,dur), stopAt=t+dur+v.maxR+0.06;
-    oc.close(stopAt); v.stop(stopAt+0.02); voices.push({oc,v,stopAt}); end=Math.max(end,stopAt);
-    return {t:at*J.beat,dur,note:L.note+rel};
-  });
-  return { events, end, stop(t){ voices.forEach(x=>{ if(x.stopAt>t){ x.oc.close(t+0.03); x.v.stop(t+0.06); } }); } };
-}
+/* The end-of-gig jingle is the gig's demo song played on the player's patch (the same one ♫ Song previews while building). */
 let jingleNow=null;
 function playJingle(patch, L){
   const ctx=ac(); stopJingle(); stopOneShots();
-  jingleNow=scheduleJingle(ctx, liveBus, patch, L, ctx.currentTime+0.08);
+  jingleNow=scheduleSong(ctx, liveBus, patch, L, ctx.currentTime+0.08);
   return jingleNow;
 }
 function stopJingle(){ if(jingleNow&&AC){ jingleNow.stop(AC.currentTime); } jingleNow=null; }
@@ -425,14 +408,14 @@ function songBpm(S_,patch){ const q=S_.followSeq&&patch.modules.find(m=>m.type==
 function songLength(L,patch){ const S_=songFor(L), beat=60/songBpm(S_,patch); return Math.max(...S_.notes.map(n=>n[1]+n[2]))*beat; }
 /* Schedule a demo song on ctx. Returns {end, stop(t)}. */
 function scheduleSong(ctx, dest, patch, L, t0){
-  const S_=songFor(L), beat=60/songBpm(S_,patch), voices=[]; let end=0;
+  const S_=songFor(L), beat=60/songBpm(S_,patch), voices=[], events=[]; let end=0;
   const play=(p,note,t,dur,vel,lvl=1)=>{ const oc=outChain(ctx,dest,t,vel*lvl), v=buildVoice(ctx,p,oc.node,t,note,dur), stopAt=t+dur+Math.min(v.maxR,2.5)+0.06;
     oc.close(stopAt); v.stop(stopAt+0.02); voices.push({oc,v,stopAt}); end=Math.max(end,stopAt); };
-  S_.notes.forEach(([rel,at,len,vel])=>play(patch,L.note+rel,t0+at*beat,len*beat,vel));
+  S_.notes.forEach(([rel,at,len,vel])=>{ play(patch,L.note+rel,t0+at*beat,len*beat,vel); events.push({t:at*beat,dur:len*beat,note:L.note+rel,beat:Math.floor(at+1e-6)}); });
   if(S_.drums){ const bars=Math.ceil(Math.max(...S_.notes.map(n=>n[1]+n[2]))/4)*4;
     for(let b=0;b<bars;b+=0.5){ const kick=S_.drums==='four'?b%1===0:(b%4===0||b%4===2), hat=S_.drums==='four'?b%1===0.5:true;
       if(kick) play(DRUM_KIT.kick,36,t0+b*beat,.1,1,.55); if(hat) play(DRUM_KIT.hat,60,t0+b*beat,.03,b%1?.9:.6,.22); } }
-  return { end, stop(t){ voices.forEach(x=>{ if(x.stopAt>t){ x.oc.close(t+0.03); x.v.stop(t+0.06); } }); } };
+  return { end, events, beat, stop(t){ voices.forEach(x=>{ if(x.stopAt>t){ x.oc.close(t+0.03); x.v.stop(t+0.06); } }); } };
 }
 let songNow=null;
 function playSong(patch, L){
@@ -448,10 +431,4 @@ async function renderSong(patch, L){
   return (await ctx.startRendering()).getChannelData(0);
 }
 /* Offline render of the jingle (used by tests to check every gig's jingle is audible). */
-async function renderJingle(patch, L){
-  const J=jingleFor(L), last=Math.max(...J.notes.map(n=>(n[1]+n[2])*J.beat));
-  const len=Math.ceil((last+2.5)*SR), ctx=new OfflineAudioContext(1,len,SR);
-  if(usesWorklet(patch)) await ensureWorklets(ctx);
-  scheduleJingle(ctx, ctx.destination, patch, L, 0.02);
-  return (await ctx.startRendering()).getChannelData(0);
-}
+function renderJingle(patch, L){ return renderSong(patch, L); }

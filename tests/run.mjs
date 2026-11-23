@@ -144,13 +144,11 @@ try {
     LEVELS.forEach(L=>store.del('draft2.'+L.id)); progress.helped={}; showBoard(); return out; })()`);
   for (const r of rescued) ok(r.paletteOk && r.score >= 90 && r.steps <= 16, `${r.id.padEnd(13)} palette has the parts; passes after ${r.steps} help step(s) (${r.score.toFixed(0)}%)`);
 
-  console.log('\nEvery gig ends with an audible jingle on its patch');
-  const jingles = await page.evaluate(`(async()=>{ const out=[];
-    for(const L of LEVELS){ const x=await renderJingle(targetPatch(L),L); let peak=0, nan=false;
-      for(let i=0;i<x.length;i++){ const v=x[i]; if(v!==v){ nan=true; break; } const a=Math.abs(v); if(a>peak) peak=a; }
-      out.push({id:L.id,peak,nan,secs:x.length/SR}); }
-    return out; })()`);
-  for (const j of jingles) ok(!j.nan && j.peak > 0.01 && j.peak < 4, `${j.id.padEnd(13)} jingle peak ${j.peak.toFixed(2)} over ${j.secs.toFixed(1)}s`);
+  console.log('\nThe end-of-gig jingle is the demo song on the player\'s patch');
+  const same = await page.evaluate(`(async()=>{ const out=[]; for(const id of ['acid','glass','kick','harp']){ const L=LEVELS.find(l=>l.id===id)||LEVELS[0];
+      const a=await renderJingle(targetPatch(L),L), b=await renderSong(targetPatch(L),L); let d=0; for(let i=0;i<Math.min(a.length,b.length);i++) d=Math.max(d,Math.abs(a[i]-b[i]));
+      out.push({id:L.id,d,len:a.length===b.length}); } return out; })()`);
+  ok(same.every(x => x.len && x.d < 1e-6), `jingle and ♫ Song render identically (${same.map(x => x.id).join(', ')}); every song's audibility is checked below`);
   const modal = await page.evaluate(`(async()=>{ const i=LEVELS.findIndex(l=>l.id==='pluck'); store.del('draft2.pluck'); openLevel(i);
     const t=targetPatch(S.L); let k=0; t.modules.forEach(m=>{ m.slot=m.type==='out'?S.slots-1:k++; }); S.patch=t; renderRack(); scheduleAnalyze();
     for(let n=0;n<60&&!(S.cmp&&S.cmp.overall>=PASS);n++) await new Promise(r=>setTimeout(r,50));
@@ -169,7 +167,7 @@ try {
     setSongMode(false); const off=!songNow; playTarget(); const note=!songNow&&oneShots.length===1; stopOneShots(); showBoard(); return {t,y,off,note}; })()`);
   ok(songMode.t && songMode.y, 'with ♫ Song on, ▶ Target and ▶ Yours play the demo song');
   ok(songMode.off && songMode.note, 'turning ♫ Song off stops it and goes back to single notes');
-  ok(modal.dots >= 4 && modal.playing && modal.stopped, `result screen plays the jingle (${modal.dots} note markers) and stops it when closed`);
+  ok(modal.dots >= 4 && modal.playing && modal.stopped, `result screen plays the client's song on your patch (${modal.dots} note markers) and stops it when closed`);
 
   console.log('\nHaptics on a phone');
   await page.open(URL, { width: 390, height: 664, mobile: true });

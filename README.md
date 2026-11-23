@@ -24,7 +24,7 @@ There's no build step and there are no dependencies: it's plain HTML, CSS and Ja
 5. **Tune.** Drag knobs up and down (Shift for fine control), or **click a knob** for a precise editor with fine −/+ steps and arrow keys.
 6. **Compare.** ▶ Target vs ▶ Yours, plus an oscilloscope, loudness and spectrum overlays and hints, are always on screen. Press **⛶ Focus** (or Shift+F) for a full-screen board with a compact compare bar.
 7. **Stuck?** Press **Help**. It first points out missing modules or cables (and can patch them for you), then names the knob that matters most and explains it. Press again and it can **lock** that knob at the client's value. Tap a locked knob to see why, or to unlock it.
-8. **Send** at a 90% match or better. Your patch plays a short **jingle** to celebrate. Then come back and beat par on cost.
+8. **Send** at a 90% match or better. Your patch plays the client's song to celebrate (the same one ♫ Song previews). Then come back and beat par on cost.
 
 Every gig has its own link (`#/gig/acid`), and the browser's Back and Forward buttons move between the board and gigs.
 
@@ -79,7 +79,7 @@ index.html          markup only
 css/style.css       all styles (desktop, tablet, phone breakpoints)
 js/data.js          module types and the gig list (briefs, manual pages, target patches, presets)
 js/store.js         saved progress (localStorage) and patch helpers
-js/audio.js         Web Audio engine: patch → voice, live playback, end-of-gig jingles
+js/audio.js         Web Audio engine: patch → voice (Classic and Studio), live playback, demo songs
 js/analysis.js      offline render, FFT, match score, hints
 js/ui-core.js       shared UI state and helpers
 js/haptics.js       vibration / iOS switch-haptic feedback
