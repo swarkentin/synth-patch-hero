@@ -1,0 +1,15 @@
+{"v":3,"createdOnFiles":{"v":1,"at":"2026-11-23T19:06:32Z"},"title":"Synth Patch Hero: real-gear training mockup (Acid Test)","launch":{"view":"canvas"},"pages":[],
+"boards":{
+"Gear.dc.html":{"x":0,"y":0,"w":1440,"h":900,"title":"1 · Pick your gear"},
+"Main.dc.html":{"x":1520,"y":0,"w":1440,"h":900,"title":"2 · Acid Test with Digitone II guidance"},
+"MiniFreak.dc.html":{"x":3040,"y":0,"w":1440,"h":900,"title":"3 · Same gig, MiniFreak guidance"},
+"OnYourBox.dc.html":{"x":0,"y":1020,"w":1440,"h":900,"title":"4 · Paid: now do it on your box"},
+"Phone.dc.html":{"x":1520,"y":1020,"w":390,"h":844,"title":"5 · Phone: gear guidance as a sheet"}
+},
+"order":["Main.dc.html","Gear.dc.html","MiniFreak.dc.html","OnYourBox.dc.html","Phone.dc.html"],
+"notes":{
+"title":{"x":0,"y":-300,"text":"Real-gear training: Acid Test on Digitone II and MiniFreak","kind":"title1","maxW":4480},
+"flow":{"x":2000,"y":1020,"w":420,"size":"m","fill":"teal","text":"Flow\n1. Pick your gear once (Settings → My gear).\n2. Patch the gig in the game as usual. An “On your box” drawer shows where each idea lives on your instrument, step by step, with a panel map.\n3. Get paid, then repeat it on the real box: by ear, with live MIDI knob readout, or (stretch) by listening through your interface."},
+"caveat":{"x":2000,"y":1440,"w":420,"size":"m","fill":"orange","text":"Draft mapping\nPanel maps are our own schematics, not the makers’ artwork. Control names marked DRAFT come from spec sheets and must be checked against the manuals and the real units before building. Values on the box are shown as rough knob positions until a measured mapping exists."}
+},
+"designSystems":[]}
