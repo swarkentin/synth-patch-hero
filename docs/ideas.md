@@ -52,6 +52,9 @@ The game already teaches concepts by ear: oscillators, filters, envelopes, FM, s
    - Desktop/Android only.
    - **Intermediate step with no mic:** the game plays the target and the player matches it on the box by ear, then rates themselves. Optionally they can record a clip into the browser for an A/B.
 6. 🟡 **A first device pack: Digitone II.** It's closest to the current engine (Swarmer ≈ supersaw, FM Tone ≈ FM Studio, Lowpass 4 ≈ ladder, comb filters ≈ strings). It could start with a chapter of 4–5 gigs, built in the order of the blocks above.
+   - Reference: the [Digitone II manual, OS 1.12](https://www.elektron.se/media/2026/10/Digitone-2-User-Manual_ENG_OS1.12_261008.pdf); a third-party layout at https://www.knobwerk.com/en/digitone2 as a fallback.
+   - Checked so far: a 128 × 64 OLED that shows eight values in the same places as DATA ENTRY knobs A–H. Page keys: TRIG, SYN, FLTR, AMP, FX, MOD. Lowpass 4 has FREQ, RESO, ENV and its own filter envelope (ATK, DEC, SUS, REL) on FLTR page 1. AMP: ATK, HOLD, DEC, SUS, REL, MODE, PAN, VOL. Wavetone page 1: TUN1, WAV1, PD1, LEV1, TUN2, WAV2, PD2, LEV2.
+   - Still to check: which knob each value sits on, value ranges, and the knob layout on the panel.
 
 ### Showing the real gear: panel maps (rules of thumb, not legal advice)
 Teaching *where to reach* on the box is central to this track, the same way gear tutorials show the hardware.
