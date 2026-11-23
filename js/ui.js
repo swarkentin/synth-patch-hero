@@ -95,22 +95,26 @@ function layoutBoard(){
   const n=S.slots, cols=S.mobile?2:(n<=4?n:Math.ceil(n/2)), rows=Math.ceil(n/cols);
   const outCell=[cols-1,0], cells=[];
   for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) if(!(c===outCell[0]&&r===outCell[1])) cells.push([c,r]);
-  S.grid={cols,rows,cells,outCell,W:PAD*2+cols*SW+(cols-1)*GAP,H:PAD*2+rows*SH+(rows-1)*GAP}; S.grid.baseW=S.grid.W; S.grid.baseH=S.grid.H;
+  S.grid={cols,rows,cells,outCell,W:PAD*2+cols*SW+(cols-1)*GAP,H:PAD*2+rows*SH+(rows-1)*GAP}; S.grid.baseW=S.grid.W; S.grid.baseH=S.grid.H; S.grid.off=[0,0];
   const st=$('#stage'); st.style.width=S.grid.W+'px'; st.style.height=S.grid.H+'px';
 }
-function slotXY(i){ const [c,r]= i===S.slots-1 ? S.grid.outCell : S.grid.cells[i]; return [PAD+c*(SW+GAP), PAD+r*(SH+GAP)]; }
+/* Board (stage) coordinates. Floating modules store grid coordinates (m.x, m.y), which can be negative: above or left of the
+   boxes. S.grid.off shifts everything so the board can grow in every direction. */
+function slotXY(i){ const [c,r]= i===S.slots-1 ? S.grid.outCell : S.grid.cells[i], o=S.grid.off||[0,0]; return [o[0]+PAD+c*(SW+GAP), o[1]+PAD+r*(SH+GAP)]; }
 const occupant=i=>S.patch.modules.find(m=>m.slot===i);
 /* Free placement: a module either sits in a box (m.slot) or floats at m.x,m.y (m.slot === null) when Snap is off.
    A floating module doesn't hold a box, but a box it mostly covers stops offering itself. */
 const MW=188;
-function modXY(m){ if(m.slot!=null){ const [x,y]=slotXY(m.slot); return [x+6,y+6]; } return [m.x,m.y]; }
+function modXY(m){ if(m.slot!=null){ const [x,y]=slotXY(m.slot); return [x+6,y+6]; } const o=S.grid.off||[0,0]; return [m.x+o[0],m.y+o[1]]; }
 function coveredSlot(i){ if(!S.grid||!S.patch.modules.some(m=>m.slot==null)) return false; const [x,y]=slotXY(i); return S.patch.modules.some(m=>{ if(m.slot!=null) return false;
-  const ox=Math.max(0,Math.min(x+SW,m.x+MW)-Math.max(x,m.x)), oy=Math.max(0,Math.min(y+SH,m.y+SH-12)-Math.max(y,m.y)); return ox*oy>SW*SH*0.3; }); }
+  const [mx,my]=modXY(m), ox=Math.max(0,Math.min(x+SW,mx+MW)-Math.max(x,mx)), oy=Math.max(0,Math.min(y+SH,my+SH-12)-Math.max(y,my)); return ox*oy>SW*SH*0.3; }); }
 function emptySlots(){ const out=[]; for(let i=0;i<S.slots-1;i++) if(!occupant(i)&&!coveredSlot(i)) out.push(i); return out; }
 /* Grow the board to hold floating modules (never smaller than the box grid). */
-function sizeStage(){ const g=S.grid; let W=g.baseW, H=g.baseH;
-  for(const m of S.patch.modules) if(m.slot==null){ W=Math.max(W,m.x+MW+PAD); H=Math.max(H,m.y+SH+PAD); }
-  g.W=W; g.H=H; const st=$('#stage'); st.style.width=W+'px'; st.style.height=H+'px'; }
+function sizeStage(){ const g=S.grid; let x0=0, y0=0, x1=g.baseW, y1=g.baseH;
+  for(const m of S.patch.modules) if(m.slot==null){ x0=Math.min(x0,m.x-PAD); y0=Math.min(y0,m.y-PAD); x1=Math.max(x1,m.x+MW+PAD); y1=Math.max(y1,m.y+SH+PAD); }
+  const prev=g.off||[0,0], off=[-x0,-y0];
+  if(S.view&&(off[0]!==prev[0]||off[1]!==prev[1])){ S.view.x-=(off[0]-prev[0])*S.view.s; S.view.y-=(off[1]-prev[1])*S.view.s; applyView(); }   // grow up/left without anything jumping on screen
+  g.off=off; g.W=x1-x0; g.H=y1-y0; const st=$('#stage'); st.style.width=g.W+'px'; st.style.height=g.H+'px'; }
 S.snap=store.get('snapOn',false);   // free placement by default; snapping to boxes is the option
 store.del('snap');                   // the old key defaulted to on and was saved for everyone
 function needs(){ if(S.sandbox) return {}; const n={}; S.L.target.mods.forEach(m=>n[m.type]=(n[m.type]||0)+1); return n; }
@@ -146,7 +150,7 @@ function validDraft(d){
   if(!d||!Array.isArray(d.modules)||!Array.isArray(d.cables)) return false;
   const seen=new Set();
   for(const m of d.modules){ if(!MT[m.type]) return false;
-    if(m.slot==null){ if(m.type==='out'||!Number.isFinite(m.x)||!Number.isFinite(m.y)||m.x<0||m.y<0) return false; continue; }
+    if(m.slot==null){ if(m.type==='out'||!Number.isFinite(m.x)||!Number.isFinite(m.y)) return false; continue; }
     if(!Number.isInteger(m.slot)||m.slot<0||m.slot>=S.slots||seen.has(m.slot)) return false; seen.add(m.slot); }
   const o=d.modules.find(m=>m.type==='out'); return !!o&&o.slot===S.slots-1;
 }
@@ -192,7 +196,7 @@ function addModule(t,slot){
   if(slot!=null) place={slot};
   else { const e=emptySlots(); if(e.length) place={slot:e[0]};
     else if(S.patch.modules.some(m=>m.slot==null)){ // boxes are covered by floating modules: float the new one below everything
-      const bottom=Math.max(S.grid.baseH,...S.patch.modules.map(m=>modXY(m)[1]+SH)); place={slot:null,x:PAD,y:bottom+GAP}; }
+      const bottom=Math.max(S.grid.baseH+S.grid.off[1],...S.patch.modules.map(m=>modXY(m)[1]+SH)); place={slot:null,x:PAD,y:bottom+GAP-S.grid.off[1]}; }
     else { toast('The rack is full. Remove a module first.'); return; } }
   const id='m'+(idc++);
   S.moving=null; S.patch.modules.push(Object.assign({id,type:t,params:defaultParams(t)},place));
@@ -292,9 +296,9 @@ function moveModuleTo(t){
 function swapWith(o){ const m=S.patch&&S.patch.modules.find(x=>x.id===S.moving); S.moving=null; if(m&&o&&m!==o&&!o.locked){ swapPlaces(m,o); Haptics.thunk(); } renderRack(); saveDraft(); }
 /* Snap off: put a module down at a stage point (its name bar under the point), clear of OUTPUT. */
 function floatAt(m,x,y){
-  const [ox,oy]=slotXY(S.slots-1); x=Math.max(0,Math.round(x)); y=Math.max(0,Math.round(y));
+  const [ox,oy]=slotXY(S.slots-1), o=S.grid.off||[0,0]; x=Math.round(x); y=Math.round(y);   // x, y: board coordinates
   const cx=x+MW/2, cy=y+SH/2; if(cx>ox&&cx<ox+SW&&cy>oy&&cy<oy+SH){ toast('OUTPUT always stays in the top-right slot.'); return false; }
-  m.slot=null; m.x=x; m.y=y; return true;
+  m.slot=null; m.x=Math.max(-3000,Math.min(6000,x-o[0])); m.y=Math.max(-3000,Math.min(6000,y-o[1])); return true;
 }
 function setSnap(on,save=true){ S.snap=on; if(save) store.set('snapOn',on); const b=$('#zSnap'); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on);
   b.title=on?'Snap is on: modules drop into the nearest box. Hold Alt or Shift while dragging to place freely.':'Snap is off: modules stay where you drop them. Hold Alt or Shift while dragging to snap to a box.'; }

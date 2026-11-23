@@ -381,6 +381,34 @@ try {
     ok(f.snapPref && f.boxed, 'with Snap on, moving a floating module puts it back in a box');
     ok(f.helped, 'Help still works when modules float');
   }
+
+  // Up and to the left, past the corner of the box grid: the board grows that way and the module stays exactly
+  // where it was let go on screen (it used to be clamped back to the board's edge).
+  for (const mob of [false, true]) {
+    await page.open(URL, mob ? { width: 390, height: 664, mobile: true } : { width: 1280, height: 800 });
+    await page.waitFor("document.querySelector('.gig')");
+    const g = JSON.parse(await page.evaluate(`(async()=>{ store.del('draft2.squelch'); store.del('snapOn'); openLevel(LEVELS.findIndex(l=>l.id==='squelch')); addModule('osc'); closeSide&&closeSide(); setSnap(false,false);
+      zoomCenter(1/1.6); await new Promise(r=>setTimeout(r,400));
+      const h=[...document.querySelectorAll('.module')].find(x=>x.querySelector('.name').textContent==='OSC').querySelector('.mhead').getBoundingClientRect();
+      return JSON.stringify({px:h.left+12,py:h.top+h.height/2,hl:h.left,ht:h.top}); })()`));
+    const dx = mob ? -45 : -90, dy = mob ? -60 : -80, n = 10;
+    if (!mob) {
+      await page.cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: g.px, y: g.py });
+      await page.cdp('Input.dispatchMouseEvent', { type: 'mousePressed', x: g.px, y: g.py, button: 'left', buttons: 1, clickCount: 1 });
+      for (let k = 1; k <= n; k++) await page.cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: g.px + dx * k / n, y: g.py + dy * k / n, button: 'left', buttons: 1 });
+      await page.cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x: g.px + dx, y: g.py + dy, button: 'left', buttons: 0, clickCount: 1 });
+    } else {
+      await page.cdp('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: g.px, y: g.py }] });
+      for (let k = 1; k <= n; k++) await page.cdp('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: g.px + dx * k / n, y: g.py + dy * k / n }] });
+      await page.cdp('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    }
+    await new Promise(r => setTimeout(r, 300));
+    const a = await page.evaluate(`(()=>{ const o=S.patch.modules.find(m=>m.type==='osc'); const h=[...document.querySelectorAll('.module')].find(x=>x.querySelector('.name').textContent==='OSC').querySelector('.mhead').getBoundingClientRect(); return JSON.stringify({hl:h.left,ht:h.top,x:o.x,y:o.y,slot:o.slot}); })()`);
+    const r = JSON.parse(a), ex = g.hl + dx, ey = g.ht + dy;
+    ok(r.slot === null && r.x < 0 && r.y < 0 && Math.abs(r.hl - ex) < 2 && Math.abs(r.ht - ey) < 2,
+      `${mob ? 'finger' : 'mouse'}: a module dragged up and left past the boxes stays exactly where it's let go (off by ${(r.hl - ex).toFixed(1)}, ${(r.ht - ey).toFixed(1)} px)`);
+  }
+  await page.open(URL, { width: 1280, height: 800 }); await page.waitFor("document.querySelector('.gig')");
   await page.open(URL, { width: 1280, height: 800 }); await page.waitFor("document.querySelector('.gig')");
 
   console.log('\nGig board browsing');

@@ -26,7 +26,7 @@ Feedback that drove it: too much scrolling between panels; you must always be ab
 - **Free placement** (playtest 2026-11-23: "more of a free form movement, with optional snapping to boxes"):
   - The board's **⊞ SNAP** toggle (next to zoom; **off by default**; saved as `snapOn` only when tapped) decides where a dropped module goes. Playtest 2026-11-23: with Snap on by default, modules "kind of snap back and don't stay where I put them". A short move dropped a module back into its own box. Free placement is now the default, and the old `snap` key (saved as on for everyone) is removed on load. With Snap on, it drops into the nearest box. With Snap off, it stays exactly where it's dropped (`m.slot=null`, `m.x`/`m.y` in board units), anywhere on the board.
   - Holding **Alt** or **Shift** while dragging flips snapping for that drag.
-  - The board grows to hold floating modules, and Fit includes them.
+  - The board grows in every direction to hold floating modules, including up and left of the boxes (playtest 2026-11-23: dragging up or far left kept "pulling back", because positions were clamped to the board's corner). Floating positions are grid coordinates and may be negative. `S.grid.off` shifts the board, and the view moves by the same amount, so nothing jumps on screen. Fit includes everything.
   - A floating module doesn't hold a box. A box it mostly covers goes quiet (no "add module") and isn't used for new modules. When every box is taken or covered, new modules (and Help's) float below the board.
   - OUTPUT can't be covered, and presets stay put.
   - Tap-to-move with Snap off: pick a module up, then tap anywhere on the board to put it there.

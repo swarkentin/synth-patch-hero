@@ -128,7 +128,7 @@ function applyStructure(si){
     if(!place){ const spare=P.modules.find(m=>!m.locked&&m.type!=='out'&&!Object.values(si.map).includes(m.id));
       if(spare){ place=spare.slot!=null?{slot:spare.slot}:{slot:null,x:spare.x,y:spare.y}; P.modules=P.modules.filter(m=>m!==spare); P.cables=P.cables.filter(c=>c.from.m!==spare.id&&c.to.m!==spare.id); notes.push(`Removed an unused ${MT[spare.type].name} to make room.`); } }
     if(!place){ // every box is taken or covered by floating modules: float the new one below the board
-      const bottom=Math.max(S.grid.baseH,...P.modules.map(m=>modXY(m)[1]+SH)); place={slot:null,x:PAD,y:bottom+GAP}; }
+      const bottom=Math.max(S.grid.baseH+S.grid.off[1],...P.modules.map(m=>modXY(m)[1]+SH)); place={slot:null,x:PAD,y:bottom+GAP-S.grid.off[1]}; }
     const id='m'+(idc++); P.modules.push(Object.assign({id,type:t.type,params:defaultParams(t.type)},place)); si.map[t.id]=id;
     notes.push(`Added a <b>${MT[t.type].name}</b>. ${MODULE_WHY[t.type]}`);
   }
