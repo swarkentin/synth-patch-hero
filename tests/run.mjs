@@ -260,6 +260,29 @@ try {
   ok(pv.switched, 'starting another preview stops the first');
   ok(pv.opened, 'opening a gig stops the preview');
 
+  console.log('\nBack and Forward');
+  await page.evaluate(`(()=>{ showBoard(); })()`);
+  const r1 = await page.evaluate(`(async()=>{ const w=ms=>new Promise(r=>setTimeout(r,ms)); const onBoard=()=>!$('#screenBoard').hidden;
+    const i=LEVELS.findIndex(l=>l.id==='acid'); openLevel(i); const hash=location.hash;
+    history.back(); await w(250); const back=onBoard()&&(location.hash==='#/'||location.hash==='');
+    history.forward(); await w(250); const fwd=!onBoard()&&S.L&&S.L.id==='acid';
+    const len0=history.length; $('#btnHome').click(); await w(250); const home=onBoard()&&history.length===len0;
+    return {hash,back,fwd,home}; })()`);
+  ok(r1.hash === '#/gig/acid', 'opening a gig gives it its own address (#/gig/acid)');
+  ok(r1.back && r1.fwd, 'browser Back returns to the gig board, and Forward reopens the gig');
+  ok(r1.home, '← Gigs steps back through history instead of piling up new entries');
+  await page.open(URL + '#/gig/fm-bell', { width: 1280, height: 800 }); await page.waitFor("typeof S!=='undefined'&&S.L&&S.L.id==='fm-bell'", 8000);
+  const r2 = await page.evaluate(`(async()=>{ history.back(); await new Promise(r=>setTimeout(r,300)); return !$('#screenBoard').hidden&&location.href.startsWith('file:'); })()`);
+  ok(r2, 'a link to a gig opens it directly, with the board underneath so Back stays in the game');
+  const data = await page.evaluate(`(async()=>{ showBoard(); progress.solved['dial-tone']={cost:2,match:95}; saveProgress(); openSettings();
+    const sum=[...document.querySelectorAll('.setRow')].some(r=>/Your data/.test(r.textContent)&&/only in this browser/.test(r.textContent));
+    const w8=()=>new Promise(r=>setTimeout(r,80)); $('#stData').click(); await w8(); const card=$('.dataCard'), txt=card?card.textContent:'';
+    const explains=/local storage/.test(txt)&&/nothing is uploaded/.test(txt)&&/1 gig paid/.test(txt);
+    $('#dWipe').click(); await w8(); $('#dWipe').click(); await w8(); const wiped=store.keys().length===0&&!Object.keys(progress.solved).length;
+    return {sum,explains,wiped,btns:!!$('#dExport')||true}; })()`);
+  ok(data.sum && data.explains, 'Settings → Your data explains where progress is stored and what is in it');
+  ok(data.wiped, 'Delete everything clears every saved entry');
+
   console.log('\nMoving modules');
   const mv = await page.evaluate(`(async()=>{ const i=LEVELS.findIndex(l=>l.id==='squelch'); store.del('draft2.squelch'); openLevel(i); addModule('osc'); addModule('filter');
     const o=S.patch.modules.find(m=>m.type==='osc'), f=S.patch.modules.find(m=>m.type==='filter'); const grip=!!document.querySelector('.module .mhead .grip');

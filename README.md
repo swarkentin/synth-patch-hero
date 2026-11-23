@@ -26,6 +26,10 @@ There's no build step and there are no dependencies: it's plain HTML, CSS and Ja
 7. **Stuck?** Press **Help**. It first points out missing modules or cables (and can patch them for you), then names the knob that matters most and explains it. Press again and it can **lock** that knob at the client's value. Tap a locked knob to see why, or to unlock it.
 8. **Send** at a 90% match or better. Your patch plays a short **jingle** to celebrate. Then come back and beat par on cost.
 
+Every gig has its own link (`#/gig/acid`), and the browser's Back and Forward buttons move between the board and gigs.
+
+**Your progress stays on your device.** It's saved in this browser's local storage, with no accounts, uploads or analytics. ⚙ Settings → Your data shows what's saved and lets you export, import or delete it.
+
 On phones, knobs, cables and modules give **haptic feedback** (Android fully; iPhone on iOS 18+). Switch it off in ⚙ Settings.
 
 **Keyboards:** open **♪ Keys** for an on-screen keyboard that shows the client's note to find. USB/MIDI keyboards work in Chrome, Edge, Opera and Firefox on desktop, and Chrome on Android (velocity and sustain pedal included). Computer keys `A`–`K` play too, `Z`/`X` shift the octave, `Space` plays yours and `Shift+T` plays the target. The board zooms with `+` `-` `0`, Ctrl+scroll or pinch.

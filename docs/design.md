@@ -76,6 +76,31 @@ Feedback that drove it: difficulty rises fast (especially the VCA lesson); playe
   - falling plucked arpeggio (Effects Rack, Strings & Plucks), so delay tails and string decays get room
   - Test: every gig's jingle, rendered offline on its reference patch, is audible and finite.
 
+## Browser history and links
+- Playtest, 2026-11-22: pressing Back left the site. Now each screen has an address:
+  - the gig board is `#/`;
+  - a gig is `#/gig/<id>`;
+  - Free Jam is `#/jam`.
+- Opening a gig pushes a history entry, so Back returns to the board and Forward reopens the gig.
+- **← Gigs** calls `history.back()` when the gig was opened from the board, so entries don't pile up.
+- Loading a gig link opens it directly, with the board put underneath in history, so Back still stays in the game.
+- `#selftest` is left alone.
+- Back from the board itself leaves the site, as expected for the first page.
+
+## Your data (Settings → Your data)
+Playtest, 2026-11-22: it was unclear where and what session data is stored.
+- **Where it lives:** everything is in `localStorage` under `sph.*` keys, in this browser only. There are no accounts, nothing is uploaded, and there are no analytics or cookies.
+- **What's stored:**
+  - `progress`: paid gigs with cost and match %, `played` (the note was played), `helped`;
+  - `draft2.<gig>`: each gig's rack in progress;
+  - preferences: `haptics`, `keysOpen`, `songMode`, `boardView`, `midiAuto`.
+- **The panel** explains this in plain words, shows counts and size, and offers:
+  - **Export:** a JSON file `{game, version, exported, data}`;
+  - **Import:** replaces everything from such a file;
+  - **Delete everything.**
+- **Separate copies:** each browser, device and host (GitHub Pages vs. claude.ai) keeps its own progress.
+- **Storage blocked:** if the browser blocks storage (private mode), the Settings row says progress only lasts until the page closes.
+
 ## Demo songs and ♫ Song mode
 - Each gig has a short demo song: a few bars of an **original** phrase in the style the sound is made for. Styles: acid 16ths, funky bass, sub bass, minor pad chords, a lead melody, chord stabs, 16th arpeggios, a drum groove, sparse FX hits, a slow bell melody, offbeat dub stabs, held notes (for sounds that move on their own), and held notes at the sequencer's own tempo for sequencer gigs. Songs never copy existing tracks.
 - Chosen per chapter (`SONG_BY_CH`), with per-gig overrides (`SONG_BY_GIG`, or a `song` field on the gig).

@@ -17,7 +17,7 @@ function previewButton(L){
   return b;
 }
 function showBoard(){
-  allNotesOff(); stopOneShots(); S.pick=null; showPatchbar(); $('#sheet').hidden=true;
+  pushRoute(null); allNotesOff(); stopOneShots(); S.pick=null; showPatchbar(); $('#sheet').hidden=true;
   S.li=-1; S.L=null; S.patch=null;
   $('#screenLevel').hidden=true; $('#screenBoard').hidden=false; $('#btnHome').hidden=true;
   $('#crumbs').textContent='Gig board'; document.body.classList.remove('inLevel'); if(S.focus) setFocus(false); closeSide(); S.slotMenu=null;
@@ -109,7 +109,7 @@ function missing(){ const n=needs(), out=[]; for(const t in n){ const h=countTyp
 function playerCost(p){ return p.modules.reduce((s,m)=>s+(m.preset?0:MT[m.type].cost),0); }
 function parCost(L){ const pre=(L.start||[]).reduce((s,x)=>s+MT[x.type].cost,0); return patchCost(targetPatch(L))-pre; }
 
-function openLevel(i){ S.moving=null;
+function openLevel(i){ S.moving=null; pushRoute(i);
   S.sandbox=i<0; S.li=i; S.L=S.sandbox?SANDBOX:LEVELS[i];
   S.feats=S.sandbox?new Set(ALL_FEATURES):featuresFor(i);
   S.palette=S.L.palette; S.slots=slotCount(S.L); S.mine=null; S.cmp=null; S.slotMenu=null;
@@ -717,9 +717,10 @@ function openSettings(){
     ${row('Haptics',hapSub,Haptics.available?`<label class="nativeSw" title="Haptics on/off"><input type="checkbox" switch id="stHapSw" ${Haptics.enabled?'checked':''}></label>`:'')}
     ${inLevel?row('On-screen keyboard','Find the client\'s note and play your patch.',`<button class="btn tgl" id="stKeys">${S.keysOpen?'Shown':'Hidden'}</button>`):''}
     ${inLevel?row('Focus mode','Bigger board, compact compare bar.',`<button class="btn tgl" id="stFocus">${S.focus?'On':'Off'}</button>`):''}
-    ${inLevel?row('Reset this rack','Removes everything you added to this gig.','<button class="btn" id="stReset">Reset</button>'):''}</div>`;
+    ${inLevel?row('Reset this rack','Removes everything you added to this gig.','<button class="btn" id="stReset">Reset</button>'):''}
+    ${row('Your data',dataSummary(),'<button class="btn" id="stData">Details</button>')}</div>`;
   const close=()=>{ sh.hidden=true; sh.innerHTML=''; };
-  $('#shDone').onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); };
+  $('#shDone').onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); }; $('#stData').onclick=openDataSheet;
   // A real iOS switch: on iOS 18 the system itself ticks when it's flipped, so it doubles as a check that switch haptics work here.
   const hs=$('#stHapSw'); if(hs) hs.onchange=()=>{ Haptics.set(hs.checked); if(hs.checked) Haptics.select(); const fb=$('#btnHaptics'); if(fb&&fb.firstChild&&fb.firstChild.nodeType===3) fb.firstChild.nodeValue='Haptics: '+(Haptics.enabled?'on':'off'); };
   if(inLevel){
@@ -729,10 +730,63 @@ function openSettings(){
   }
 }
 $('#btnSettings').onclick=openSettings;
+
+/* ---------- Your data: what's saved, where, and export / import / delete ---------- */
+function dataInfo(){
+  const ks=store.keys(), drafts=ks.filter(k=>k.startsWith('draft')), solved=Object.keys(progress.solved).length;
+  return {ks,drafts:drafts.length,solved,played:Object.keys(progress.played||{}).length,helped:Object.keys(progress.helped||{}).length,
+    prefs:ks.filter(k=>!k.startsWith('draft')&&k!=='progress'),kb:Math.max(0.1,store.bytes()*2/1024)};
+}
+function dataSummary(){ const d=dataInfo(); return store.available()?`Saved only in this browser on this device: ${d.solved} gig${d.solved===1?'':'s'} paid, ${d.drafts} patch${d.drafts===1?'':'es'} in progress, ${d.kb.toFixed(1)} KB.`:'This browser isn\'t letting the game save anything (private mode or storage blocked), so progress lasts only until you close the page.'; }
+function openDataSheet(){
+  const sh=$('#sheet'); sh.hidden=false; const d=dataInfo();
+  const PREF={haptics:'Haptics on/off',keysOpen:'On-screen keyboard shown',songMode:'♫ Song mode',boardView:'Gig board chapter and filter',midiAuto:'Reconnect MIDI automatically'};
+  sh.innerHTML=`<div class="sheetCard dataCard"><div class="shHead"><span class="shTitle">YOUR DATA</span><button class="btn primary" id="shDone">Done</button></div>
+    <p><b>Where it lives:</b> in this browser's local storage, on this device only. There are no accounts, nothing is uploaded, and there are no analytics or cookies.</p>
+    <p><b>What that means:</b> another browser or device, a private window, or the other copy of the game (GitHub Pages vs. claude.ai) each keeps its own separate progress. Clearing this site's data in your browser settings erases it. Use Export to move it.</p>
+    <ul class="dataList">
+      <li><b>Progress</b><span>${d.solved} gig${d.solved===1?'':'s'} paid (cost, match %), ${d.played} with the note played, ${d.helped} finished with Help.</span></li>
+      <li><b>Patches in progress</b><span>${d.drafts} gig${d.drafts===1?'':'s'}: your rack and cables, so you can leave a gig and come back.</span></li>
+      <li><b>Preferences</b><span>${d.prefs.length?d.prefs.map(k=>PREF[k]||k).join(' · '):'None yet.'}</span></li>
+      <li><b>Total</b><span>${d.kb.toFixed(1)} KB in ${d.ks.length} entr${d.ks.length===1?'y':'ies'} (named <code>sph.*</code>).</span></li>
+    </ul>
+    <div class="dataBtns"><button class="btn" id="dExport">Export</button><label class="btn" id="dImportL">Import<input type="file" accept="application/json,.json" id="dImport" hidden></label><button class="btn danger" id="dWipe">Delete everything</button></div>
+    <small class="dataNote">Export saves a small .json file. Import replaces what's here with that file.</small></div>`;
+  const close=()=>{ sh.hidden=true; sh.innerHTML=''; };
+  $('#shDone').onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); };
+  $('#dExport').onclick=()=>{ try{ const blob=new Blob([JSON.stringify({game:'synth-patch-hero',version:1,exported:new Date().toISOString(),data:store.dump()},null,1)],{type:'application/json'});
+    const a=el('a',{href:URL.createObjectURL(blob),download:'synth-patch-hero-progress.json'}); document.body.appendChild(a); a.click(); a.remove(); toast('Exported synth-patch-hero-progress.json'); }catch(e){ toast('This page isn\'t allowed to download files here.'); } };
+  $('#dImport').onchange=async e=>{ const f=e.target.files[0]; if(!f) return;
+    try{ const j=JSON.parse(await f.text()); if(j.game!=='synth-patch-hero'||!j.data) throw 0;
+      store.keys().forEach(k=>store.del(k)); Object.entries(j.data).forEach(([k,v])=>store.set(k,v)); progress=store.get('progress',{solved:{}});
+      close(); showBoard(); toast(`Imported ${Object.keys(progress.solved).length} paid gigs.`); }catch(_){ toast('That file isn\'t a Synth Patch Hero export.'); } };
+  const w=$('#dWipe'); w.onclick=()=>{ if(!w.dataset.armed){ w.dataset.armed=1; w.textContent='Tap again to delete'; return; }
+    store.keys().forEach(k=>store.del(k)); progress={solved:{}}; close(); showBoard(); toast('Deleted all saved data.'); };
+}
 $('#briefBtn').onclick=openSide; $('#sideClose').onclick=closeSide; $('#sideBackdrop').onclick=closeSide;
 $('#midiChip').onclick=()=>{ if(MIDI.state==='on'){ toast('Connected: '+MIDI.names.join(', ')); return; } connectMIDI(false); };
 if(store.get('midiAuto',false)) connectMIDI(true);
-$('#btnHome').onclick=showBoard;
+$('#btnHome').onclick=()=>{ if(history.state&&history.state.fromBoard) history.back(); else showBoard(); };
+
+/* ---------- browser history: Back/Forward move between the gig board and gigs ----------
+   Board = #/ , a gig = #/gig/<id>, Free Jam = #/jam. Back from a gig returns to the board instead of leaving the site. */
+const ROUTE={busy:false};
+function routeFor(i){ return i==null?'#/':i<0?'#/jam':'#/gig/'+LEVELS[i].id; }
+function routeFromHash(h=location.hash){ let m; if(h==='#/jam') return -1; if((m=h.match(/^#\/gig\/([\w-]+)$/))){ const i=LEVELS.findIndex(L=>L.id===m[1]); return i>=0?i:null; } return null; }
+function pushRoute(i){
+  if(ROUTE.busy||location.hash==='#selftest') return; const h=routeFor(i), cur=location.hash||'#/';
+  if(cur===h) return;
+  try{ history.pushState({i,fromBoard:i!=null&&cur==='#/'},'',h); }catch(_){}
+}
+function applyRoute(){ ROUTE.busy=true; try{ const i=routeFromHash(); if(i==null) showBoard(); else openLevel(i); } finally{ ROUTE.busy=false; } }
+window.addEventListener('popstate',()=>{ if(location.hash!=='#selftest') applyRoute(); });
+/* On load: a link to a gig opens it, with the board underneath in history so Back still lands on the board. */
+function startRoute(){
+  const i=routeFromHash();
+  if(i==null){ ROUTE.busy=true; showBoard(); ROUTE.busy=false; try{ history.replaceState(null,'','#/'); }catch(_){} return; }
+  try{ history.replaceState(null,'','#/'); }catch(_){}
+  ROUTE.busy=true; showBoard(); ROUTE.busy=false; openLevel(i);
+}
 (function(){ if(!Haptics.available) return; let b=el('button',{class:'btn ghost',id:'btnHaptics'}); $('#btnReset').after(b); b=Haptics.upgrade(b);
   const lbl=()=>{ b.firstChild&&b.firstChild.nodeType===3?b.firstChild.nodeValue='Haptics: '+(Haptics.enabled?'on':'off'):b.prepend('Haptics: '+(Haptics.enabled?'on':'off')); }; lbl();
   b.onclick=()=>{ Haptics.set(!Haptics.enabled); lbl(); Haptics.select(); }; })();

@@ -6,7 +6,12 @@
 const store = {
   get(k,d){ try{ const v=localStorage.getItem('sph.'+k); return v==null?d:JSON.parse(v);}catch(e){return d;} },
   set(k,v){ try{ localStorage.setItem('sph.'+k,JSON.stringify(v)); }catch(e){} },
-  del(k){ try{ localStorage.removeItem('sph.'+k);}catch(e){} }
+  del(k){ try{ localStorage.removeItem('sph.'+k);}catch(e){} },
+  /* Everything this game keeps: localStorage keys starting "sph.", in this browser only. */
+  keys(){ try{ return Object.keys(localStorage).filter(k=>k.startsWith('sph.')).map(k=>k.slice(4)); }catch(e){ return []; } },
+  dump(){ const o={}; this.keys().forEach(k=>{ try{ o[k]=JSON.parse(localStorage.getItem('sph.'+k)); }catch(e){} }); return o; },
+  bytes(){ return this.keys().reduce((n,k)=>{ try{ return n+k.length+4+(localStorage.getItem('sph.'+k)||'').length; }catch(e){ return n; } },0); },
+  available(){ try{ localStorage.setItem('sph.__t','1'); localStorage.removeItem('sph.__t'); return true; }catch(e){ return false; } },
 };
 let progress = store.get('progress',{solved:{}});
 const saveProgress = ()=>store.set('progress',progress);

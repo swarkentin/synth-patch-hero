@@ -527,3 +527,16 @@ label.kbClose,#btnHelp[role=button]{display:inline-flex;align-items:center;justi
 .module.moving .grip{color:var(--amber)}
 .module.moveTarget::after{content:'SWAP HERE';position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;border:2px dashed var(--amber);border-radius:10px;background:rgba(20,16,12,.66);color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.16em;cursor:pointer}
 .slot.moveTarget{border-color:var(--amber)!important;color:var(--amber)!important;background:rgba(240,165,60,.06);cursor:pointer}
+
+/* Your data */
+.dataCard p{color:var(--dim);font-size:13px;line-height:1.5;margin:10px 0 0}
+.dataCard p b{color:var(--text)}
+.dataList{list-style:none;margin:12px 0 0;padding:0;border-top:1px solid var(--line)}
+.dataList li{display:flex;gap:12px;padding:9px 2px;border-bottom:1px solid var(--line);font-size:13px}
+.dataList li b{flex:0 0 140px;font-family:var(--head);letter-spacing:.04em}
+.dataList li span{color:var(--dim)}
+.dataBtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.dataBtns .btn{cursor:pointer}
+.btn.danger{border-color:#8a3b32;color:#f08a7a}
+.dataNote{display:block;margin-top:8px;font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+@media (max-width:760px){ .dataList li{flex-direction:column;gap:2px} .dataList li b{flex:none} }

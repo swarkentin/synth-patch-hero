@@ -18,6 +18,10 @@ Synth Patch Hero: a synth-patching puzzle game that teaches synthesis. Repo: htt
 - Help explains before it acts: it names the problem first, and only patches or locks when the player confirms. Locked knobs always explain why.
 - Knobs must be precise on trackpads: wheel input follows scroll distance, and a click opens the fine editor.
 
+## Routing and storage
+- Screens have hash routes: `#/` (board), `#/gig/<id>`, `#/jam`. `openLevel`/`showBoard` push history; `popstate` applies the route. Keep Back inside the game.
+- All saved data goes through `store` (`localStorage`, `sph.*` keys) and must stay local. If you add a new key, list it in Settings → Your data (`openDataSheet`) and in `docs/design.md`.
+
 ## Gig data (`js/data.js`)
 `LEVELS[]` entries: `id, title, concept, client, role, unlock[], palette{type:max}, note, gate, dur, brief, manual (HTML), target{mods[], cables['a.out>b.in']}, reply`. Optional fields:
 - `tol`: scoring tolerance.
