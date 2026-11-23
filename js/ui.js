@@ -1,7 +1,7 @@
 /* Synth Patch Hero · Gig board, level screen, slot board, knobs, cables, compare panel. */
 'use strict';
 /* iPhone: these become tap targets with a switch under the finger (see js/haptics.js). Must run before handlers are attached. */
-['#briefBtn','#engBtn','#songBtn','#keysBtn','#focusBtn','#btnSettings','#btnHome','#kbClose'].forEach(sel=>Haptics.upgrade(document.querySelector(sel)));
+['#briefBtn','#songBtn','#keysBtn','#focusBtn','#btnSettings','#btnHome','#kbClose'].forEach(sel=>Haptics.upgrade(document.querySelector(sel)));
 /* =====================================================================
    BOARD
    ===================================================================== */
@@ -121,7 +121,7 @@ function playerCost(p){ return p.modules.reduce((s,m)=>s+(m.preset?0:MT[m.type].
 function parCost(L){ const pre=(L.start||[]).reduce((s,x)=>s+MT[x.type].cost,0); return patchCost(targetPatch(L))-pre; }
 
 function openLevel(i){ S.moving=null; pushRoute(i); try{ applyEngine(i<0?{studio:true}:LEVELS[i]); }catch(_){}
-  S.sandbox=i<0; S.li=i; S.L=S.sandbox?SANDBOX:LEVELS[i]; renderEngineBtn();
+  S.sandbox=i<0; S.li=i; S.L=S.sandbox?SANDBOX:LEVELS[i];
   S.feats=S.sandbox?new Set(ALL_FEATURES):featuresFor(i);
   S.palette=S.L.palette; S.slots=slotCount(S.L); S.mine=null; S.cmp=null; S.slotMenu=null;
   const draft=store.get('draft2.'+S.L.id,null);
@@ -603,18 +603,10 @@ function renderCompare(){
 function toggleExpanded(){ const c=$('#compare'); c.classList.toggle('expanded'); const m=c.querySelector('[data-v=more]'); if(m) m.textContent=c.classList.contains('expanded')?'LESS ▴':'MORE ▾';
   requestAnimationFrame(()=>{ if(!S.userZoom) fitView(); }); }
 function paintPlotTabs(){ document.querySelectorAll('.plotTabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.plotView)); }
-/* ---------- Engine A/B: Classic (stock browser audio parts) vs Studio (analog-style voice + studio finish) ----------
-   Studio is a preview on gigs marked studio:true and in Free Jam; every other gig plays and scores on Classic. */
-S.enginePref=store.get('engine','studio');
-const studioOK=L=>!!L&&(L.studio||S.sandbox);
-function engineFor(L){ return studioOK(L)?S.enginePref:'classic'; }
-function applyEngine(L){ const e=engineFor(L), lad=!!(L&&L.studio==='ladder'); if(lad!==STUDIO.ladder){ STUDIO.ladder=lad; LEVELS.forEach(l=>{ delete l._tX; delete l._tA; }); } if(e!==ENGINE){ setEngine(e); LEVELS.forEach(l=>{ delete l._tX; delete l._tA; }); } }
-function renderEngineBtn(){ const b=$('#engBtn'); if(!b) return; const on=S.enginePref==='studio', show=studioOK(S.L);
-  b.hidden=!show; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on);
-  b.querySelector('.ico').textContent=on?'◆':'◇'; b.querySelector('.lbl').textContent=on?' Studio':' Classic';
-  b.title=on?'Studio engine (preview): analog-style oscillators, a ladder filter, curved envelopes and a studio finish. Tap to compare with the Classic engine.':'Classic engine: the browser\'s stock synth parts. Tap to hear the Studio engine.'; }
-function toggleEngine(){ S.enginePref=S.enginePref==='studio'?'classic':'studio'; store.set('engine',S.enginePref); stopOneShots(); applyEngine(S.L); renderEngineBtn();
-  toast(S.enginePref==='studio'?'Studio engine: analog-style oscillators, ladder filter, curved envelopes, studio finish.':'Classic engine: the plain browser synth. Tap ◇ again for Studio.'); scheduleAnalyze(); }
+/* ---------- Sound engine: Studio everywhere. A gig marked studio:'ladder' uses the 4-pole ladder low-pass;
+   everything else uses the 12 dB filter. Target and player always render with the same settings. ---------- */
+function applyEngine(L){ const lad=!!(L&&L.studio==='ladder'); if(ENGINE!=='studio') setEngine('studio');
+  if(lad!==STUDIO.ladder){ STUDIO.ladder=lad; LEVELS.forEach(l=>{ delete l._tX; delete l._tA; }); } }
 
 /* ▶ Target / ▶ Yours: one note, or in song mode (♫) a short demo song on that patch. */
 S.songMode=!!store.get('songMode',false);
@@ -759,7 +751,6 @@ let rzT=null;
 window.addEventListener('resize',()=>{ clearTimeout(rzT); rzT=setTimeout(()=>{ if(!S.L) return; if(!S.userZoom) fitView(); else { clampView(); applyView(); } drawCables(); drawPlots(); renderKeys(); },80); });
 $('#kbDn').onclick=()=>{ S.kbLo-=12; renderKeys(); };
 $('#kbUp').onclick=()=>{ S.kbLo+=12; renderKeys(); };
-$('#engBtn').onclick=toggleEngine;
 $('#songBtn').onclick=()=>setSongMode(!S.songMode); $('#songBtn').classList.toggle('on',S.songMode);
 $('#keysBtn').onclick=()=>setKeysOpen(!S.keysOpen);
 $('#focusBtn').onclick=()=>setFocus(!S.focus);
@@ -800,7 +791,7 @@ function dataInfo(){
 function dataSummary(){ const d=dataInfo(); return store.available()?`Saved only in this browser on this device: ${d.solved} gig${d.solved===1?'':'s'} paid, ${d.drafts} patch${d.drafts===1?'':'es'} in progress, ${d.kb.toFixed(1)} KB.`:'This browser isn\'t letting the game save anything (private mode or storage blocked), so progress lasts only until you close the page.'; }
 function openDataSheet(){
   const sh=$('#sheet'); sh.hidden=false; const d=dataInfo();
-  const PREF={haptics:'Haptics on/off',keysOpen:'On-screen keyboard shown',songMode:'♫ Song mode',boardView:'Gig board chapter and filter',midiAuto:'Reconnect MIDI automatically',snap:'Snap modules to boxes',engine:'Classic or Studio sound engine'};
+  const PREF={haptics:'Haptics on/off',keysOpen:'On-screen keyboard shown',songMode:'♫ Song mode',boardView:'Gig board chapter and filter',midiAuto:'Reconnect MIDI automatically',snap:'Snap modules to boxes'};
   sh.innerHTML=`<div class="sheetCard dataCard"><div class="shHead"><span class="shTitle">YOUR DATA</span><button class="btn primary" id="shDone">Done</button></div>
     <p><b>Where it lives:</b> in this browser's local storage, on this device only. There are no accounts, nothing is uploaded, and there are no analytics or cookies.</p>
     <p><b>What that means:</b> another browser or device, a private window, or the other copy of the game (GitHub Pages vs. claude.ai) each keeps its own separate progress. Clearing this site's data in your browser settings erases it. Use Export to move it.</p>

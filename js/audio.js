@@ -114,7 +114,7 @@ function ensureWorklets(ctx){
 }
 /* ENGINE: 'classic' (the browser's stock audio parts) or 'studio' (analog-style oscillators, ladder filter, curved
    envelopes). Both scoring renders and playback use the same engine, so matching stays fair either way. */
-let ENGINE='classic';
+let ENGINE='studio';
 /* Studio engine parts, switchable one at a time for A/B listening and tuning. */
 const STUDIO={ladder:false, drift:1, finish:true};   // ladder: set per gig (studio:'ladder')
 const usesWorklet = patch => ENGINE==='studio'||patch.modules.some(m=>m.type==='sync');
@@ -184,7 +184,7 @@ function buildVoice(ctx, patch, dest, t0, note, gate){
         n.ins.in=g; n.ins.gain=mg; n.outs.out=g; break; }
       case 'env': {
         const c=ctx.createConstantSource(); c.offset.value=0; n.outs.out=c; sources.push(c);
-        envs.push({param:c.offset,p:P,id:m.id}); maxR=Math.max(maxR,P.r); break; }
+        envs.push({param:c.offset,p:P,id:m.id}); maxR=Math.max(maxR,ENGINE==='studio'?P.r*2:P.r); break; }   // Studio releases curve out: silent by ~2× R
       case 'lfo': {
         const o=ctx.createOscillator(); o.type=P.wave; o.frequency.value=P.rate; n.outs.out=o; sources.push(o); break; }
       case 'mixer': {
@@ -263,6 +263,11 @@ function buildVoice(ctx, patch, dest, t0, note, gate){
   for(const e of envs){
     const c=patch.cables.find(x=>x.to.m===e.id&&x.to.p==='trig'&&seqs[x.from.m]&&x.from.p==='gate'); if(!c) continue;
     e.trig=true; const st=seqs[c.from.m], prm=e.param; prm.setValueAtTime(0,t0);
+    if(ENGINE==='studio'){ const p=e.p, ta=Math.max(p.a/Math.log(1.3/0.3),1e-4);
+      st.forEach(({t,g})=>{ const at=t0+t; prm.setTargetAtTime(1.3,at,ta);
+        if(g>p.a){ prm.setValueAtTime(1,at+p.a); prm.setTargetAtTime(p.s,at+p.a,Math.max(p.d,1e-3)/EXP_K); }
+        prm.setValueAtTime(Math.min(1,envAtExp(p,g)),at+g); prm.setTargetAtTime(0,at+g,Math.max(p.r,1e-3)/EXP_K); });
+      continue; }
     st.forEach(({t,g},k)=>{ const pts=envPoints(e.p,g), next=k+1<st.length?st[k+1].t-t:Infinity;
       if(k>0){ const prevPts=envPoints(e.p,st[k-1].g); prm.setValueAtTime(ptsAt(prevPts,st.step),t0+t); }
       for(let i=1;i<pts.length&&pts[i][0]<next;i++) prm.linearRampToValueAtTime(pts[i][1],t0+t+pts[i][0]); });
@@ -292,7 +297,8 @@ function buildVoice(ctx, patch, dest, t0, note, gate){
         prm.linearRampToValueAtTime(0,t+e.p.r);
       }
     },
-    stop(t){ sources.forEach(s=>{try{s.stop(t);}catch(_){}});
+    stop(t){ if(this._stopAt!=null&&t>=this._stopAt) return; this._stopAt=t;   // the earliest stop wins (multi-note gigs stop each note, then the whole render)
+      sources.forEach(s=>{try{s.stop(t);}catch(_){}});
       workers.forEach(w=>{ try{ w.port.postMessage({stopAt:t}); }catch(_){} }); }   // each processor sleeps until its note starts and ends itself at t
   };
 }
@@ -312,6 +318,7 @@ function outChain(ctx,dest,t0,level=1){
 /* ---- Live playback ---- */
 let AC=null, liveBus=null;
 let studioBus=null, plainBus=null;
+try{ localStorage.removeItem('sph.engine'); }catch(_){}   // the old Classic/Studio toggle is gone
 /* A short stereo room for the studio finish (seeded noise, different per channel for width). */
 function roomIR(ctx){ const len=Math.floor(ctx.sampleRate*0.9), b=ctx.createBuffer(2,len,ctx.sampleRate);
   for(let ch=0;ch<2;ch++){ const d=b.getChannelData(ch), r=seeded(77+ch*13); for(let i=0;i<len;i++){ const t=i/ctx.sampleRate; d[i]=r()*Math.exp(-t*6.5)*(t<0.008?t/0.008:1)*0.5; } } return b; }

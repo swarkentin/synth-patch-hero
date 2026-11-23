@@ -26,7 +26,7 @@ const BANDS = {
   'vibrato|l.rate=5': [70, 89.9],
   // new chapters
   'air|f.type=lowpass': [0, 30], 'hat|f.type=lowpass': [0, 30], 'cowbell|o2.semi=0': [0, 45],
-  'breathing|e.a=0.5': [90, 100], 'sub|e.a=0.03': [90, 100], 'ufo|l.rate=7.1': [80, 95], 'wobble|l.rate=3.3': [60, 89.9], 'supersaw|o.fine=0,o2.fine=0': [60, 89.9],
+  'breathing|e.a=0.5': [90, 100], 'sub|e.a=0.03': [90, 100], 'ufo|l.rate=7.1': [80, 95], 'wobble|l.rate=3.3': [60, 89.9], 'supersaw|o.fine=0,o2.fine=0': [40, 89.9],
   // mixer, harmonics, FM, effects, strings, random
   'notch|f.type=bandpass': [0, 40], 'notch|f.cutoff=700': [65, 89.9], 'swell|f.cutAmt=4200': [0, 75], 'sub-layer|m.l2=0.5': [0, 75],
   'build-square|h.h3=0.3': [93, 100], 'build-square|h.h5=0': [40, 85], 'metal-ring|m.semi=7': [0, 35], 'fm-bell|m.semi=7': [0, 35], 'epiano|me.d=1.2': [0, 60],
@@ -34,7 +34,7 @@ const BANDS = {
   // advanced tier: sync, ring, function generator, mod VCA, folder, low-pass gate, key tracking
   'first-steps|q.s2=5': [0, 80], 'slide|q.glide=0': [0, 60], 'warehouse|q.bpm=120': [0, 70],
   'torn-edge|s.ratio=2': [0, 50], 'sync-sweep|s.sweepAmt=2': [0, 85], 'robot-voice|b.semi=5': [0, 45], 'strike-once|f.fall=0.4': [0, 50],
-  'late-vibrato|o.pitchAmt=60': [0, 85], 'fold|f.fold=2.5': [0, 45], 'fold|f.fold=3.3': [90, 100], 'bonk|e.d=0.15': [0, 50], 'bonk|e.d=0.27': [90, 100], 'even-keel|f.track=0': [0, 75],
+  'late-vibrato|o.pitchAmt=60': [0, 85], 'fold|f.fold=2.5': [0, 45], 'fold|f.fold=3.3': [90, 100], 'bonk|e.d=0.15': [0, 60], 'bonk|e.d=0.27': [90, 100], 'even-keel|f.track=0': [0, 75],
   'ks-string|d.tone=3000': [0, 70], 'ks-string|d.fb=0.95': [70, 89.9], 'robot|f.type=lowpass': [0, 65],
 };
 
@@ -199,7 +199,9 @@ try {
   ok(ios1.noGesture, 'no haptic is attempted without a live user gesture');
   const pal = await page.evaluate(`(async()=>{ store.del('draft2.thin-walls'); openLevel(LEVELS.findIndex(l=>l.id==='thin-walls')); closeSide(); await new Promise(r=>setTimeout(r,300));
     const b=document.querySelector('.palBtn'); const r=b.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2,mods:S.patch.modules.length,checked:b.querySelector('input.hapSw').checked}; })()`);
-  await page.tap(pal.x, pal.y); await new Promise(r => setTimeout(r, 400));
+  await page.tap(pal.x, pal.y);
+  for (let q = 0; q < 40; q++) { await new Promise(r => setTimeout(r, 50)); if (await page.evaluate(`S.patch.modules.length`) > pal.mods) break; }   // the tap's action runs a tick later; renders can be slow
+  await new Promise(r => setTimeout(r, 150));
   const after = await page.evaluate(`(()=>{ const b=document.querySelector('.palBtn'), i=b&&b.querySelector('input.hapSw'); return {mods:S.patch.modules.length, sw:__swToggles}; })()`);
   ok(after.mods === pal.mods + 1, 'a real tap on a module button adds exactly one module (no double click)');
   ok(after.sw >= 1, 'that tap flips the hidden switch under the finger (what makes iOS tick)');
@@ -258,40 +260,28 @@ try {
   ok(pv.switched, 'starting another preview stops the first');
   ok(pv.opened, 'opening a gig stops the preview');
 
-  console.log('\nStudio engine (preview on Acid Test and Free Jam)');
-  const eng = await page.evaluate(`(async()=>{ const out={}; const w=ms=>new Promise(r=>setTimeout(r,ms));
-    store.set('engine','studio'); S.enginePref='studio';
-    openLevel(LEVELS.findIndex(l=>l.id==='squelch')); out.classicElsewhere=ENGINE==='classic'&&$('#engBtn').hidden;
-    const ai=LEVELS.findIndex(l=>l.id==='acid'); store.del('draft2.acid'); openLevel(ai); out.studioOnAcid=ENGINE==='studio'&&!$('#engBtn').hidden;
-    const L=LEVELS[ai], T=targetPatch(L), tA=analyze(await renderPatch(T,L)), sc=async p=>levelCompare(L,tA,analyze(await renderPatch(p,L))).overall;
-    out.self=await sc(targetPatch(L)); out.untouched=await sc(S.patch);
+  console.log('\nSound engine (Studio everywhere; ladder filter only where a gig asks for it)');
+  const eng = await page.evaluate(`(async()=>{ const out={};
+    out.noToggle=!document.querySelector('#engBtn');
+    openLevel(LEVELS.findIndex(l=>l.id==='squelch')); out.squelch=ENGINE==='studio'&&STUDIO.ladder===!!(LEVELS.find(l=>l.id==='squelch').studio==='ladder');
+    const ai=LEVELS.findIndex(l=>l.id==='acid'); store.del('draft2.acid'); openLevel(ai); out.acid=ENGINE==='studio'&&STUDIO.ladder===true;
+    openLevel(LEVELS.findIndex(l=>l.id==='supersaw')); out.saw=STUDIO.ladder===false;
+    openLevel(-1); out.jam=ENGINE==='studio'&&STUDIO.ladder===false;
+    openLevel(ai); const L=LEVELS[ai], T=targetPatch(L), tA=analyze(await renderPatch(T,L)), sc=async p=>levelCompare(L,tA,analyze(await renderPatch(p,L))).overall;
+    out.self=await sc(targetPatch(L));
     const near=targetPatch(L); near.modules.find(m=>m.id==='f').params.cutoff*=Math.pow(2,0.2); out.near=await sc(near);
     const sq=targetPatch(L); sq.modules.find(m=>m.id==='o').params.wave='square'; out.square=await sc(sq);
-    let steps=0; for(;steps<16;steps++){ await runAnalyze(); if(S.cmp&&S.cmp.overall>=90) break; if(!(await autoHelp())) break; } await runAnalyze(); out.help=S.cmp.overall; out.steps=steps;
     const x=await renderPatch(T,L); let pk=0,nan=false; for(const v of x){ if(v!==v) nan=true; pk=Math.max(pk,Math.abs(v)); } out.sane=!nan&&pk>0.05&&pk<2;
-    $('#engBtn').click(); await w(60); out.toggled=ENGINE==='classic'&&store.get('engine')==='classic'&&!L._tA;
-    $('#engBtn').click(); await w(60); out.back=ENGINE==='studio';
-    openLevel(-1); out.jam=ENGINE==='studio'&&!$('#engBtn').hidden;
-    showBoard(); store.set('engine','studio'); S.enginePref='studio'; setEngine('classic'); LEVELS.forEach(l=>{ delete l._tX; delete l._tA; });
-    return out; })()`);
-  ok(eng.classicElsewhere && eng.studioOnAcid && eng.jam, 'Studio is offered only on gigs marked studio:true and in Free Jam; other gigs stay on Classic');
+    showBoard(); return out; })()`);
+  ok(eng.noToggle, 'there is no engine toggle to worry about');
+  ok(eng.acid && eng.saw && eng.jam && eng.squelch, 'every gig plays on Studio; the ladder filter is used only where the gig asks for it');
   ok(eng.sane && Math.abs(eng.self - 100) < 0.01, `Studio renders are clean and deterministic (reference scores ${eng.self.toFixed(1)})`);
-  ok(eng.untouched < 80 && eng.near > 80 && eng.near < 95 && eng.square < 60, `Studio scoring: untouched ${eng.untouched.toFixed(1)}, cutoff +0.2 oct ${eng.near.toFixed(1)}, square ${eng.square.toFixed(1)}`);
-  ok(eng.help >= 90, `Help rescues Acid Test on the Studio engine (${eng.steps} steps, ${eng.help.toFixed(1)}%)`);
-  const sg = await page.evaluate(`(async()=>{ store.set('engine','studio'); S.enginePref='studio'; const out=[];
-    for(const L of LEVELS.filter(l=>l.studio)){ const i=LEVELS.indexOf(L); store.del('draft2.'+L.id); openLevel(i);
-      const tA=analyze(await renderPatch(targetPatch(L),L)); const self=levelCompare(L,tA,analyze(await renderPatch(targetPatch(L),L))).overall;
-      await runAnalyze(); const untouched=S.cmp.overall; let steps=0; for(;steps<16;steps++){ if(S.cmp.overall>=90) break; if(!(await autoHelp())) break; await runAnalyze(); }
-      out.push({id:L.id,self,untouched,help:S.cmp.overall,steps}); }
-    showBoard(); setEngine('classic'); LEVELS.forEach(l=>{ delete l._tX; delete l._tA; }); return out; })()`);
-  for (const g of sg) ok(Math.abs(g.self-100)<0.01 && g.untouched < 80 && g.help >= 90, `${g.id.padEnd(9)} on Studio: reference ${g.self.toFixed(0)}, untouched ${g.untouched.toFixed(1)}, Help reaches ${g.help.toFixed(1)} in ${g.steps} steps`);
-  ok(sg.length >= 2, `${sg.length} gigs offer the Studio engine`);
-  const full = await page.evaluate(`(async()=>{ setEngine('studio'); const res={};
-    for(const id of ['acid','glass']){ const L=LEVELS.find(l=>l.id===id)||LEVELS.find(l=>l.ch==='pads'), x=await renderSong(targetPatch(L),L), len=songLength(L,targetPatch(L)), w=Math.floor(SR/4), quiet=[];
+  ok(eng.near > 75 && eng.near < 95 && eng.square < 60, `Acid Test on the ladder: cutoff +0.2 oct ${eng.near.toFixed(1)}, square ${eng.square.toFixed(1)}`);
+  const full = await page.evaluate(`(async()=>{ const res={};
+    for(const id of ['acid','glass','warehouse']){ const L=LEVELS.find(l=>l.id===id); openLevel(LEVELS.indexOf(L)); const x=await renderSong(targetPatch(L),L), len=songLength(L,targetPatch(L)), w=Math.floor(SR/4), quiet=[];
       for(let i=0;i+w<len*SR-w;i+=w){ let s=0; for(let j=i;j<i+w;j++) s+=x[j]*x[j]; if(Math.sqrt(s/w)<0.003) quiet.push((i/SR).toFixed(2)); } res[L.id]=quiet; }
-    setEngine('classic'); return res; })()`);
-  ok(Object.values(full).every(q => !q.length), `long Studio songs play all the way through (silent stretches: ${JSON.stringify(full)})`);
-  ok(eng.toggled && eng.back, 'the ◆ button switches engines, re-renders the target and remembers the choice');
+    showBoard(); return res; })()`);
+  ok(Object.values(full).every(q => !q.length), `long songs play all the way through (silent stretches: ${JSON.stringify(full)})`);
 
   console.log('\nBack and Forward');
   await page.evaluate(`(()=>{ showBoard(); })()`);

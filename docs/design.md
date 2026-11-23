@@ -94,7 +94,7 @@ Playtest, 2026-11-22: it was unclear where and what session data is stored.
 - **What's stored:**
   - `progress`: paid gigs with cost and match %, `played` (the note was played), `helped`;
   - `draft2.<gig>`: each gig's rack in progress;
-  - preferences: `haptics`, `keysOpen`, `songMode`, `boardView`, `midiAuto`, `snap`, `engine`.
+  - preferences: `haptics`, `keysOpen`, `songMode`, `boardView`, `midiAuto`, `snap`. (An old `engine` key from the A/B toggle is removed on load.)
 - **The panel** explains this in plain words, shows counts and size, and offers:
   - **Export:** a JSON file `{game, version, exported, data}`;
   - **Import:** replaces everything from such a file;
@@ -109,19 +109,25 @@ Playtest, 2026-11-22: it was unclear where and what session data is stored.
 - On the gig board, ▶ plays the song on the target. Inside a gig, the toolbar's **♫ Song** toggle (remembered) makes ▶ Target and ▶ Yours (and Space / Shift+T) play the song instead of one note, so the player can compare their patch in a musical context. Turning it off goes back to single notes.
 - Test: every gig's song renders audible and finite (2–9 s).
 
-## Sound engines: Classic and Studio (preview)
+## Sound engine (Studio)
 Playtest, 2026-11-23: "the ideas are right, but most sound like a pretty cheap old Casio".
-- **Classic** is the browser's stock parts: OscillatorNode, a 12 dB BiquadFilter, and linear envelopes.
-- **Studio** replaces the voice core:
-  - **Oscillators:** PolyBLEP band-limited oscillators (AudioWorklet `va-osc`) with a slow, seeded analog drift of a few cents. The seed comes from the oscillator's settings, the note and its ordinal, so identical patches render identically and scoring stays exact.
-  - **Filter:** 12 dB/oct by default (the A/B on Neon Avenue preferred it: a supersaw needs its bright top). A 4-pole zero-delay-feedback ladder low-pass (`ladder`) is used only on gigs marked `studio:'ladder'` (Acid Test: the squelch is the ladder's job). The ladder is 2× oversampled, with tanh saturation in the feedback loop. Resonance runs up to near self-oscillation. Makeup gain of 1 + 1.25·res keeps loudness within about ±20% of Classic. HP/BP/notch still use the biquad for now.
-  - **Envelopes:** an RC-style attack that curves up to full at A, then exponential decay and release (time constant = knob time / 3.5, so ~97% of the way by the knob's time).
-- **Studio finish:** live playback only, never scoring. Gentle tanh saturation, glue compression (2.5:1), and a short seeded stereo room at 16%. It's applied equally to ▶ Target, ▶ Yours, songs and previews.
-- **Scope:** Studio is offered only on gigs marked `studio:true` (Acid Test and Neon Avenue so far) and in Free Jam. There, the ◆/◇ toolbar button switches engines; the choice is saved as `engine`, default Studio. Switching re-renders and re-scores the target, so matching stays fair on either engine. Every other gig plays and scores on Classic until it's been calibrated on Studio. `STUDIO` in audio.js switches Studio parts (ladder, drift, finish) one at a time for listening tests.
-- **Acid Test on Studio:** reference 100, untouched 1, cutoff +0.2 oct 86, square wave 38. Help rescues it in 12 steps.
-- **Neon Avenue (supersaw) on Studio:** reference 100. Stricter on detune than Classic: no detune scores 58 (Classic 79), ±5 cents 80, ±12 cents 83. One saw 78, cutoff 1300 Hz 85.
-- **Studio processors** (`va-osc`, `ladder`, `sync-osc`) get their note's start time and sleep until then. `stop(t)` sends `{stopAt:t}` and the processor returns false at exactly t. Without this, a demo song's dozens of pre-created voices all ran from the first beat, which wasted CPU and silenced songs after a bar (test: long Studio songs have no silent stretches).
-- **Next:** if the A/B confirms the upgrade, convert gigs chapter by chapter, re-tuning calibration bands as we go. After that: ladder-style HP/BP, curved envelopes for sequencer retriggers, a chorus worth the name, and a sound-design pass on targets and demo songs.
+- **A/B first:** Acid Test and Neon Avenue were A/B'd against the browser's stock parts (OscillatorNode, 12 dB biquad, linear envelopes). Studio won, so it's now the only engine.
+- **No toggle:** "too much for users to worry about".
+- **Fallback:** if a browser can't load the AudioWorklet, oscillators and filters fall back to the stock nodes. Envelopes still curve. Scoring stays fair because target and player always render the same way.
+- **Oscillators:** PolyBLEP band-limited oscillators (AudioWorklet `va-osc`) with a slow, seeded analog drift of a few cents. The seed comes from the oscillator's settings, the note and its ordinal, so identical patches render identically and scoring stays exact.
+- **Filter:**
+  - 12 dB/oct low-pass by default. The supersaw A/B preferred it, because a supersaw needs its bright top.
+  - A 4-pole zero-delay-feedback **ladder** (`ladder`) is used on gigs marked `studio:'ladder'`, where squelch is the point: Squelch, Acid Test, Wobble, Random Filter, Tidal Wobble, Warehouse Line and Total Wreck. It's 2× oversampled, with tanh saturation in the feedback loop. Makeup gain of 1 + 1.25·res keeps loudness within about ±20%.
+  - HP/BP/notch use the biquad.
+- **Envelopes:** an RC-style attack that curves up to full at A, then exponential decay and release (time constant = knob time / 3.5). SEQ-retriggered envelopes curve too. Voices ring for 2× R so the curved tail isn't cut.
+- **Studio finish:** live playback only, never scoring. Gentle tanh saturation, glue compression (2.5:1), and a short seeded stereo room at 16%.
+- **Processor lifetime:** `va-osc`, `ladder` and `sync-osc` get their note's start time and sleep until then. `stop(t)` sends `{stopAt:t}` and the processor returns false at exactly t. The earliest stop wins, because multi-note gigs stop each note and then the whole render; when two stop times raced, renders weren't repeatable. Without the start-time sleep, a demo song's dozens of pre-created voices all ran from the first beat, which wasted CPU and silenced songs after a bar.
+- **Calibration on Studio:**
+  - Curved decays made **Pluck** too forgiving of a long decay (0.5 s vs 0.35 s scored 92), so Pluck got `tolShape:0.45` (now 0.5 s → 80, 0.4 s → 91).
+  - Bands moved on purpose: supersaw with no detune now 58 (was ≥ 60; Studio makes plain unison more obvious), so the band is 40–89.9. Bonk with a halved decay is 54 (band 0–60).
+  - Every gig still passes: reference = 100, untouched < 80, Help rescues in ≤ 16 steps, bypassing any module fails.
+  - Acid Test on the ladder: cutoff +0.2 oct 86, square 38.
+- `STUDIO` in audio.js switches parts (ladder, drift, finish) one at a time for listening tests.
 
 ## Modules (cost)
 - OSC 2¢: wave, oct, semi, fine, pitch MOD AMT (bipolar, ±48 st), and an **FM** audio input with FM AMT (linear FM, ± Hz).

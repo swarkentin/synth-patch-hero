@@ -30,6 +30,7 @@ Synth Patch Hero: a synth-patching puzzle game that teaches synthesis. Repo: htt
 - `startCables[]`.
 - `presetNote`.
 - `seq`: `[[semitones, start, gate], …]` for multi-note targets.
+- `studio:'ladder'`: use the 4-pole ladder low-pass (for squelchy, resonant gigs). Otherwise the 12 dB filter.
 
 `CHAPTERS[]` entries: `id, title, short, blurb`, plus optional `level:'advanced'` (badge) or `bonus:true` (badge; exempt from the one-challenge-per-theme rule).
 

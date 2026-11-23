@@ -79,7 +79,7 @@ index.html          markup only
 css/style.css       all styles (desktop, tablet, phone breakpoints)
 js/data.js          module types and the gig list (briefs, manual pages, target patches, presets)
 js/store.js         saved progress (localStorage) and patch helpers
-js/audio.js         Web Audio engine: patch → voice (Classic and Studio), live playback, demo songs
+js/audio.js         Web Audio engine: patch → voice (analog-style oscillators, ladder filter, curved envelopes), live playback, demo songs
 js/analysis.js      offline render, FFT, match score, hints
 js/ui-core.js       shared UI state and helpers
 js/haptics.js       vibration / iOS switch-haptic feedback

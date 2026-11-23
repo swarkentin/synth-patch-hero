@@ -193,7 +193,7 @@ const LEVELS = [
   <div class="tip">Watch the loudness graph: the dotted line marks when the key is let go. Match the fade after it with RELEASE.</div>`,
   target:{mods:[{id:'o',type:'osc',p:{wave:'square'}},{id:'v',type:'vca',p:{level:0.8}},{id:'e',type:'env',p:{a:0.01,d:0.1,s:1,r:0.5}}], cables:['o.out>v.in','v.out>out.in','e.out>v.gain']},
   reply:`On, off, and a lovely little fade. The actors stopped flinching. Thank you!`},
-{ id:'pluck', ch:'basics', tol:1.5, title:'Pluck', concept:'VCA + ADSR', client:'Juniper Vale', role:'Folktronica songwriter',
+{ id:'pluck', ch:'basics', tolShape:0.45, tol:1.5, title:'Pluck', concept:'VCA + ADSR', client:'Juniper Vale', role:'Folktronica songwriter',
   unlock:[], palette:{osc:1,filter:1,vca:1,env:1}, note:57, gate:1.0, dur:1.6,
   brief:`Every sound you've made so far just… sits there, droning. I want a plucked string, like a kalimba. A quick "plink" that fades away by itself. Soft tone.`,
   manual:`<h4>All four envelope stages</h4>
@@ -214,7 +214,7 @@ const LEVELS = [
   target:{mods:[{id:'o',type:'osc',p:{wave:'triangle',oct:1,pitchAmt:40}},{id:'l',type:'lfo',p:{rate:5.5}}], cables:['o.out>out.in','l.out>o.pitch']},
   reply:`Bravissimo! We open Friday. Wear something sparkly.`},
 /* ---------------- FILTERS ---------------- */
-{ id:'squelch', ch:'filters', title:'Squelch', concept:'Resonance', client:'Acid Annie', role:'303 devotee, warehouse DJ',
+{ id:'squelch', ch:'filters', studio:'ladder', title:'Squelch', concept:'Resonance', client:'Acid Annie', role:'303 devotee, warehouse DJ',
   unlock:['res'], palette:{osc:1,filter:1}, note:45, gate:1.2, dur:1.4,
   brief:`Darling, a plain filter is so polite. I need it to sing. That rubbery, wet, whistling peak right at the cutoff. Make it squelch.`,
   manual:`<h4>Resonance</h4>
@@ -315,7 +315,7 @@ const LEVELS = [
   target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:250,res:0.3,cutAmt:2600}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.002,d:0.45,s:0.3,r:0.12}},{id:'e2',type:'env',p:{a:0.002,d:0.16,s:0,r:0.1}}],
     cables:['o.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain','e2.out>f.cut']},
   reply:`Dow-dow-dow. My bassline finally bounces. Sending you the stems!`},
-{ id:'wobble', ch:'bass', tol:3, title:'Wobble', concept:'LFO → filter', client:'BRÖSTEP', role:'Producer, umlaut mandatory',
+{ id:'wobble', ch:'bass', studio:'ladder', tol:3, title:'Wobble', concept:'LFO → filter', client:'BRÖSTEP', role:'Producer, umlaut mandatory',
   unlock:[], palette:{osc:1,filter:1,vca:1,env:2,lfo:1}, note:33, gate:1.8, dur:2.0,
   brief:`YO. I need the WUB. Low, filthy bass where the filter opens and closes in rhythm. WUB WUB WUB. Same tempo as the reference. Don't let me down.`,
   manual:`<h4>Filter wobble</h4>
@@ -386,7 +386,7 @@ const LEVELS = [
   target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:500,res:0.15,cutAmt:2700}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.03,d:0.3,s:0.8,r:0.2}},{id:'e2',type:'env',p:{a:0.06,d:0.35,s:0.45,r:0.2}}],
     cables:['o.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain','e2.out>f.cut']},
   reply:`BLAT! BLAT-BLAT! The crowd thinks we hired horns. We are never hiring horns.`},
-{ id:'supersaw', ch:'leads', studio:true, tol:3, title:'Neon Avenue', concept:'Detune', client:'Neon Avenue', role:'Synthwave duo, sunglasses indoors',
+{ id:'supersaw', ch:'leads', tol:3, title:'Neon Avenue', concept:'Detune', client:'Neon Avenue', role:'Synthwave duo, sunglasses indoors',
   unlock:['fine'], palette:{osc:2,filter:1,vca:1,env:2,lfo:1}, note:45, gate:1.8, dur:2.0,
   brief:`Our lead needs to be BIG. Wide, shimmering, like two synths playing at once. One oscillator sounds thin next to the reference.`,
   manual:`<h4>Detuning</h4>
@@ -732,7 +732,7 @@ const LEVELS = [
   <div class="tip">The S&amp;H here uses the same random sequence every time, so the target is repeatable. Count the steps per second on the spectrum.</div>`,
   target:{mods:[{id:'o',type:'osc',p:{wave:'square',pitchAmt:1200}},{id:'s',type:'sh',p:{rate:8}}], cables:['s.out>o.pitch','o.out>out.in']},
   reply:`BEEP BOOP. The computer lives again. Film festival in March!`},
-{ id:'rand-filter', ch:'random', tol:5, title:'Random Filter', concept:'Random modulation', client:'Kit Sørensen', role:'Modular synth streamer',
+{ id:'rand-filter', ch:'random', studio:'ladder', tol:5, title:'Random Filter', concept:'Random modulation', client:'Kit Sørensen', role:'Modular synth streamer',
   unlock:['mod','res'], palette:{osc:1,filter:1,sh:1}, note:45, gate:2.0, dur:2.0,
   brief:`My chat loves the "random filter" sound. Same note held, but the filter jumps somewhere new at every step: squelchy, bubbly, never the same twice. Well, the same twice for you, so you can match it.`,
   manual:`<h4>Random modulation</h4>
@@ -783,7 +783,7 @@ const LEVELS = [
   target:{mods:[{id:'q',type:'seq',p:{s1:0,s2:12,s3:0,s4:12,s5:7,s6:5,s7:3,s8:0,len:8,bpm:110,gate:1,glide:0.08}},{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:900,res:0.3}},{id:'v',type:'vca',p:{level:0.85}}],
     cables:['q.pitch>o.pitch','o.out>f.in','f.out>v.in','v.out>out.in','q.gate>v.gain']},
   reply:`It's like the bassline is skating. Smooth. Thank you.`},
-{ id:'warehouse', ch:'seqlab', challenge:true, tol:1.5, title:'Warehouse Line', concept:'Challenge', client:'DJ Ferrite', role:'Acid house night promoter',
+{ id:'warehouse', ch:'seqlab', studio:'ladder', challenge:true, tol:1.5, title:'Warehouse Line', concept:'Challenge', client:'DJ Ferrite', role:'Acid house night promoter',
   unlock:['res','mod'], palette:{seq:1,osc:1,filter:1,env:1,vca:1,lfo:1}, note:33, gate:2.0, dur:2.2,
   brief:`The classic squelchy acid bassline. A fast eight-step loop at 128, rubbery slides between some notes, and every step "yowps" through a screaming resonant filter. Low and nasty.`,
   manual:`<h4>Challenge: the acid line</h4>
@@ -836,7 +836,7 @@ const LEVELS = [
   reply:`Plink. That's a pluck. You're on retainer now.`},
 { id:'seasick', ch:'repair', tol:3, title:'Seasick', concept:'Modulation depth', client:'Hank Pruitt', role:'Pawn shop owner, feeling queasy',
   unlock:['mod'], palette:{osc:1,lfo:1,vca:1,env:1}, note:57, gate:1.4, dur:1.6,
-  start:[{id:'o',type:'osc',slot:0,p:{wave:'triangle',pitchAmt:900}},{id:'l',type:'lfo',slot:4,p:{wave:'sine',rate:1.2}},{id:'v',type:'vca',slot:1,p:{level:0.85}},{id:'e',type:'env',slot:5,p:{a:0.05,d:0.3,s:0.8,r:0.3}}],
+  start:[{id:'o',type:'osc',slot:0,p:{wave:'triangle',pitchAmt:900}},{id:'l',type:'lfo',slot:4,p:{wave:'sine',rate:1.2}},{id:'v',type:'vca',slot:1,p:{level:0.85}},{id:'e',type:'env',slot:5,p:{a:0.35,d:0.4,s:0.55,r:0.35}}],
   startCables:['o.out>v.in','v.out>out.in','e.out>v.gain','l.out>o.pitch'],
   presetNote:`It's meant to be a gentle vibrato lead. Right now it lurches up and down like a ship. Tame the wobble.`,
   brief:`This one makes me seasick. It's supposed to be a sweet little lead with a gentle vibrato, like a singer. Right now it's like a siren after three beers.`,
@@ -844,10 +844,10 @@ const LEVELS = [
   <p>Every modulation has two questions: <b>how far</b> (the amount knob at the destination) and <b>how fast</b> (the source's rate).</p>
   <ul><li>Vibrato is narrow: a fraction of a semitone.</li><li>Vibrato is quick: around five or six wobbles per second.</li></ul>
   <div class="tip">The pitch line in the spectrum shows how wide the wobble is. The scope's movement shows how fast.</div>`,
-  target:{mods:[{id:'o',type:'osc',p:{wave:'triangle',pitchAmt:35}},{id:'l',type:'lfo',p:{wave:'sine',rate:5.5}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.05,d:0.3,s:0.8,r:0.3}}],
+  target:{mods:[{id:'o',type:'osc',p:{wave:'triangle',pitchAmt:35}},{id:'l',type:'lfo',p:{wave:'sine',rate:5.5}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.35,d:0.4,s:0.55,r:0.35}}],
     cables:['o.out>v.in','v.out>out.in','e.out>v.gain','l.out>o.pitch']},
   reply:`My stomach thanks you. So does the customer who bought it.`},
-{ id:'total-wreck', ch:'repair', challenge:true, tolShape:1.2, title:'Total Wreck', concept:'Challenge', client:'Hank Pruitt', role:'Pawn shop owner, final boss',
+{ id:'total-wreck', ch:'repair', studio:'ladder', challenge:true, tolShape:1.2, title:'Total Wreck', concept:'Challenge', client:'Hank Pruitt', role:'Pawn shop owner, final boss',
   unlock:['ftype','res','mod'], palette:{osc:1,filter:1,vca:1,env:2,delay:1}, note:45, gate:0.35, dur:1.8,
   start:[{id:'o',type:'osc',slot:0,p:{wave:'sine'}},{id:'f',type:'filter',slot:1,p:{type:'highpass',cutoff:600,res:0.6,cutAmt:2400}},{id:'v',type:'vca',slot:2,p:{level:0.85}},{id:'e',type:'env',slot:4,p:{a:1.2,d:0.25,s:0.3,r:0.15}},
     {id:'e2',type:'env',slot:5,p:{a:0.003,d:0.2,s:0,r:0.1}},{id:'d',type:'delay',slot:3,p:{time:0.3,fb:0.92,mix:0.3,tone:3000}}],
@@ -934,7 +934,7 @@ const LEVELS = [
   target:{mods:[{id:'o',type:'osc',p:{wave:'triangle',pitchAmt:110}},{id:'l',type:'lfo',p:{wave:'sine',rate:5.5}},{id:'m',type:'modvca',p:{amt:1}},{id:'e',type:'env',p:{a:1.1,d:0.1,s:1,r:0.3}}],
     cables:['o.out>out.in','l.out>m.in','m.out>o.pitch','e.out>m.cv']},
   reply:`It sounds like it's breathing before it sings. Bellissimo.`},
-{ id:'tidal', ch:'modlab', challenge:true, tol:3, title:'Tidal Wobble', concept:'Challenge', client:'Low Tide Collective', role:'Bass music trio',
+{ id:'tidal', ch:'modlab', studio:'ladder', challenge:true, tol:3, title:'Tidal Wobble', concept:'Challenge', client:'Low Tide Collective', role:'Bass music trio',
   unlock:['mod','res'], palette:{osc:1,filter:1,lfo:1,modvca:1,func:1,env:1}, note:45, gate:2.4, dur:2.4,
   brief:`A fast filter wobble that comes and goes like waves: it swells up, fades away to nothing, swells up again. All on one held note.`,
   manual:`<h4>Challenge: the tide</h4>
