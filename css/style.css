@@ -546,3 +546,38 @@ label.kbClose,#btnHelp[role=button]{display:inline-flex;align-items:center;justi
 .zoomCtl .snap.on{color:var(--amber)}
 .slot.covered{border:1px dashed rgba(255,255,255,.05);background:transparent;pointer-events:none}
 .module.floating{box-shadow:0 10px 24px rgba(0,0,0,.55);z-index:3}
+
+/* ---------- Compare header: Listen (what plays) and Score (how you're doing) as two clear groups ---------- */
+.cmpTop{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.cmpTop .grp{display:grid;gap:6px;align-items:center}
+.cmpTop .grp.listen{grid-template-columns:1fr 1fr}
+.cmpTop .grp.listen .seg{grid-column:1/-1}
+.cmpTop .grp.score{grid-template-columns:auto 1fr auto;padding-top:8px;border-top:1px solid var(--line)}
+.cmpTop .grp.score .pctBox{text-align:left;min-width:64px}
+.cmpTop #btnSubmit{flex-basis:auto}
+.seg{display:flex;border:1px solid var(--line2);border-radius:7px;overflow:hidden;background:var(--panel2)}
+.seg button,.seg label[role=button]{flex:1;display:flex;align-items:center;justify-content:center;padding:5px 8px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--dim);background:transparent;border:0;cursor:pointer}
+.seg button+button,.seg label[role=button]+label[role=button]{border-left:1px solid var(--line2)}
+.seg .on{background:var(--line2);color:var(--text)}
+.seg [data-m=song].on{color:var(--amber)}
+/* Toolbar: only view switches live on the right, one style. Song mode lives with ▶ Target / ▶ Yours on wide screens. */
+.viewGrp{display:flex;gap:6px;align-items:center}
+@media (min-width:761px){ #songBtn{display:none} }
+#focusBtn.on{border-color:var(--amber);color:var(--amber)}
+/* Focus mode on wide screens: Listen | Score | hints | graphs, in one row */
+@media (min-width:761px){
+  body.focus .cmpTop{flex-direction:row;align-items:center;width:auto;gap:14px;display:flex}
+  body.focus .cmpTop .grp.listen{grid-template-columns:auto auto;width:auto}
+  body.focus .cmpTop .grp.score{grid-template-columns:auto auto auto;border-top:0;padding-top:0;padding-left:14px;border-left:1px solid var(--line);height:100%}
+  body.focus .cmpTop .grp.score .pctBox{min-width:56px}
+  body.focus #btnSubmit{padding:8px 14px}
+}
+/* Phones keep the compact one-row strip: groups dissolve into it; Song stays in the toolbar */
+@media (max-width:760px){
+  .cmpTop{flex-direction:row;align-items:center;gap:5px}
+  .cmpTop .grp{display:contents}
+  .cmpTop .seg{display:none}
+  .cmpTop .grp.score .pctBox{margin-left:auto;text-align:right;min-width:0}
+}
+@media (max-width:760px){ .viewGrp{order:2;flex:none;gap:5px} }
+@media (max-width:760px){ .compare:not(.expanded) #hints{min-height:38px} }   /* room for the 2-line hint from the start: no layout jump when analysis lands */

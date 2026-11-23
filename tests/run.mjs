@@ -167,6 +167,18 @@ try {
     setSongMode(false); const off=!songNow; playTarget(); const note=!songNow&&oneShots.length===1; stopOneShots(); showBoard(); return {t,y,off,note}; })()`);
   ok(songMode.t && songMode.y, 'with ♫ Song on, ▶ Target and ▶ Yours play the demo song');
   ok(songMode.off && songMode.note, 'turning ♫ Song off stops it and goes back to single notes');
+  const groups = await page.evaluate(`(async()=>{ openLevel(LEVELS.findIndex(l=>l.id==='acid')); const q=s=>document.querySelector(s), vis=e=>!!e&&getComputedStyle(e).display!=='none';
+    const listen=q('.cmpTop .grp.listen'), score=q('.cmpTop .grp.score');
+    const ok1=listen&&listen.contains(q('#pT'))&&listen.contains(q('#pY'))&&listen.contains(q('#playSeg'))&&score.contains(q('#btnSubmit'))&&score.contains(q('#btnHelp'))&&score.contains(q('#pct'));
+    const viewOnly=[...q('.viewGrp').children].every(b=>['songBtn','keysBtn','focusBtn'].includes(b.id))&&!q('#clearBtn')&&!vis(q('#songBtn'));
+    q('#playSeg [data-m=song]').click(); await new Promise(r=>setTimeout(r,40)); const segOn=S.songMode&&q('#playSeg [data-m=song]').classList.contains('on');
+    q('#playSeg [data-m=note]').click(); await new Promise(r=>setTimeout(r,40)); const segOff=!S.songMode&&q('#playSeg [data-m=note]').classList.contains('on');
+    setFocus(true); await new Promise(r=>setTimeout(r,100)); const fr=q('.cmpTop').getBoundingClientRect(), lr=listen.getBoundingClientRect(), sr=score.getBoundingClientRect();
+    const focusRow=sr.left>=lr.right-1&&Math.abs((sr.top+sr.bottom)/2-(lr.top+lr.bottom)/2)<30; setFocus(false); showBoard(); return {ok1,viewOnly,segOn,segOff,focusRow}; })()`);
+  ok(groups.ok1, 'the compare panel groups Listen (▶ Target, ▶ Yours, Note | Song) apart from Score (match, Send, Help)');
+  ok(groups.viewOnly, 'the toolbar\'s right side holds only view switches (Keys, Focus); Reset lives in Settings');
+  ok(groups.segOn && groups.segOff, 'the Note | Song switch sets what ▶ plays');
+  ok(groups.focusRow, 'in focus mode Listen and Score sit side by side in the compare bar');
   ok(modal.dots >= 4 && modal.playing && modal.stopped, `result screen plays the client's song on your patch (${modal.dots} note markers) and stops it when closed`);
 
   console.log('\nHaptics on a phone');
@@ -197,6 +209,9 @@ try {
   const ios1 = await page.evaluate(`(async()=>{ await new Promise(r=>setTimeout(r,6000)); const before=__sw; Haptics.select(); return {noVibrate:typeof navigator.vibrate!=='function', continuous:Haptics.continuous, noGesture:__sw===before}; })()`);
   ok(ios1.noVibrate && ios1.continuous === false, 'iPhone mode: no vibrate(), no continuous drag ticks');
   ok(ios1.noGesture, 'no haptic is attempted without a live user gesture');
+  const still = await page.evaluate(`(async()=>{ store.del('draft2.squelch'); openLevel(LEVELS.findIndex(l=>l.id==='squelch')); closeSide(); const tops=new Set();
+    for(let k=0;k<24;k++){ tops.add(Math.round(document.querySelector('.palBtn').getBoundingClientRect().top)); await new Promise(r=>setTimeout(r,50)); } showBoard(); return [...tops]; })()`);
+  ok(still.length === 1, `the phone layout holds still while the first analysis lands (toolbar tops seen: ${still.join(', ')})`);
   const pal = await page.evaluate(`(async()=>{ store.del('draft2.thin-walls'); openLevel(LEVELS.findIndex(l=>l.id==='thin-walls')); closeSide(); await new Promise(r=>setTimeout(r,300));
     const b=document.querySelector('.palBtn'); const r=b.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2,mods:S.patch.modules.length,checked:b.querySelector('input.hapSw').checked}; })()`);
   await page.tap(pal.x, pal.y);

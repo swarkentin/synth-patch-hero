@@ -47,10 +47,11 @@
       <button class="btn ghost briefBtn" id="briefBtn">Brief</button>
       <div id="palette" style="display:flex;gap:6px"></div>
       <span class="spacer"></span>
-      <button class="btn ghost" id="focusBtn" title="Full-screen focus mode: big board, compact compare bar (Shift+F)"><span class="ico">⛶</span><span class="lbl"> Focus</span></button>
-      <button class="btn ghost" id="songBtn" title="Song mode: ▶ Target and ▶ Yours play a short demo song instead of one note"><span class="ico">♫</span><span class="lbl"> Song</span></button>
-      <button class="btn ghost" id="keysBtn" title="Show the keyboard (USB/MIDI keyboards work even when hidden)"><span class="ico">♪</span><span class="lbl"> Keys</span></button>
-      <button class="btn ghost" id="clearBtn" title="Remove everything you added">Reset</button>
+      <div class="viewGrp" role="group" aria-label="View">
+        <button class="btn ghost" id="songBtn" title="Song mode: ▶ Target and ▶ Yours play a short demo song instead of one note"><span class="ico">♫</span><span class="lbl"> Song</span></button>
+        <button class="btn ghost" id="keysBtn" title="Show the keyboard (USB/MIDI keyboards work even when hidden)"><span class="ico">♪</span><span class="lbl"> Keys</span></button>
+        <button class="btn ghost" id="focusBtn" title="Full-screen focus mode: big board, compact compare bar (Shift+F)"><span class="ico">⛶</span><span class="lbl"> Focus</span></button>
+      </div>
     </div>
     <div class="viewport" id="viewport">
       <div id="stage"><div id="slots"></div><div id="mods"></div><svg id="cables"></svg></div>

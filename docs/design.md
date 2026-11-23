@@ -77,6 +77,14 @@ Feedback that drove it: difficulty rises fast (especially the VCA lesson); playe
   - Playtest on iPhone (Chrome): haptics worked for a few seconds, then stopped. Cause: WebKit only plays the switch haptic right after a real tap or release (transient user activation); a finger sliding across a knob, timers and async work don't count. So on iOS we fire only while `navigator.userActivation.isActive`, use a single tick (no delayed pulses), and knobs tick once **on release** after turning instead of during the drag (`Haptics.continuous` is false). Tap-driven feedback still works: −/+ in the knob editor, plugging cables, adding modules, keys, Send. The "crossed 90%" buzz usually arrives after async analysis, so it won't fire on iPhone.
 - **Jingle = the demo song** (playtest 2026-11-23: "be able to test the song jingle while building"). On Send, the result screen plays the gig's demo song on the player's own patch (a copy), with note markers that light in time (one per note, or one per beat for busy songs) and a ♫ Replay song button. It stops when the dialog closes. It's the same song ♫ Song mode plays on ▶ Yours while building, so players can preview exactly what they'll hear when paid. The separate per-chapter jingle phrases were removed. Test: jingle and song render identically.
 
+## Controls layout (playtest 2026-11-23: "buttons are kind of all over the place")
+- **Rule:** keep what plays, how you're doing, and how the screen looks in separate, consistent places, in normal and focus mode.
+- **Compare panel, Listen group:** ▶ Target and ▶ Yours, plus a **Note | Song** switch directly under them. It decides what ▶ plays: one held note, or the demo song that's also the end-of-gig jingle.
+- **Compare panel, Score group:** match %, **Send** and **Help**, under a divider. In focus mode on wide screens, Listen | Score | hints | graphs run left to right in one bar.
+- **Toolbar right side, view switches only:** ♪ Keys and ⛶ Focus (✕ Exit focus while focused, amber). **Reset** moved to ⚙ Settings → Reset this rack, so a destructive button doesn't sit beside view toggles.
+- **Phones:** keep the compact strip (▶ Target · ▶ Yours · % · Send · ?). Song mode stays as the ♫ icon beside Keys and Focus for space.
+- **No layout jump on open:** graphs are sized when the panel renders, and on phones the hint area reserves two lines. Before this, the first analysis resized both, shifting the toolbar 31 px about 250 ms after a gig opened, so taps could land on the wrong control. Test: the phone layout holds still.
+
 ## Browser history and links
 - Playtest, 2026-11-22: pressing Back left the site. Now each screen has an address:
   - the gig board is `#/`;

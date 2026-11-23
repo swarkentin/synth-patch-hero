@@ -579,8 +579,10 @@ function startCable(ev,portEl){
 /* ---------- compare panel ---------- */
 function renderCompare(){
   const c=$('#compare'), sb=S.sandbox; c.classList.remove('expanded');
-  c.innerHTML=`<div class="cmpTop">${sb?'':'<button class="playBtn t" id="pT"><span class="dot"></span>▶ TARGET</button>'}<button class="playBtn y" id="pY"><span class="dot"></span>▶ ${sb?'PLAY':'YOURS'}</button>
-    ${sb?'<div class="pctBox"><small>FREE JAM</small></div>':`<div class="pctBox"><b id="pct">–</b><small id="pctSub">need ${PASS}%</small></div><button class="btn primary" id="btnSubmit" disabled>Send</button><button class="btn" id="btnHelp" title="Stuck? Get a hint, or let Help patch a module or lock a knob"><span class="lbl">Help</span><span class="ico">?</span></button>`}</div>
+  c.innerHTML=`<div class="cmpTop">
+      <div class="grp listen" role="group" aria-label="Listen">${sb?'':'<button class="playBtn t" id="pT"><span class="dot"></span>▶ TARGET</button>'}<button class="playBtn y" id="pY"><span class="dot"></span>▶ ${sb?'PLAY':'YOURS'}</button>
+        <div class="seg" id="playSeg" role="group" aria-label="What ▶ plays"><button data-m="note" title="▶ plays one held note">NOTE</button><button data-m="song" title="▶ plays a short demo song (the same one you'll hear when you're paid)">♫ SONG</button></div></div>
+      <div class="grp score" role="group" aria-label="Score">${sb?'<div class="pctBox"><small>FREE JAM</small></div>':`<div class="pctBox"><b id="pct">–</b><small id="pctSub">need ${PASS}%</small></div><button class="btn primary" id="btnSubmit" disabled>Send</button><button class="btn" id="btnHelp" title="Stuck? Get a hint, or let Help patch a module or lock a knob"><span class="lbl">Help</span><span class="ico">?</span></button>`}</div></div>
     ${sb?'':`<div class="bar"><i id="barAll"></i><span class="thr" style="left:${PASS}%"></span></div>`}
     <div class="cmpBody">
       ${sb?'':`<div class="subs"><div class="sub"><span>Spectrogram</span><div class="bar"><i id="barSpec"></i></div><span id="vSpec"></span></div>
@@ -597,6 +599,8 @@ function renderCompare(){
       <div class="stats" id="stats"></div>
     </div>`;
   ['#pT','#pY','#btnHelp','#btnSubmit'].forEach(sel=>Haptics.upgrade(c.querySelector(sel)));
+  c.querySelectorAll('#playSeg button').forEach(b0=>{ const b=Haptics.upgrade(b0); b.addEventListener('click',()=>setSongMode(b.dataset.m==='song',true)); }); syncSongUI();
+  c.querySelectorAll('canvas.plot').forEach(cv=>{ try{ setupCanvas(cv); }catch(_){} });   // size graphs now, so the panel doesn't jump when the first analysis lands
   if(!sb){ $('#pT').onclick=()=>playTarget(); $('#btnSubmit').onclick=submit; $('#btnHelp').onclick=requestHelp;
     $('#hints').addEventListener('click',()=>{ if(S.mobile) toggleExpanded(); }); }
   $('#pY').onclick=()=>playYours();
@@ -617,9 +621,11 @@ function applyEngine(L){ const lad=!!(L&&L.studio==='ladder'); if(ENGINE!=='stud
 S.songMode=!!store.get('songMode',false);
 function playTarget(){ if(S.songMode&&!S.sandbox) flashPlay('pT',playSong(targetPatch(S.L),S.L)); else playFixed(targetPatch(S.L),S.L,'pT'); }
 function playYours(){ if(S.songMode) flashPlay('pY',playSong(S.patch,S.L||{note:45,ch:'basics'})); else playFixed(S.patch,S.L,'pY'); }
-function setSongMode(on){ S.songMode=on; store.set('songMode',on); stopOneShots(); const b=$('#songBtn'); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on);
-  b.title=on?'Song mode is on: ▶ Target and ▶ Yours play a demo song. Tap for single notes.':'Song mode: ▶ Target and ▶ Yours play a short demo song instead of one note';
-  if(on) toast('Song mode: ▶ Target and ▶ Yours now play a short demo song.'); }
+function syncSongUI(){ const on=S.songMode, b=$('#songBtn'); if(b){ b.classList.toggle('on',on); b.setAttribute('aria-pressed',on);
+    b.title=on?'Song mode is on: ▶ Target and ▶ Yours play a demo song. Tap for single notes.':'Song mode: ▶ Target and ▶ Yours play a short demo song instead of one note'; }
+  document.querySelectorAll('#playSeg [data-m]').forEach(x=>{ const sel=(x.dataset.m==='song')===on; x.classList.toggle('on',sel); x.setAttribute('aria-pressed',sel); }); }
+function setSongMode(on,quiet){ if(on===S.songMode&&quiet) return; S.songMode=on; store.set('songMode',on); stopOneShots(); syncSongUI();
+  if(on&&!quiet) toast('Song mode: ▶ Target and ▶ Yours now play a short demo song.'); }
 function flashPlay(id,dur){ const b=document.getElementById(id); if(!b) return; b.classList.add('lit'); setTimeout(()=>b.classList.remove('lit'),dur*1000); }
 
 let aTimer=null, aSeq=0;
@@ -756,12 +762,10 @@ let rzT=null;
 window.addEventListener('resize',()=>{ clearTimeout(rzT); rzT=setTimeout(()=>{ if(!S.L) return; if(!S.userZoom) fitView(); else { clampView(); applyView(); } drawCables(); drawPlots(); renderKeys(); },80); });
 $('#kbDn').onclick=()=>{ S.kbLo-=12; renderKeys(); };
 $('#kbUp').onclick=()=>{ S.kbLo+=12; renderKeys(); };
-$('#songBtn').onclick=()=>setSongMode(!S.songMode); $('#songBtn').classList.toggle('on',S.songMode);
+$('#songBtn').onclick=()=>setSongMode(!S.songMode); syncSongUI();
 $('#keysBtn').onclick=()=>setKeysOpen(!S.keysOpen);
 $('#focusBtn').onclick=()=>setFocus(!S.focus);
 function resetRack(){ S.pick=null; showPatchbar(); freshPatch(); refreshRack(); scheduleAnalyze(); toast('Rack reset'); }
-$('#clearBtn').onclick=()=>{ const b=$('#clearBtn'); if(!b.dataset.armed){ b.dataset.armed=1; b.textContent='Sure?'; setTimeout(()=>{ b.textContent='Reset'; delete b.dataset.armed; },2500); return; }
-  delete b.dataset.armed; b.textContent='Reset'; resetRack(); };
 $('#kbClose').onclick=()=>setKeysOpen(false);
 /* ---------- settings sheet (⚙ in the top bar) ---------- */
 function openSettings(){
