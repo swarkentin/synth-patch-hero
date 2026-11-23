@@ -296,6 +296,35 @@ try {
   ok(mv.swapped, 'tapping another module swaps the two');
   ok(mv.cancelled && mv.outSafe, 'tapping the name bar again cancels, and OUTPUT stays in its slot');
 
+  // Real drags: line the module up with an empty slot but let go a little high, so the pointer (on the name bar)
+  // ends in the gap above the slot. The module should still land in that slot, judged by its own centre.
+  for (const mob of [false, true]) {
+    await page.open(URL, mob ? { width: 390, height: 664, mobile: true } : { width: 1280, height: 800 });
+    await page.waitFor("document.querySelector('.gig')");
+    const g = JSON.parse(await page.evaluate(`(async()=>{ store.del('draft2.squelch'); openLevel(LEVELS.findIndex(l=>l.id==='squelch')); addModule('osc'); addModule('filter'); closeSide&&closeSide();
+      await new Promise(r=>setTimeout(r,400)); const o=S.patch.modules.find(m=>m.type==='osc');
+      const d=[...document.querySelectorAll('.module')].find(x=>x.querySelector('.name').textContent==='OSC'), h=d.querySelector('.mhead').getBoundingClientRect(), md=d.getBoundingClientRect();
+      const free=[...Array(S.slots).keys()].find(i=>i!==S.slots-1&&!occupant(i)&&slotXY(i)[1]>slotXY(o.slot)[1]-1&&i!==o.slot);
+      const st=$('#stage').getBoundingClientRect(), [sx,sy]=slotXY(free), [ox,oy]=slotXY(o.slot), k=S.view.s;
+      const px=h.left+12, py=h.top+h.height/2, tx=px+(sx-ox)*k, ty=st.top+(sy-8)*k;   // let go 8px above the slot's top edge, in the gap
+      return JSON.stringify({free,px,py,tx,ty}); })()`));
+    const n = 10;
+    if (!mob) {
+      await page.cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: g.px, y: g.py });
+      await page.cdp('Input.dispatchMouseEvent', { type: 'mousePressed', x: g.px, y: g.py, button: 'left', buttons: 1, clickCount: 1 });
+      for (let k = 1; k <= n; k++) await page.cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: g.px + (g.tx - g.px) * k / n, y: g.py + (g.ty - g.py) * k / n, button: 'left', buttons: 1 });
+      await page.cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x: g.tx, y: g.ty, button: 'left', buttons: 0, clickCount: 1 });
+    } else {
+      await page.cdp('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: g.px, y: g.py }] });
+      for (let k = 1; k <= n; k++) await page.cdp('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: g.px + (g.tx - g.px) * k / n, y: g.py + (g.ty - g.py) * k / n }] });
+      await page.cdp('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    }
+    await new Promise(r => setTimeout(r, 250));
+    const landed = await page.evaluate(`S.patch.modules.find(m=>m.type==='osc').slot`);
+    ok(landed === g.free, `${mob ? 'finger' : 'mouse'} drag lands in the slot the module is lined up with, even when let go a little high (slot ${landed}, wanted ${g.free})`);
+  }
+  await page.open(URL, { width: 1280, height: 800 }); await page.waitFor("document.querySelector('.gig')");
+
   console.log('\nGig board browsing');
   const nav = await page.evaluate(`(async()=>{ showBoard(); const q=s=>document.querySelector(s), vis=()=>[...document.querySelectorAll('#gigs .chapter')].filter(x=>!x.hidden).map(x=>x.dataset.ch);
     const chips=[...document.querySelectorAll('#boardNav .bnChip')].map(b=>b.dataset.ch).filter(Boolean);

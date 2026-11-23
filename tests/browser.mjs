@@ -64,6 +64,7 @@ export async function launch() {
       await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     },
     async screenshot() { const r = await send('Page.captureScreenshot', { format: 'png' }); return Buffer.from(r.result.data, 'base64'); },
+    cdp: send,
     errors: () => errors.slice(),
   };
   return { page, async close() { try { ws.close(); } catch {} proc.kill(); await sleep(100); rmSync(profile, { recursive: true, force: true }); } };

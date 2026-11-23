@@ -246,6 +246,13 @@ function makePort(m,p,dir){
   return e;
 }
 function stagePoint(ev){ const r=$('#stage').getBoundingClientRect(); return [(ev.clientX-r.left)/S.view.s,(ev.clientY-r.top)/S.view.s]; }
+/* Where a dragged module lands: the slot nearest the module's own centre (not the pointer, which sits on the
+   name bar at the very top, so lining the module up with a slot used to leave the pointer in the gap above it). */
+function dropSlot(m,dx,dy){
+  const [x0,y0]=slotXY(m.slot), cx=x0+SW/2+dx, cy=y0+SH/2+dy; let best=null, bd=Infinity;
+  for(let i=0;i<S.slots;i++){ const [x,y]=slotXY(i), d=Math.hypot(x+SW/2-cx,(y+SH/2-cy)*SW/SH); if(d<bd){ bd=d; best=i; } }
+  return bd<SW*0.75?best:null;
+}
 function slotAt(p){ for(let i=0;i<S.slots;i++){ const [x,y]=slotXY(i); if(p[0]>=x&&p[0]<=x+SW&&p[1]>=y&&p[1]<=y+SH) return i; } return null; }
 /* Tap-to-move: tap a module's name bar to pick it up, then tap a free slot (move) or another module (swap). */
 function toggleMove(m){
@@ -265,14 +272,15 @@ function dragModule(head,m,d){
     const x0=e.clientX, y0=e.clientY; let moved=false, over=null;
     const mv=ev=>{ if(S.pinching) return; const dx=(ev.clientX-x0)/S.view.s, dy=(ev.clientY-y0)/S.view.s;
       if(!moved&&Math.hypot(dx,dy)<5) return; moved=true; d.classList.add('dragging'); d.style.transform=`translate(${dx}px,${dy}px)`;
-      const t=slotAt(stagePoint(ev)); if(t!==over){ document.querySelectorAll('.slot.drop').forEach(s=>s.classList.remove('drop')); over=t; const se=t!=null&&document.querySelector(`.slot[data-slot="${t}"]`); if(se&&t!==m.slot) se.classList.add('drop'); }
+      const t=dropSlot(m,dx,dy); if(t!==over){ document.querySelectorAll('.slot.drop').forEach(s=>s.classList.remove('drop')); over=t; const se=t!=null&&document.querySelector(`.slot[data-slot="${t}"]`); if(se&&t!==m.slot) se.classList.add('drop'); }
       drawCables(); };
     const up=ev=>{ head.removeEventListener('pointermove',mv); head.removeEventListener('pointerup',up); head.removeEventListener('pointercancel',up);
       d.style.transform=''; d.classList.remove('dragging'); document.querySelectorAll('.slot.drop').forEach(s=>s.classList.remove('drop'));
       if(!moved){ if(S.moving&&S.moving!==m.id) moveModuleTo(m.slot); else toggleMove(m); return; }
-      const t=slotAt(stagePoint(ev));
-      if(t!=null&&t!==m.slot&&t!==S.slots-1){ const o=occupant(t);
-        if(!o){ m.slot=t; Haptics.thunk(); } else if(!o.locked){ o.slot=m.slot; m.slot=t; Haptics.thunk(); } else toast('That slot holds a preset module.'); }
+      const t=dropSlot(m,(ev.clientX-x0)/S.view.s,(ev.clientY-y0)/S.view.s);
+      if(t===S.slots-1) toast('OUTPUT always stays in the top-right slot.');
+      else if(t!=null&&t!==m.slot){ const o=occupant(t);
+        if(!o){ m.slot=t; Haptics.thunk(); } else if(!o.locked){ o.slot=m.slot; m.slot=t; Haptics.thunk(); } else toast('That slot holds a preset module, so it can\'t move.'); }
       renderRack(); saveDraft(); };
     head.addEventListener('pointermove',mv); head.addEventListener('pointerup',up); head.addEventListener('pointercancel',up);
   });
