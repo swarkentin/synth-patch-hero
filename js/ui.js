@@ -111,7 +111,8 @@ function emptySlots(){ const out=[]; for(let i=0;i<S.slots-1;i++) if(!occupant(i
 function sizeStage(){ const g=S.grid; let W=g.baseW, H=g.baseH;
   for(const m of S.patch.modules) if(m.slot==null){ W=Math.max(W,m.x+MW+PAD); H=Math.max(H,m.y+SH+PAD); }
   g.W=W; g.H=H; const st=$('#stage'); st.style.width=W+'px'; st.style.height=H+'px'; }
-S.snap=store.get('snap',true);
+S.snap=store.get('snapOn',false);   // free placement by default; snapping to boxes is the option
+store.del('snap');                   // the old key defaulted to on and was saved for everyone
 function needs(){ if(S.sandbox) return {}; const n={}; S.L.target.mods.forEach(m=>n[m.type]=(n[m.type]||0)+1); return n; }
 const isChallenge=()=>!S.sandbox&&!!S.L.challenge;
 const placedCount=()=>S.patch.modules.filter(m=>m.type!=='out').length;
@@ -295,7 +296,7 @@ function floatAt(m,x,y){
   const cx=x+MW/2, cy=y+SH/2; if(cx>ox&&cx<ox+SW&&cy>oy&&cy<oy+SH){ toast('OUTPUT always stays in the top-right slot.'); return false; }
   m.slot=null; m.x=x; m.y=y; return true;
 }
-function setSnap(on){ S.snap=on; store.set('snap',on); const b=$('#zSnap'); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on);
+function setSnap(on,save=true){ S.snap=on; if(save) store.set('snapOn',on); const b=$('#zSnap'); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on);
   b.title=on?'Snap is on: modules drop into the nearest box. Hold Alt or Shift while dragging to place freely.':'Snap is off: modules stay where you drop them. Hold Alt or Shift while dragging to snap to a box.'; }
 function dragModule(head,m,d){
   head.addEventListener('pointerdown',e=>{
@@ -370,7 +371,7 @@ function revealSlot(i){
   const tEnd=e=>{ if(pinch&&e.touches.length<2){ pinch=null; setTimeout(()=>{ S.pinching=false; },80); } };
   vp.addEventListener('touchend',tEnd); vp.addEventListener('touchcancel',tEnd);
   document.addEventListener('gesturestart',e=>e.preventDefault());
-  $('#zSnap').onclick=()=>setSnap(!S.snap); setSnap(S.snap);
+  $('#zSnap').onclick=()=>setSnap(!S.snap); setSnap(S.snap,false);
   $('#zIn').onclick=()=>zoomCenter(1.2); $('#zOut').onclick=()=>zoomCenter(1/1.2); $('#zFit').onclick=()=>fitView();
 })();
 function setFocus(on){
@@ -791,7 +792,7 @@ function dataInfo(){
 function dataSummary(){ const d=dataInfo(); return store.available()?`Saved only in this browser on this device: ${d.solved} gig${d.solved===1?'':'s'} paid, ${d.drafts} patch${d.drafts===1?'':'es'} in progress, ${d.kb.toFixed(1)} KB.`:'This browser isn\'t letting the game save anything (private mode or storage blocked), so progress lasts only until you close the page.'; }
 function openDataSheet(){
   const sh=$('#sheet'); sh.hidden=false; const d=dataInfo();
-  const PREF={haptics:'Haptics on/off',keysOpen:'On-screen keyboard shown',songMode:'♫ Song mode',boardView:'Gig board chapter and filter',midiAuto:'Reconnect MIDI automatically',snap:'Snap modules to boxes'};
+  const PREF={haptics:'Haptics on/off',keysOpen:'On-screen keyboard shown',songMode:'♫ Song mode',boardView:'Gig board chapter and filter',midiAuto:'Reconnect MIDI automatically',snapOn:'Snap modules to boxes'};
   sh.innerHTML=`<div class="sheetCard dataCard"><div class="shHead"><span class="shTitle">YOUR DATA</span><button class="btn primary" id="shDone">Done</button></div>
     <p><b>Where it lives:</b> in this browser's local storage, on this device only. There are no accounts, nothing is uploaded, and there are no analytics or cookies.</p>
     <p><b>What that means:</b> another browser or device, a private window, or the other copy of the game (GitHub Pages vs. claude.ai) each keeps its own separate progress. Clearing this site's data in your browser settings erases it. Use Export to move it.</p>

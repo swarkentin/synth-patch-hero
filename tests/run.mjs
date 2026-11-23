@@ -308,13 +308,14 @@ try {
 
   console.log('\nMoving modules');
   const mv = await page.evaluate(`(async()=>{ const i=LEVELS.findIndex(l=>l.id==='squelch'); store.del('draft2.squelch'); openLevel(i); addModule('osc'); addModule('filter');
-    const o=S.patch.modules.find(m=>m.type==='osc'), f=S.patch.modules.find(m=>m.type==='filter'); const grip=!!document.querySelector('.module .mhead .grip');
+    const freeDefault=store.get('snapOn')==null&&S.snap===false; setSnap(true); const o=S.patch.modules.find(m=>m.type==='osc'), f=S.patch.modules.find(m=>m.type==='filter'); const grip=!!document.querySelector('.module .mhead .grip');
     toggleMove(o); const pick=!!document.querySelector('.module.moving')&&document.querySelectorAll('.slot.moveTarget').length>0&&!!document.querySelector('.module.moveTarget');
     const free=document.querySelector('.slot.moveTarget'), t=+free.dataset.slot; free.click(); await new Promise(r=>setTimeout(r,60)); const moved=o.slot===t&&!S.moving;
     const fs=f.slot; toggleMove(o); document.querySelector('.module.moveTarget').click(); const swapped=o.slot===fs&&f.slot===t&&!S.moving;
     toggleMove(o); toggleMove(o); const cancelled=!S.moving&&!document.querySelector('.moveTarget');
-    const outSafe=S.patch.modules.find(m=>m.type==='out').slot===S.slots-1; showBoard(); return {grip,pick,moved,swapped,cancelled,outSafe}; })()`);
+    const outSafe=S.patch.modules.find(m=>m.type==='out').slot===S.slots-1; setSnap(false); store.del('snapOn'); showBoard(); return {grip,pick,moved,swapped,cancelled,outSafe,freeDefault}; })()`);
   ok(mv.grip, 'movable modules show a grip on their name bar');
+  ok(mv.freeDefault, 'free placement is the default (Snap starts off)');
   ok(mv.pick && mv.moved, 'tapping a name bar picks the module up; tapping a free slot moves it there');
   ok(mv.swapped, 'tapping another module swaps the two');
   ok(mv.cancelled && mv.outSafe, 'tapping the name bar again cancels, and OUTPUT stays in its slot');
@@ -324,7 +325,7 @@ try {
   for (const mob of [false, true]) {
     await page.open(URL, mob ? { width: 390, height: 664, mobile: true } : { width: 1280, height: 800 });
     await page.waitFor("document.querySelector('.gig')");
-    const g = JSON.parse(await page.evaluate(`(async()=>{ store.del('draft2.squelch'); openLevel(LEVELS.findIndex(l=>l.id==='squelch')); addModule('osc'); addModule('filter'); closeSide&&closeSide();
+    const g = JSON.parse(await page.evaluate(`(async()=>{ store.del('draft2.squelch'); openLevel(LEVELS.findIndex(l=>l.id==='squelch')); addModule('osc'); addModule('filter'); closeSide&&closeSide(); setSnap(true);
       await new Promise(r=>setTimeout(r,400)); const o=S.patch.modules.find(m=>m.type==='osc');
       const d=[...document.querySelectorAll('.module')].find(x=>x.querySelector('.name').textContent==='OSC'), h=d.querySelector('.mhead').getBoundingClientRect(), md=d.getBoundingClientRect();
       const free=[...Array(S.slots).keys()].find(i=>i!==S.slots-1&&!occupant(i)&&slotXY(i)[1]>slotXY(o.slot)[1]-1&&i!==o.slot);
@@ -367,7 +368,7 @@ try {
       // reopen: position is saved with the patch
       openLevel(LEVELS.findIndex(l=>l.id==='squelch')); const o2=S.patch.modules.find(m=>m.type==='osc'); const kept=o2.slot===null&&o2.x===at[0]&&o2.y===at[1];
       // snap back on: dragging into a box puts it back in the grid
-      setSnap(true); const snapPref=store.get('snap')===true;
+      setSnap(true); const snapPref=store.get('snapOn')===true;
       S.moving=o2.id; const free=emptySlots()[0]; moveModuleTo(free); const boxed=o2.slot===free&&o2.x===undefined;
       // help still works with a floating module present
       o2.slot=null; o2.x=40; o2.y=600; renderRack(); for(let k=0;k<16;k++){ if(!(await autoHelp())) break; }

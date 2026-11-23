@@ -24,7 +24,7 @@ Feedback that drove it: too much scrolling between panels; you must always be ab
 - Adding: tap an empty slot (picker) or a palette button (first empty slot).
 - **Moving** (playtest 2026-11-22: "having them stuck in slots is annoying"; dragging wasn't discoverable). Movable modules show a ⠿ grip on the name bar. Drag the name bar to another slot, or **tap** it to pick the module up: free slots show MOVE HERE and other movable modules show SWAP HERE. Tap one to move or swap. Tap the name bar again, or press Esc, to cancel. Presets and OUTPUT stay put. A dragged module lands in the slot nearest **its own centre**, not the pointer's. The pointer sits on the name bar at the module's top, so lining a module up with a slot often left the pointer in the gap above, and the module snapped back (playtest, 2026-11-23). Drops on OUTPUT or a preset now say why they were refused.
 - **Free placement** (playtest 2026-11-23: "more of a free form movement, with optional snapping to boxes"):
-  - The board's **⊞ SNAP** toggle (next to zoom; on by default; saved as `snap`) decides where a dropped module goes. With Snap on, it drops into the nearest box. With Snap off, it stays exactly where it's dropped (`m.slot=null`, `m.x`/`m.y` in board units), anywhere on the board.
+  - The board's **⊞ SNAP** toggle (next to zoom; **off by default**; saved as `snapOn` only when tapped) decides where a dropped module goes. Playtest 2026-11-23: with Snap on by default, modules "kind of snap back and don't stay where I put them". A short move dropped a module back into its own box. Free placement is now the default, and the old `snap` key (saved as on for everyone) is removed on load. With Snap on, it drops into the nearest box. With Snap off, it stays exactly where it's dropped (`m.slot=null`, `m.x`/`m.y` in board units), anywhere on the board.
   - Holding **Alt** or **Shift** while dragging flips snapping for that drag.
   - The board grows to hold floating modules, and Fit includes them.
   - A floating module doesn't hold a box. A box it mostly covers goes quiet (no "add module") and isn't used for new modules. When every box is taken or covered, new modules (and Help's) float below the board.
@@ -94,7 +94,7 @@ Playtest, 2026-11-22: it was unclear where and what session data is stored.
 - **What's stored:**
   - `progress`: paid gigs with cost and match %, `played` (the note was played), `helped`;
   - `draft2.<gig>`: each gig's rack in progress;
-  - preferences: `haptics`, `keysOpen`, `songMode`, `boardView`, `midiAuto`, `snap`. (An old `engine` key from the A/B toggle is removed on load.)
+  - preferences: `haptics`, `keysOpen`, `songMode`, `boardView`, `midiAuto`, `snapOn`. (An old `engine` key from the A/B toggle is removed on load.)
 - **The panel** explains this in plain words, shows counts and size, and offers:
   - **Export:** a JSON file `{game, version, exported, data}`;
   - **Import:** replaces everything from such a file;

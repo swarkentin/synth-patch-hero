@@ -19,7 +19,7 @@ There's no build step and there are no dependencies: it's plain HTML, CSS and Ja
 
 1. **Pick a gig.** Browse by chapter with the chips at the top, or filter to what's left to do. Tap ▶ on any gig card to hear the client's sound in a short demo song before you take it on. Then open it and read the brief and the manual page for that lesson.
 2. **Fill the board.** OUTPUT sits in the top-right slot, and some gigs start with **preset** modules already wired. Tap an empty slot (or a palette button) to add a module. The **Parts** chips (`FILTER 0/1`) tell you what's still missing.
-3. **Patch.** Drag from jack to jack, or tap one jack and then another. To rearrange, drag a module by its ⠿ name bar, or tap the name bar and then tap where it should go. Turn **⊞ Snap** off to place modules anywhere you like. Yellow cables carry audio, blue cables carry control signals. Click a cable to unplug it.
+3. **Patch.** Drag from jack to jack, or tap one jack and then another. To rearrange, drag a module by its ⠿ name bar, or tap the name bar and then tap where it should go. Modules stay wherever you drop them. Turn on **⊞ Snap** to drop them neatly into boxes instead. Yellow cables carry audio, blue cables carry control signals. Click a cable to unplug it.
 4. **Listen.** ▶ Target and ▶ Yours play one note. Switch on **♫ Song** to hear both in a short demo song instead.
 5. **Tune.** Drag knobs up and down (Shift for fine control), or **click a knob** for a precise editor with fine −/+ steps and arrow keys.
 6. **Compare.** ▶ Target vs ▶ Yours, plus an oscilloscope, loudness and spectrum overlays and hints, are always on screen. Press **⛶ Focus** (or Shift+F) for a full-screen board with a compact compare bar.
