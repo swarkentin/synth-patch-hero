@@ -1042,6 +1042,48 @@ const GEAR = {
   rack:{ name:'My modular rack', short:'RACK', soon:true, modular:true, blurb:'Any brand: patch it the way the game does, cable for cable' },
 };
 const GEAR_GUIDES = {
+  'thin-walls':{
+    dt2:{
+      steps:[
+        {t:'Sound source', game:'OSC · SAW', page:'SYN', pg:'1/3', head:['SYN · WAVETONE','1/3'],
+          x:`Use a track with the <b>Wavetone</b> machine. Turn <b>WAV1</b> until oscillator 1 is a bright, buzzy saw-like wave. Keep <b>LEV1</b> up and turn <b>LEV2</b> down, so one oscillator plays, like the game's single OSC.`,
+          knobs:[['TUN1','·'],['WAV1','saw',null,1],['PD1','·'],['LEV1','up',0.8,1],['TUN2','·'],['WAV2','·'],['PD2','·'],['LEV2','0',0,1]]},
+        {t:'Filter type', game:'FILTER · LP', page:'FLTR', pg:'1/2', head:['FLTR · MULTI-MODE','1/2'], hiHead:1,
+          x:`Set the track's filter machine to <b>MULTI-MODE</b>. Its <b>TYPE</b> knob morphs from low-pass through band-pass to high-pass. Turn it all the way to low-pass, the game's LP.`,
+          knobs:[['ATK','·'],['DEC','·'],['SUS','·'],['REL','·'],['FREQ','·'],['RESO','·'],['TYPE','LP',0,1],['ENV','·']]},
+        {t:'Lower the cutoff', game:'CUTOFF 480 Hz', page:'FLTR', pg:'1/2', head:['FLTR · MULTI-MODE','1/2'],
+          x:`Turn <b>FREQ</b> down to about a third, until the buzz turns muffled, like music through a wall. Keep <b>RESO</b> down and <b>ENV</b> at 0, so the filter just sits still.`,
+          knobs:[['ATK','·'],['DEC','·'],['SUS','·'],['REL','·'],['FREQ','~1/3',0.33,1],['RESO','0',0,1],['TYPE','LP',0],['ENV','0',0,1]]},
+        {t:'Keep the note steady', game:'(no ENV in this gig)', page:'AMP', pg:'P1', head:['AMP','P1'],
+          x:`This gig has no envelope, but the box always has one on its amp. Make it stay out of the way: <b>MODE</b> ADSR, <b>ATK</b> 0, <b>SUS</b> all the way up, <b>REL</b> short. Then play a held A2 and flip between it and ▶ Target (Note) in the game.`,
+          knobs:[['ATK','0',0,1],['HOLD','·'],['DEC','·'],['SUS','max',1,1],['REL','short',0.15,1],['MODE','ADSR',null,1],['PAN','·'],['VOL','·']]},
+      ],
+      words:[['OSC','Wavetone (SYN)'],['FILTER · LP','MULTI-MODE, TYPE at LP (FLTR)'],['CUTOFF','FREQ'],['RES','RESO']],
+      prewired:[],
+      note:`Here you patched OSC → FILTER → OUT yourself. On the Digitone II that chain is built in: every track runs its oscillator through a filter and an amp, so you only choose and set them.`,
+    },
+  },
+  supersaw:{
+    dt2:{
+      steps:[
+        {t:'A swarm of saws', game:'2 × OSC · SAW', page:'SYN', pg:'P1', head:['SYN · SWARMER','P1'],
+          x:`Use a track with the <b>SWARMER</b> machine: one main oscillator plus a swarm of copies, all on one page. It does the work of the game's two oscillators. Turn <b>MIX</b> to about halfway, so you hear the main voice and the swarm together.`,
+          knobs:[['TUNE','·'],['SWRM','·'],['DET','·'],['MIX','~1/2',0.5,1],['M.OCT','0',null,1],['MAIN','·'],['ANIM','·'],['N.MOD','·']]},
+        {t:'Detune', game:'FINE +9 / −9', page:'SYN', pg:'P1', head:['SYN · SWARMER','P1'],
+          x:`Turn <b>DET</b> up slowly from 0. The swarm drifts out of tune with itself and the sound starts to shimmer and widen, like the game's two saws at +9 and −9 cents. Stop at a gentle shimmer, a little under a quarter, not a seasick wobble.`,
+          knobs:[['TUNE','·'],['SWRM','·'],['DET','~1/5',0.2,1],['MIX','~1/2',0.5],['M.OCT','0'],['MAIN','·'],['ANIM','·'],['N.MOD','·']]},
+        {t:'Just a little darker', game:'FILTER · CUTOFF 2.6 kHz · RES 10%', page:'FLTR', pg:'1/2', head:['FLTR · MULTI-MODE','1/2'],
+          x:`Set the filter machine to <b>MULTI-MODE</b> with <b>TYPE</b> at low-pass. Keep <b>FREQ</b> fairly high, about three quarters, so it only trims the fizz on top. <b>RESO</b> just off 0. Leave <b>ENV</b> at 0: in this gig the filter doesn't move.`,
+          knobs:[['ATK','·'],['DEC','·'],['SUS','·'],['REL','·'],['FREQ','~3/4',0.75,1],['RESO','low',0.1,1],['TYPE','LP',0,1],['ENV','0',0,1]]},
+        {t:'Keep the note steady', game:'(no ENV in this gig)', page:'AMP', pg:'P1', head:['AMP','P1'],
+          x:`This gig has no envelope, but the box always has one on its amp. Keep it out of the way: <b>MODE</b> ADSR, <b>ATK</b> 0, <b>SUS</b> all the way up, <b>REL</b> short. Then play a held A2 and flip between it and ▶ Target (Note) in the game.`,
+          knobs:[['ATK','0',0,1],['HOLD','·'],['DEC','·'],['SUS','max',1,1],['REL','short',0.15,1],['MODE','ADSR',null,1],['PAN','·'],['VOL','·']]},
+      ],
+      words:[['2 × OSC + FINE','SWARMER: DET, MIX'],['FILTER · LP','MULTI-MODE (FLTR)'],['CUTOFF','FREQ'],['RES','RESO']],
+      prewired:[],
+      note:`In the game you built the detune from two oscillators. The Swarmer machine has the swarm built in, and every track already runs it through a filter and an amp.`,
+    },
+  },
   acid:{
     dt2:{
       steps:[
@@ -1057,8 +1099,8 @@ const GEAR_GUIDES = {
         {t:'Filter envelope', game:'2nd ENV → FILTER CUT', page:'FLTR', pg:'1/2', head:['FLTR · LOWPASS 4','1/2'],
           x:`Same page. The filter has its own envelope built in, so no cable is needed. Set <b>ATK</b> to 0, <b>DEC</b> short, <b>SUS</b> to 0 and <b>REL</b> short. Then turn <b>ENV</b> (envelope depth) well up, so each note bites open and snaps shut.`,
           knobs:[['ATK','0',0,1],['DEC','short',0.3,1],['SUS','0',0,1],['REL','short',0.15,1],['FREQ','~1/4',0.25],['RESO','~4/5',0.8],['',''],['ENV','high',0.8,1]]},
-        {t:'Amp envelope', game:'1st ENV → VCA', page:'AMP', pg:'1/1', head:['AMP','1/1'],
-          x:`The amp has its own envelope too. Set <b>MODE</b> to ADSR. <b>ATK</b> 0, <b>DEC</b> about halfway, <b>SUS</b> about a third, <b>REL</b> short. Then play it next to the client's song (♫ in the game) and flip between them.`,
+        {t:'Amp envelope', game:'1st ENV → VCA', page:'AMP', pg:'P1', head:['AMP','P1'],
+          x:`The amp has its own envelope too. Set <b>MODE</b> to ADSR. <b>ATK</b> 0, <b>DEC</b> about halfway, <b>SUS</b> about a third, <b>REL</b> short. Then play a short A2 on the box and flip between it and ▶ Target (set to Note) in the game.`,
           knobs:[['ATK','0',0,1],['HOLD','·'],['DEC','mid',0.45,1],['SUS','~1/3',0.35,1],['REL','short',0.15,1],['MODE','ADSR',null,1],['PAN','·'],['VOL','·']]},
       ],
       words:[['OSC','Wavetone (SYN)'],['FILTER · ladder','LOWPASS 4 (FLTR)'],['CUTOFF','FREQ'],['RES','RESO'],['ENV → CUT','FLTR envelope + ENV'],['ENV → VCA','AMP envelope'],['VCA LEVEL','VOL (AMP)']],

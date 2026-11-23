@@ -56,19 +56,40 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .gig.solved{border-color:#3d4a2c}
 .gig.jam{border-style:dashed}
 .chapter{margin-bottom:26px}
-.boardNav{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;justify-content:space-between;margin:0 -4px 16px;padding:10px 4px;background:linear-gradient(var(--bg) 82%,transparent);}
-.bnChips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}
-.bnGroup{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--faint);margin:0 2px 0 8px}
-.bnChip{display:inline-flex;align-items:baseline;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;cursor:pointer;white-space:nowrap}
-.bnChip small{color:var(--faint);font-size:10px}
-.bnChip.done small{color:var(--good)}
-.bnChip:hover{border-color:var(--amber)}
-.bnChip.on{background:var(--amber);border-color:var(--amber);color:#1a130b}
-.bnChip.on small{color:#3a2a14}
-.bnStatus{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden;flex:none}
-.bnSt{padding:6px 11px;background:transparent;border:0;border-right:1px solid var(--line2);color:var(--dim);font-family:var(--mono);font-size:11.5px;cursor:pointer}
+.boardMain{display:grid;grid-template-columns:252px minmax(0,1fr);gap:22px;align-items:start}
+.boardNav{position:sticky;top:10px;z-index:6;display:flex;flex-direction:column;gap:10px;max-height:calc(100dvh - var(--topH) - 20px);overflow:auto;scrollbar-width:thin;scrollbar-color:var(--line2) transparent;padding-right:4px;padding-bottom:6px}
+.bnBar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.bnPick{display:none}
+.bnStatus{display:inline-flex;border:1px solid var(--line2);border-radius:7px;overflow:hidden;flex:none}
+.bnSt{padding:4px 9px;background:transparent;border:0;border-right:1px solid var(--line2);color:var(--dim);font-family:var(--mono);font-size:11px;cursor:pointer}
 .bnSt:last-child{border-right:0}
 .bnSt.on{background:var(--line2);color:var(--text)}
+.bnBox{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border:1px solid var(--line2);border-radius:7px;background:transparent;color:var(--dim);font-family:var(--mono);font-size:11px;cursor:pointer;white-space:nowrap}
+.bnBox.on{border-color:var(--gear);color:var(--gear);background:var(--gearBg)}
+.bnTree{display:flex;flex-direction:column;gap:1px}
+.bnNext{display:flex;flex-direction:column;gap:2px;text-align:left;margin-bottom:8px;padding:10px 12px;border:1px solid var(--amber);border-radius:9px;background:var(--panel);color:var(--text);cursor:pointer}
+.bnNext small{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--amber)}
+.bnNext b{font-family:var(--head);font-size:16px}
+.bnNext span{font-size:11.5px;color:var(--dim)}
+.bnNext:hover{background:var(--panel2)}
+.bnGroup{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--faint);margin:10px 0 3px 6px}
+.bnRow{position:relative;display:grid;grid-template-columns:12px 1fr auto;align-items:center;gap:6px;width:100%;text-align:left;padding:5px 8px 7px 6px;border:0;border-radius:6px;background:transparent;color:var(--text);font-size:13px;cursor:pointer}
+.bnRow:hover{background:var(--panel)}
+.bnRow small{font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+.bnRow.done small{color:var(--good)}
+.bnRow.on{background:var(--panel2);box-shadow:inset 2px 0 0 var(--amber)}
+.bnRow.none{opacity:.4}
+.bnTw{font-size:9px;color:var(--faint);transition:transform .12s}
+.bnRow.exp .bnTw{transform:rotate(90deg);color:var(--amber)}
+.bnBar2{position:absolute;left:24px;right:8px;bottom:2px;height:2px;border-radius:1px;background:var(--line)}
+.bnBar2>i{display:block;height:100%;border-radius:1px;background:var(--good)}
+.bnGigs{display:flex;flex-direction:column;margin:2px 0 6px 18px;border-left:1px solid var(--line2)}
+.bnGig{display:flex;align-items:center;gap:7px;text-align:left;padding:4px 8px;border:0;background:transparent;color:var(--dim);font-size:12.5px;cursor:pointer;border-radius:0 6px 6px 0}
+.bnGig:hover{background:var(--panel);color:var(--text)}
+.bnGig small{margin-left:auto;font-size:10px;color:var(--faint)} .bnGig small+small{margin-left:4px}
+.bnGig .bnG{color:var(--gear)}
+.bnDot{font-size:10px;width:12px;color:var(--faint)}
+.bnGig.done .bnDot{color:var(--good)} .bnGig.next{color:var(--text)} .bnGig.next .bnDot{color:var(--amber)}
 .boardEmpty{color:var(--dim);font-family:var(--mono);font-size:13px;padding:30px 0;text-align:center}
 #songBtn.on{border-color:var(--amber);color:var(--amber)}
 .chHead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:10px}
@@ -442,10 +463,15 @@ body.focus .work{flex:1}
   #palette::-webkit-scrollbar{display:none}
   #briefBtn{order:0} #songBtn{order:2} #keysBtn{order:3} #focusBtn{order:4}
   #briefBtn,#songBtn,#keysBtn,#focusBtn{flex:none;padding:6px 9px}
-  .boardNav{flex-direction:column;align-items:stretch;gap:8px;margin:0 -12px 12px;padding:8px 12px}
-  .bnChips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px}
-  .bnChips::-webkit-scrollbar{display:none}
-  .bnStatus{align-self:flex-start}
+  .boardMain{display:block}
+  .boardNav{top:0;max-height:none;overflow:visible;margin:0 -12px 12px;padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--line)}
+  .bnBar{flex-wrap:nowrap}
+  .bnPick{display:flex;align-items:center;gap:6px;flex:1;min-width:0;padding:6px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--panel);color:var(--text);font-size:13px;cursor:pointer}
+  .bnPickT{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--head)} .bnPick small{font-family:var(--mono);font-size:10px;color:var(--faint)} .bnCaret{margin-left:auto;color:var(--faint)}
+  .bnTree{display:none;position:absolute;left:12px;right:12px;top:100%;max-height:62dvh;overflow:auto;padding:10px;background:var(--panel);border:1px solid var(--line2);border-radius:10px;box-shadow:0 14px 40px rgba(0,0,0,.55)}
+  .boardNav.open .bnTree{display:flex}
+  .boardNav.open .bnCaret{transform:rotate(180deg)}
+  .bnRow{padding:8px 8px 10px 6px;font-size:14px} .bnGig{padding:7px 8px;font-size:13.5px}
   .toolbar .spacer,#clearBtn{display:none}
   .compare{gap:5px;padding:7px 8px}
   .compare>.bar{display:none}

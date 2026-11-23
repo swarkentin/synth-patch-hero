@@ -45,7 +45,7 @@ Gear guidance should teach that translation explicitly: "this cable is already w
 
 ### Building blocks, smallest first
 
-1. 🟢 **"On your box" notes and panel maps in existing gigs.** *First cut built: Acid Test on the Digitone II (see docs/design.md, On your box). Next: more gigs, then MiniFreak.* A short, optional panel per gig, for example "On a MiniFreak: the cycling envelope in Loop mode is this gig's FUNC." It's shown for gear the player picks in Settings ("My gear": none / Digitone II / MiniFreak / MC-707), with a panel map highlighting where the control lives (see Showing the real gear). This is cheap and immediately useful, but every note must be checked against the manual.
+1. 🟢 **"On your box" notes and panel maps in existing gigs.** *Built for the Digitone II: Thin Walls, Acid Test and Neon Avenue (see docs/design.md, On your box). Next: more gigs, then MiniFreak.* A short, optional panel per gig, for example "On a MiniFreak: the cycling envelope in Loop mode is this gig's FUNC." It's shown for gear the player picks in Settings ("My gear": none / Digitone II / MiniFreak / MC-707), with a panel map highlighting where the control lives (see Showing the real gear). This is cheap and immediately useful, but every note must be checked against the manual.
 2. 🟡 **Device racks.** Locked, pre-wired preset racks that mirror each box's signal flow, with its labels and value ranges (e.g. 0–127), so the numbers learned transfer to the real knobs. Presets, locks and Help already support most of this.
 3. 🟡 **Engine additions to cover the boxes:**
    - Comb± filters.
@@ -56,12 +56,13 @@ Gear guidance should teach that translation explicitly: "this cable is already w
    - A 12 dB state-variable LP/BP/HP that behaves like an analog SVF.
    - The **MiniFreak** builds on open-source Eurorack oscillator code, so some of its modes have published reference algorithms. Check the licences before porting anything (and keep the no-dependencies rule).
    - Out of reach: **ZEN-Core PCM waveforms** and any factory samples (proprietary recordings).
-4. 🟡 **Read the real knobs over MIDI.** If a box sends parameter changes (CC/NRPN), Help can compare the player's real knob against the target ("your cutoff is about 20 too high") and lock-step lessons can wait for the right knob. This needs per-device CC/NRPN maps from the manuals. Web MIDI works in desktop Chrome/Edge/Firefox and Chrome on Android, **not on iPhone**.
-5. 🔴 **Listening mode: score the real box.** The game sends a note over MIDI, records the box through the audio interface or mic, and scores it with the existing matcher, so the player turns real knobs and watches the match % climb. Judged a stretch, but on the right track.
+4. 🟢 **Send the client's phrase to the box (MIDI out).** The game plays the demo song's notes out to the box on the track's channel, in time with ▶ Target, so both play the same line for A/B. Needs only a port and channel picker, no CC tables. Until then, guides compare one short note.
+5. 🟡 **Read the real knobs over MIDI.** If a box sends parameter changes (CC/NRPN), Help can compare the player's real knob against the target ("your cutoff is about 20 too high") and lock-step lessons can wait for the right knob. This needs per-device CC/NRPN maps from the manuals. Web MIDI works in desktop Chrome/Edge/Firefox and Chrome on Android, **not on iPhone**.
+6. 🔴 **Listening mode: score the real box.** The game sends a note over MIDI, records the box through the audio interface or mic, and scores it with the existing matcher, so the player turns real knobs and watches the match % climb. Judged a stretch, but on the right track.
    - Unknowns: latency alignment, level calibration, room noise and mic colour. The scoring would need a "gear" tolerance profile.
    - Desktop/Android only.
    - **Intermediate step with no mic:** the game plays the target and the player matches it on the box by ear, then rates themselves. Optionally they can record a clip into the browser for an A/B.
-6. 🟡 **A first device pack: Digitone II.** It's closest to the current engine (Swarmer ≈ supersaw, FM Tone ≈ FM Studio, Lowpass 4 ≈ ladder, comb filters ≈ strings). It could start with a chapter of 4–5 gigs, built in the order of the blocks above.
+7. 🟡 **A first device pack: Digitone II.** It's closest to the current engine (Swarmer ≈ supersaw, FM Tone ≈ FM Studio, Lowpass 4 ≈ ladder, comb filters ≈ strings). It could start with a chapter of 4–5 gigs, built in the order of the blocks above.
    - Reference: the [Digitone II manual, OS 1.12](https://www.elektron.se/media/2026/10/Digitone-2-User-Manual_ENG_OS1.12_261008.pdf); a third-party layout at https://www.knobwerk.com/en/digitone2 as a fallback.
    - Checked so far: a 128 × 64 OLED that shows eight values in the same places as DATA ENTRY knobs A–H. Page keys: TRIG, SYN, FLTR, AMP, FX, MOD. Lowpass 4 has FREQ, RESO, ENV and its own filter envelope (ATK, DEC, SUS, REL) on FLTR page 1. AMP: ATK, HOLD, DEC, SUS, REL, MODE, PAN, VOL. Wavetone page 1: TUN1, WAV1, PD1, LEV1, TUN2, WAV2, PD2, LEV2.
    - Still to check: which knob each value sits on, value ranges, and the knob layout on the panel.

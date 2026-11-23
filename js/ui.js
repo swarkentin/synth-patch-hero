@@ -39,7 +39,7 @@ function showBoard(){
         <div class="client">${L.client} · ${L.role}</div>
         <div class="concept"><span class="tag">${L.concept}</span>${gearBadges(L)}${sv?`<span class="stamp">PAID · ${sv.cost}¢ · ${Math.round(sv.match)}%${progress.played&&progress.played[L.id]?' · ♪':''}${progress.helped&&progress.helped[L.id]?' · helped':''}</span>`:i===nxt?'<span class="nextTag">NEXT</span>':''}</div>`;
       b=Haptics.upgrade(b); b.addEventListener('click',()=>{ stopPreview(); openLevel(i); });
-      const w=el('div',{class:'gigWrap'}); w.dataset.done=sv?'1':''; w.appendChild(b); w.appendChild(previewButton(L)); grid.appendChild(w);
+      const w=el('div',{class:'gigWrap'}); w.dataset.done=sv?'1':''; w.dataset.gig=L.id; w.appendChild(b); w.appendChild(previewButton(L)); grid.appendChild(w);
     });
     sec.appendChild(grid); g.appendChild(sec);
   });
@@ -51,36 +51,69 @@ function showBoard(){
   renderBoardNav(); applyBoardFilter();
 }
 
-/* ---------- gig board browsing: chapter chips (a table of contents) + a status filter ---------- */
-const BV=Object.assign({ch:null,status:'all'},store.get('boardView',{}));
+/* ---------- gig board browsing: a lesson tree (sidebar on wide screens, a dropdown bar on phones) + compact filters ---------- */
+const BV=Object.assign({ch:null,status:'all',box:false},store.get('boardView',{}));
 const CH_GROUPS=[['START',c=>c.id==='basics'],['THEMES',c=>c.id!=='basics'&&!c.level&&!c.bonus],['ADVANCED',c=>c.level==='advanced'],['EXTRAS',c=>c.bonus]];
+const chDone=c=>c.levels.filter(i=>progress.solved[LEVELS[i].id]).length;
+const boxOk=L=>!BV.box||guidesFor(L).length>0;
 function renderBoardNav(){
-  const nav=$('#boardNav'); nav.innerHTML='';
-  const chips=el('div',{class:'bnChips'});
-  const chip=(id,label,sub,done)=>{ let b=el('button',{class:'bnChip'+(done?' done':''),'data-ch':id||''}); b.innerHTML=`<span>${label}</span>${sub?`<small>${sub}</small>`:''}`;
-    b=Haptics.upgrade(b); b.addEventListener('click',()=>{ BV.ch=id; saveBV(); applyBoardFilter(); Haptics.select(); $('#boardNav').scrollIntoView({block:'start',behavior:'smooth'}); }); return b; };
-  chips.appendChild(chip(null,'ALL',`${Object.keys(progress.solved).length}/${LEVELS.length}`));
-  CH_GROUPS.forEach(([name,f])=>{ const cs=CHAPTERS.filter(f); if(!cs.length) return; chips.appendChild(el('span',{class:'bnGroup'},name));
-    cs.forEach(c=>{ const done=c.levels.filter(i=>progress.solved[LEVELS[i].id]).length; chips.appendChild(chip(c.id,c.short,done===c.levels.length?'✓':`${done}/${c.levels.length}`,done===c.levels.length)); }); });
-  chips.appendChild(chip('jam','FREE JAM',''));
+  const nav=$('#boardNav'); nav.innerHTML=''; nav.classList.remove('open');
+  const solved=Object.keys(progress.solved).length, nxt=LEVELS.findIndex(l=>!progress.solved[l.id]);
+  const tap=(node,fn)=>{ node=Haptics.upgrade(node); node.addEventListener('click',e=>{ Haptics.select(); fn(e); }); return node; };
+  // compact bar: chapter dropdown (phones), status, my box
+  const bar=el('div',{class:'bnBar'});
+  const cur=BV.ch==='jam'?'Free Jam':BV.ch?(CHAPTERS.find(c=>c.id===BV.ch)||{}).title:'All lessons';
+  const curC=CHAPTERS.find(c=>c.id===BV.ch);
+  let pick=el('button',{class:'bnPick','aria-expanded':'false'}); pick.innerHTML=`<span class="bnPickT">${cur}</span><small>${curC?chDone(curC)+'/'+curC.levels.length:BV.ch==='jam'?'':solved+'/'+LEVELS.length}</small><span class="bnCaret">▾</span>`;
+  bar.appendChild(tap(pick,()=>{ const o=!nav.classList.contains('open'); nav.classList.toggle('open',o); pick.setAttribute('aria-expanded',o); }));
   const st=el('div',{class:'bnStatus',role:'group','aria-label':'Show'});
-  [['all','All'],['todo','To do'],['done','Done']].forEach(([k,l])=>{ let b=el('button',{class:'bnSt','data-st':k},l); b=Haptics.upgrade(b);
-    b.addEventListener('click',()=>{ BV.status=k; saveBV(); applyBoardFilter(); Haptics.select(); }); st.appendChild(b); });
-  nav.appendChild(chips); nav.appendChild(st);
+  [['all','All'],['todo','To do'],['done','Done']].forEach(([k,l])=>st.appendChild(tap(el('button',{class:'bnSt','data-st':k},l),()=>{ BV.status=k; saveBV(); applyBoardFilter(); })));
+  bar.appendChild(st);
+  const hasGear=myGear().length>0;
+  let box=el('button',{class:'bnBox',id:'bnBox',title:hasGear?'Only gigs with an On your box guide for your gear':'Got a synth or groovebox? Pick it in My gear'});
+  box.innerHTML=`<span class="ico">▦</span> ${hasGear?'My box':'My gear…'}`;
+  bar.appendChild(tap(box,()=>{ if(!myGear().length){ openGearSheet(); return; } BV.box=!BV.box; saveBV(); applyBoardFilter(); }));
+  nav.appendChild(bar);
+  // start here / next up
+  const tree=el('div',{class:'bnTree'});
+  if(nxt>=0){ const L=LEVELS[nxt], c=CHAPTERS.find(c=>c.levels.includes(nxt));
+    let go=el('button',{class:'bnNext'}); go.innerHTML=`<small>${solved?'NEXT UP':'START HERE'}</small><b>${L.title}</b><span>${c.title} ${c.levels.indexOf(nxt)+1} · ${L.concept}</span>`;
+    tree.appendChild(tap(go,()=>{ stopPreview(); openLevel(nxt); })); }
+  // the tree
+  const row=(id,label,sub,frac)=>{ let r=el('button',{class:'bnRow','data-ch':id||''}); r.innerHTML=`<span class="bnTw">${id&&id!=='jam'?'▸':''}</span><span class="bnL">${label}</span><small>${sub}</small>${frac!=null?`<i class="bnBar2"><i style="width:${Math.round(frac*100)}%"></i></i>`:''}`;
+    return tap(r,()=>{ BV.ch=id; saveBV(); nav.classList.remove('open'); applyBoardFilter(); renderBoardNav(); const g=$('#gigs'); if(g.getBoundingClientRect().top<0) g.scrollIntoView({block:'start',behavior:'smooth'}); }); };
+  tree.appendChild(row(null,'All lessons',`${solved}/${LEVELS.length}`));
+  CH_GROUPS.forEach(([name,f])=>{ const cs=CHAPTERS.filter(f); if(!cs.length) return; tree.appendChild(el('div',{class:'bnGroup'},name));
+    cs.forEach(c=>{ const d=chDone(c), r=row(c.id,c.title,d===c.levels.length?"✓":`${d}/${c.levels.length}`,d?d/c.levels.length:null);
+      if(d===c.levels.length) r.classList.add('done'); if(c.level==='advanced') r.title='Advanced'; tree.appendChild(r);
+      if(BV.ch===c.id){ const ul=el('div',{class:'bnGigs'}); const cn=nextInChapter(c);
+        c.levels.forEach((i,k)=>{ const L=LEVELS[i], sv=progress.solved[L.id];
+          let gb=el('button',{class:'bnGig'+(sv?' done':'')+(i===cn?' next':''),'data-gig':L.id}); gb.innerHTML=`<span class="bnDot">${sv?'✓':i===cn?'●':'○'}</span><span>${L.title}</span>${L.challenge?'<small>★</small>':''}${guidesFor(L).length?'<small class="bnG">▦</small>':''}`;
+          ul.appendChild(tap(gb,()=>{ stopPreview(); openLevel(i); })); });
+        tree.appendChild(ul); r.classList.add('exp'); } }); });
+  tree.appendChild(row('jam','Free Jam',''));
+  nav.appendChild(tree);
 }
-function saveBV(){ store.set('boardView',{ch:BV.ch,status:BV.status}); }
+function saveBV(){ store.set('boardView',{ch:BV.ch,status:BV.status,box:BV.box}); }
 function applyBoardFilter(){
   if(BV.ch&&BV.ch!=='jam'&&!CHAPTERS.some(c=>c.id===BV.ch)) BV.ch=null;
-  document.querySelectorAll('#boardNav .bnChip').forEach(b=>b.classList.toggle('on',(b.dataset.ch||null)===BV.ch));
+  if(BV.box&&!myGear().length) BV.box=false;
+  document.querySelectorAll('#boardNav .bnRow').forEach(b=>b.classList.toggle('on',(b.dataset.ch||null)===BV.ch));
   document.querySelectorAll('#boardNav .bnSt').forEach(b=>b.classList.toggle('on',b.dataset.st===BV.status));
+  const bx=$('#bnBox'); if(bx){ bx.classList.toggle('on',BV.box); bx.setAttribute('aria-pressed',BV.box); }
   let shown=0;
   document.querySelectorAll('#gigs .chapter').forEach(sec=>{
-    const chOk=!BV.ch||sec.dataset.ch===BV.ch; let any=sec.dataset.ch==='jam'&&BV.status==='all';
-    sec.querySelectorAll('.gigWrap').forEach(w=>{ const ok=BV.status==='all'||(BV.status==='done')===!!w.dataset.done; w.hidden=!ok; if(ok) any=true; });
+    const chOk=!BV.ch||sec.dataset.ch===BV.ch; let any=sec.dataset.ch==='jam'&&BV.status==='all'&&!BV.box;
+    sec.querySelectorAll('.gigWrap').forEach(w=>{ const L=LEVELS.find(l=>l.id===w.dataset.gig);
+      const ok=(BV.status==='all'||(BV.status==='done')===!!w.dataset.done)&&(!L||boxOk(L)); w.hidden=!ok; if(ok) any=true; });
     sec.hidden=!(chOk&&any); if(!sec.hidden) shown++; });
+  // the tree dims chapters with nothing to show under the current filters
+  document.querySelectorAll('#boardNav .bnRow[data-ch]').forEach(r=>{ const c=CHAPTERS.find(c=>c.id===r.dataset.ch); if(!c) return;
+    r.classList.toggle('none',!c.levels.some(i=>{ const L=LEVELS[i], sv=!!progress.solved[L.id]; return (BV.status==='all'||(BV.status==='done')===sv)&&boxOk(L); })); });
   $('#boardEmpty').hidden=shown>0;
-  $('#boardEmpty').textContent=BV.status==='done'?'Nothing finished here yet. Pick a gig and get paid!':'Nothing left to do here. Every gig is done!';
+  $('#boardEmpty').textContent=BV.box?'No On your box guides here yet for your gear. Try All lessons, or turn off My box.':BV.status==='done'?'Nothing finished here yet. Pick a gig and get paid!':'Nothing left to do here. Every gig is done!';
 }
+document.addEventListener('click',e=>{ const n=$('#boardNav'); if(n&&n.classList.contains('open')&&!n.contains(e.target)) n.classList.remove('open'); });
 
 
 /* =====================================================================
