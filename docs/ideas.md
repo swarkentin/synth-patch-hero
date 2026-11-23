@@ -57,7 +57,10 @@ The game already teaches concepts by ear: oscillators, filters, envelopes, FM, s
 Teaching *where to reach* on the box is central to this track, the same way gear tutorials show the hardware.
 - 🟢 **Panel maps.** Accurate diagrams of each box's control layout, drawn in the game's own style: real knob and button positions, groupings and labels, pages and menus. The lesson's control lights up ("turn this one"). We draw them from our own measurements of the hardware.
 - 🟢 **Names and labels.** Name the instruments and their controls descriptively ("FILTER → FREQ on the Digitone II"), with a "not affiliated with or endorsed by" note on gear content.
-- 🟡 **Your own photo.** The player adds a photo of their own unit (kept local, like the rest of their data), taps once to mark each control, and lessons highlight the real knob on their photo. Photos we take of our own gear are fine to ship too.
+- 🟢 **Wireframes only.** Every box gets the same wireframe treatment; no photo option. It's easier to build, looks the same across boxes, and nothing has to be tapped into place.
+- 🟢 **A copy of its screen.** If the box has a display (an OLED, an LCD), show a lookalike of it next to the wireframe: the same page layout, parameter names and values, in the game's type. Highlight the values to change. It stays pinned in view while the panel moves, so players can check they grabbed the right knob.
+- 🟢 **Wide boxes.** Some panels are too wide to show whole and still read (a MiniFreak; imagine a PolyBrute). Show a thin overview strip of the whole panel with a window over the part drawn below. The window follows each step to its section, and the player can drag it or switch to "whole panel". Small boxes just show the whole panel.
+- Mockup of this flow for Acid Test on Digitone II and MiniFreak: https://claude.ai/artifact/1pE43QM3CdVrQ13h5jBucY
 - 🔴 **Avoid:** manufacturer press photos, renders and manual illustrations (copyrighted; ask for permission, since some makers have educator or creator programs). Logos and pixel-faithful copies of the panel artwork, or anything that reads as an official app. Factory presets and samples.
 - Describe the game on its own terms (see CLAUDE.md); gear names belong only in gear-specific content.
 
