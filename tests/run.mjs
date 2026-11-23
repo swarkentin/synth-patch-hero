@@ -276,10 +276,18 @@ try {
     openLevel(-1); out.jam=ENGINE==='studio'&&!$('#engBtn').hidden;
     showBoard(); store.set('engine','studio'); S.enginePref='studio'; setEngine('classic'); LEVELS.forEach(l=>{ delete l._tX; delete l._tA; });
     return out; })()`);
-  ok(eng.classicElsewhere && eng.studioOnAcid && eng.jam, 'Studio is offered on Acid Test and Free Jam only; other gigs stay on Classic');
+  ok(eng.classicElsewhere && eng.studioOnAcid && eng.jam, 'Studio is offered only on gigs marked studio:true and in Free Jam; other gigs stay on Classic');
   ok(eng.sane && Math.abs(eng.self - 100) < 0.01, `Studio renders are clean and deterministic (reference scores ${eng.self.toFixed(1)})`);
   ok(eng.untouched < 80 && eng.near > 80 && eng.near < 95 && eng.square < 60, `Studio scoring: untouched ${eng.untouched.toFixed(1)}, cutoff +0.2 oct ${eng.near.toFixed(1)}, square ${eng.square.toFixed(1)}`);
   ok(eng.help >= 90, `Help rescues Acid Test on the Studio engine (${eng.steps} steps, ${eng.help.toFixed(1)}%)`);
+  const sg = await page.evaluate(`(async()=>{ store.set('engine','studio'); S.enginePref='studio'; const out=[];
+    for(const L of LEVELS.filter(l=>l.studio)){ const i=LEVELS.indexOf(L); store.del('draft2.'+L.id); openLevel(i);
+      const tA=analyze(await renderPatch(targetPatch(L),L)); const self=levelCompare(L,tA,analyze(await renderPatch(targetPatch(L),L))).overall;
+      await runAnalyze(); const untouched=S.cmp.overall; let steps=0; for(;steps<16;steps++){ if(S.cmp.overall>=90) break; if(!(await autoHelp())) break; await runAnalyze(); }
+      out.push({id:L.id,self,untouched,help:S.cmp.overall,steps}); }
+    showBoard(); setEngine('classic'); LEVELS.forEach(l=>{ delete l._tX; delete l._tA; }); return out; })()`);
+  for (const g of sg) ok(Math.abs(g.self-100)<0.01 && g.untouched < 80 && g.help >= 90, `${g.id.padEnd(9)} on Studio: reference ${g.self.toFixed(0)}, untouched ${g.untouched.toFixed(1)}, Help reaches ${g.help.toFixed(1)} in ${g.steps} steps`);
+  ok(sg.length >= 2, `${sg.length} gigs offer the Studio engine`);
   const full = await page.evaluate(`(async()=>{ setEngine('studio'); const res={};
     for(const id of ['acid','glass']){ const L=LEVELS.find(l=>l.id===id)||LEVELS.find(l=>l.ch==='pads'), x=await renderSong(targetPatch(L),L), len=songLength(L,targetPatch(L)), w=Math.floor(SR/4), quiet=[];
       for(let i=0;i+w<len*SR-w;i+=w){ let s=0; for(let j=i;j<i+w;j++) s+=x[j]*x[j]; if(Math.sqrt(s/w)<0.003) quiet.push((i/SR).toFixed(2)); } res[L.id]=quiet; }

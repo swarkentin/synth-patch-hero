@@ -386,7 +386,7 @@ const LEVELS = [
   target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:500,res:0.15,cutAmt:2700}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.03,d:0.3,s:0.8,r:0.2}},{id:'e2',type:'env',p:{a:0.06,d:0.35,s:0.45,r:0.2}}],
     cables:['o.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain','e2.out>f.cut']},
   reply:`BLAT! BLAT-BLAT! The crowd thinks we hired horns. We are never hiring horns.`},
-{ id:'supersaw', ch:'leads', tol:3, title:'Neon Avenue', concept:'Detune', client:'Neon Avenue', role:'Synthwave duo, sunglasses indoors',
+{ id:'supersaw', ch:'leads', studio:true, tol:3, title:'Neon Avenue', concept:'Detune', client:'Neon Avenue', role:'Synthwave duo, sunglasses indoors',
   unlock:['fine'], palette:{osc:2,filter:1,vca:1,env:2,lfo:1}, note:45, gate:1.8, dur:2.0,
   brief:`Our lead needs to be BIG. Wide, shimmering, like two synths playing at once. One oscillator sounds thin next to the reference.`,
   manual:`<h4>Detuning</h4>
