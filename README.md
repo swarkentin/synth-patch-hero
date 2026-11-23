@@ -106,6 +106,10 @@ Tests need Node 22+ and Chrome or Chromium on the PATH (or set `CHROME_PATH`). C
 
 See [`docs/design.md`](docs/design.md) for the design decisions behind the layout, slot board, scoring and touch controls.
 
+## Roadmap
+
+Ideas we might build next, including using what you learn here on real synths, live in [docs/ideas.md](docs/ideas.md).
+
 ## License
 
 [MIT](LICENSE)

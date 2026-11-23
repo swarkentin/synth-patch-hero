@@ -207,9 +207,4 @@ Calibrated outcomes: exact = 100; cutoff +0.2 oct ≈ 94; decay −9% ≈ 88; wr
 - Web MIDI works in Chrome/Edge/Opera/Firefox desktop and Chrome on Android; iOS Safari has none. The hosted artifact frame may block MIDI, so GitHub Pages (or opening `index.html` directly) works around that.
 
 ## Roadmap / open ideas
-- Melodic targets: play A1 → C2 → E2 prompts, then riffs; glide/portamento; arpeggiators.
-- Tremolo (LFO → VCA) as its own lesson; pulse width and PWM; quantizer for the sequencer and S&H; accents and rests on sequencer steps; physical-modeling exciter/resonator; FM operators with feedback; self-oscillating filter; translation challenges (match a subtractive target with only FM or folding).
-- Blind "ear" gigs that hide the graphs; budget gigs with a hard cost cap; remix gigs that change one quality of an existing patch.
-- Vocabulary quizzes between chapters (which knob makes it "brighter", "plucky", "wider"?).
-- More presets in later gigs (e.g. a prebuilt filter section in Wobble, so the lesson focuses on the LFO).
-- Histograms of player scores; story chapters.
+See **[docs/ideas.md](ideas.md)**. It's the single ideas bucket, including the real-gear track (Digitone II, MiniFreak, MC-707): concept→gear map, device racks, MIDI knob reading, and a stretch "listening mode" that scores the real box.

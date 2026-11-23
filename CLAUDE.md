@@ -7,6 +7,7 @@ Synth Patch Hero: a synth-patching puzzle game that teaches synthesis. Repo: htt
 - **Run `npm test` before every commit.** It needs Node 22+ and Chrome. It covers scoring calibration bands, every gig opening cleanly at desktop (1280×800) and phone (390×664) sizes with OUTPUT in view, focus mode, every gig being solvable by its reference patch, Help rescuing every gig from an untouched rack, and the curriculum structure.
 - **Don't loosen calibration bands to make a change pass.** If scoring changes on purpose, update the bands in `tests/run.mjs` and the numbers in `docs/design.md` in the same commit.
 - In docs, copy and commit messages, describe the game on its own terms. Don't call it "X-style" or name-drop other games or studios.
+- Park future ideas in `docs/ideas.md` (the roadmap bucket). When one is built, record the decision in `docs/design.md` and tick it in ideas.md.
 - Keep `docs/design.md` current when a design decision changes. Regenerate the README screenshots with `npm run screenshots` after visible UI changes.
 
 ## Design constraints (from playtesting)
