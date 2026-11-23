@@ -207,4 +207,4 @@ Calibrated outcomes: exact = 100; cutoff +0.2 oct ≈ 94; decay −9% ≈ 88; wr
 - Web MIDI works in Chrome/Edge/Opera/Firefox desktop and Chrome on Android; iOS Safari has none. The hosted artifact frame may block MIDI, so GitHub Pages (or opening `index.html` directly) works around that.
 
 ## Roadmap / open ideas
-See **[docs/ideas.md](ideas.md)**. It's the single ideas bucket, including the real-gear track (Digitone II, MiniFreak, MC-707): concept→gear map, device racks, MIDI knob reading, and a stretch "listening mode" that scores the real box.
+See **[docs/ideas.md](ideas.md)**. It's the single ideas bucket, including the real-gear track (Digitone II, MiniFreak, MC-707): concept→gear map, panel maps that show where to reach on the real box, device racks, MIDI knob reading, and a stretch "listening mode" that scores the real box.

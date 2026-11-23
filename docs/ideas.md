@@ -35,7 +35,7 @@ The game already teaches concepts by ear: oscillators, filters, envelopes, FM, s
 
 ### Building blocks, smallest first
 
-1. 🟢 **"On your box" notes in existing gigs.** A short, optional panel per gig, for example "On a MiniFreak: the cycling envelope in Loop mode is this gig's FUNC." It's shown for gear the player picks in Settings ("My gear": none / Digitone II / MiniFreak / MC-707). This is cheap and immediately useful, but every note must be checked against the manual.
+1. 🟢 **"On your box" notes and panel maps in existing gigs.** A short, optional panel per gig, for example "On a MiniFreak: the cycling envelope in Loop mode is this gig's FUNC." It's shown for gear the player picks in Settings ("My gear": none / Digitone II / MiniFreak / MC-707), with a panel map highlighting where the control lives (see Showing the real gear). This is cheap and immediately useful, but every note must be checked against the manual.
 2. 🟡 **Device racks.** Locked, pre-wired preset racks that mirror each box's signal flow, with its labels and value ranges (e.g. 0–127), so the numbers learned transfer to the real knobs. Presets, locks and Help already support most of this.
 3. 🟡 **Engine additions to cover the boxes:**
    - Comb± filters.
@@ -53,9 +53,12 @@ The game already teaches concepts by ear: oscillators, filters, envelopes, FM, s
    - **Intermediate step with no mic:** the game plays the target and the player matches it on the box by ear, then rates themselves. Optionally they can record a clip into the browser for an A/B.
 6. 🟡 **A first device pack: Digitone II.** It's closest to the current engine (Swarmer ≈ supersaw, FM Tone ≈ FM Studio, Lowpass 4 ≈ ladder, comb filters ≈ strings). It could start with a chapter of 4–5 gigs, built in the order of the blocks above.
 
-### Brand and licensing rules of thumb (not legal advice)
-- Naming the instruments descriptively ("for Digitone II owners") is generally fine.
-- No logos, panel art or trade dress copies. No factory presets or samples. Never imply endorsement.
+### Showing the real gear: panel maps (rules of thumb, not legal advice)
+Teaching *where to reach* on the box is central to this track, the same way gear tutorials show the hardware.
+- 🟢 **Panel maps.** Accurate diagrams of each box's control layout, drawn in the game's own style: real knob and button positions, groupings and labels, pages and menus. The lesson's control lights up ("turn this one"). We draw them from our own measurements of the hardware.
+- 🟢 **Names and labels.** Name the instruments and their controls descriptively ("FILTER → FREQ on the Digitone II"), with a "not affiliated with or endorsed by" note on gear content.
+- 🟡 **Your own photo.** The player adds a photo of their own unit (kept local, like the rest of their data), taps once to mark each control, and lessons highlight the real knob on their photo. Photos we take of our own gear are fine to ship too.
+- 🔴 **Avoid:** manufacturer press photos, renders and manual illustrations (copyrighted; ask for permission, since some makers have educator or creator programs). Logos and pixel-faithful copies of the panel artwork, or anything that reads as an official app. Factory presets and samples.
 - Describe the game on its own terms (see CLAUDE.md); gear names belong only in gear-specific content.
 
 ---
