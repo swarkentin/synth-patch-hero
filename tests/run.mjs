@@ -280,6 +280,11 @@ try {
   ok(eng.sane && Math.abs(eng.self - 100) < 0.01, `Studio renders are clean and deterministic (reference scores ${eng.self.toFixed(1)})`);
   ok(eng.untouched < 80 && eng.near > 80 && eng.near < 95 && eng.square < 60, `Studio scoring: untouched ${eng.untouched.toFixed(1)}, cutoff +0.2 oct ${eng.near.toFixed(1)}, square ${eng.square.toFixed(1)}`);
   ok(eng.help >= 90, `Help rescues Acid Test on the Studio engine (${eng.steps} steps, ${eng.help.toFixed(1)}%)`);
+  const full = await page.evaluate(`(async()=>{ setEngine('studio'); const res={};
+    for(const id of ['acid','glass']){ const L=LEVELS.find(l=>l.id===id)||LEVELS.find(l=>l.ch==='pads'), x=await renderSong(targetPatch(L),L), len=songLength(L,targetPatch(L)), w=Math.floor(SR/4), quiet=[];
+      for(let i=0;i+w<len*SR-w;i+=w){ let s=0; for(let j=i;j<i+w;j++) s+=x[j]*x[j]; if(Math.sqrt(s/w)<0.003) quiet.push((i/SR).toFixed(2)); } res[L.id]=quiet; }
+    setEngine('classic'); return res; })()`);
+  ok(Object.values(full).every(q => !q.length), `long Studio songs play all the way through (silent stretches: ${JSON.stringify(full)})`);
   ok(eng.toggled && eng.back, 'the ◆ button switches engines, re-renders the target and remembers the choice');
 
   console.log('\nBack and Forward');
