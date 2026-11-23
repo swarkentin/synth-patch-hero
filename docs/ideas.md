@@ -12,6 +12,16 @@ A parking lot for where Synth Patch Hero could go next. Nothing here is committe
 
 The game already teaches concepts by ear: oscillators, filters, envelopes, FM, sync, folding, sequencing. The next step is to **transfer** those concepts to the instruments players own. Reference gear on hand: **Elektron Digitone II**, **Arturia MiniFreak**, **Roland MC-707** (ZEN-Core).
 
+### Two paths off the screen
+The game is a modular synth: modules and cables. That stays the core. Off the screen there are two ways to go:
+- **A modular rack.** The game maps 1:1: a module is a module and a cable is a cable. This is where the patching skills carry over most directly, but a rack is expensive to start.
+- **A standalone synth or groovebox** (MiniFreak, Digitone II, MC-707). It's the **affordable way to learn today** for players who can't buy a modular rack yet. The same modules are inside, but they're pre-wired, and the cables become pages, envelope-depth knobs and a mod matrix.
+
+Gear guidance should teach that translation explicitly: "this cable is already wired inside your box" (a fixed filter envelope, an amp envelope on the VCA), and "this cable is a mod-matrix slot" (cycling envelope → cutoff). It should also be honest about what a box can't do (no audio-rate cross-patching, a fixed filter order). Skills learned on a box still count when a player moves up to a rack later.
+
+- 🟡 **"Already wired" cables.** When a gear tab is on, mark the cables in the game patch that the chosen box has built in (dimmed with a small "inside your box" tag). Mark the ones that need a matrix slot or a menu differently.
+- 🟡 **A generic "modular rack" entry in My gear.** No brand: steps say "patch your VCO's saw out to the filter in". This sits next to the standalone boxes. Brand-specific modules can come later.
+
 ### Why this fits
 - Most of what a player learns here maps directly onto these boxes. The table below shows the overlap.
 - What makes this game different from other synth trainers (open-ended patches scored by sound, Help that explains, repair gigs) carries over naturally to "make this sound on *your* box."
