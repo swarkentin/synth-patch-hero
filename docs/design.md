@@ -5,7 +5,7 @@
 - **Stack:** plain HTML/CSS/JS with Web Audio and no build step. `index.html` loads `css/style.css` and `js/*.js`.
 
 ## Core loop
-Gig board (▶ on each card previews the client's target sound) → client brief + manual page → fill the slot board with modules and patch them → compare against the target in the always-visible compare panel → match ≥ 90% → Send → paid → optimize cost (¢) to beat par.
+Gig board (▶ on each card plays a short demo song on the client's sound) → client brief + manual page → fill the slot board with modules and patch them → compare against the target in the always-visible compare panel → match ≥ 90% → Send → paid → optimize cost (¢) to beat par.
 
 ## Screen layout (since 2026-11-21)
 Feedback that drove it: too much scrolling between panels; you must always be able to compare yours with the target and see the scope; the keyboard was a distraction while solving; the board needed zoom; OUTPUT should never need hunting for; it should be obvious when a module is missing.
@@ -21,7 +21,8 @@ Feedback that drove it: too much scrolling between panels; you must always be ab
 - **OUTPUT is always in the top-right slot**, so it's in view at the default zoom.
 - **Presets:** a level can define `start` modules (slot, params, `locked`) and `startCables`. Locked presets can't be moved or deleted, but their knobs can be turned. They're marked PRESET and are free (cost ¢ excludes them; par = target cost − preset cost). Used in Dial Tone (OSC), Wow Bass (OSC→VCA→OUT + amp ENV; the player adds FILTER + filter ENV), and Kick It (OSC→VCA→OUT + amp ENV; the player adds the pitch ENV).
 - **Parts list:** derived from the target patch, e.g. `OSC ✓ · FILTER 0/1 · ENV 1/2`. When parts are missing, empty slots pulse "NEEDS A MODULE", the palette buttons for the missing types get a dot, and the first hint names the part.
-- Adding: tap an empty slot (picker) or a palette button (first empty slot). Moving: drag a module's header to another slot (swaps with unlocked modules).
+- Adding: tap an empty slot (picker) or a palette button (first empty slot).
+- **Moving** (playtest 2026-11-22: "having them stuck in slots is annoying"; dragging wasn't discoverable). Movable modules show a ⠿ grip on the name bar. Drag the name bar to another slot, or **tap** it to pick the module up: free slots show MOVE HERE and other movable modules show SWAP HERE. Tap one to move or swap. Tap the name bar again, or press Esc, to cancel. Presets and OUTPUT stay put.
 - **Zoom/pan:** − / + / Fit buttons, Ctrl/⌘+scroll or trackpad pinch, two-finger pinch on touch, drag empty space to pan, keys `+ - 0`. The board auto-fits when a level opens and on resize, until the player zooms by hand.
 
 ## Help ladder (js/help.js)
@@ -75,6 +76,13 @@ Feedback that drove it: difficulty rises fast (especially the VCA lesson); playe
   - falling plucked arpeggio (Effects Rack, Strings & Plucks), so delay tails and string decays get room
   - Test: every gig's jingle, rendered offline on its reference patch, is audible and finite.
 
+## Demo songs and ♫ Song mode
+- Each gig has a short demo song: a few bars of an **original** phrase in the style the sound is made for. Styles: acid 16ths, funky bass, sub bass, minor pad chords, a lead melody, chord stabs, 16th arpeggios, a drum groove, sparse FX hits, a slow bell melody, offbeat dub stabs, held notes (for sounds that move on their own), and held notes at the sequencer's own tempo for sequencer gigs. Songs never copy existing tracks.
+- Chosen per chapter (`SONG_BY_CH`), with per-gig overrides (`SONG_BY_GIG`, or a `song` field on the gig).
+- Some styles have a light backing of a kick and hi-hat. These come from fixed internal patches, so the client's sound stays in front.
+- On the gig board, ▶ plays the song on the target. Inside a gig, the toolbar's **♫ Song** toggle (remembered) makes ▶ Target and ▶ Yours (and Space / Shift+T) play the song instead of one note, so the player can compare their patch in a musical context. Turning it off goes back to single notes.
+- Test: every gig's song renders audible and finite (2–9 s).
+
 ## Modules (cost)
 - OSC 2¢: wave, oct, semi, fine, pitch MOD AMT (bipolar, ±48 st), and an **FM** audio input with FM AMT (linear FM, ± Hz).
 - NOISE 1¢.
@@ -95,12 +103,15 @@ Feedback that drove it: difficulty rises fast (especially the VCA lesson); playe
   - **FOLDER** 2¢: sine wavefolder (FOLD 1–8×, CV with MOD AMT, LEVEL), 4× oversampled.
   - **LPG** 2¢: low-pass gate. One CV drives the volume and the cutoff (8 octaves) together. OPEN sets the resting state.
   - **FILTER KEY TRK** (feature `keytrk`): the cutoff follows the note relative to middle C. Only the bonus gig uses it.
+- **SEQ** 3¢: 8-step sequencer of 16th notes. Step values are bipolar drawbars (±12 st); STEPS, BPM, GATE %, GLIDE. PITCH out is in octaves and connects straight to an oscillator's detune, so it's followed exactly (MOD AMT doesn't apply). Into a filter's CUT it goes through MOD AMT as usual. GATE out is 0/1 for GATE % of each step. ENV gains a **TRIG** input (feature `seq`): a SEQ GATE there restarts the ADSR on every step instead of once per note. Steps run while the note is held (30 s horizon for live notes).
 - **S&H** 2¢: sample and hold. Random steps from a fixed 32-step seeded sequence, so targets are repeatable. Rate is stepped at 0.5 Hz, so exact values are reachable.
 
 Yellow cables = audio, blue = control. Modulation depth lives on the destination (MOD AMT knobs). Bipolar knobs fill from the centre. Knobs and jacks unlock per lesson. Modules with five or more knobs use a denser knob layout so they fit a slot.
 
-## Curriculum (77 gigs in 18 chapters + Free Jam)
-Structure: **Basics** (7 gigs) is the suggested starting point, followed by thirteen **themes**, three **advanced** chapters (marked ADVANCED on the board, `level:'advanced'`) and a **Bonus** chapter (`bonus:true`, exempt from the one-challenge rule). **Every gig is open from the start** (playtest, 2026-11-22: let people explore and skip ahead); progress is still recorded per gig. Each gig card has a round **▶ preview** button that plays the target sound right on the board, so players can browse by ear before picking a gig. Tap again to stop. Starting another preview or opening a gig stops the current one. It sits beside the card rather than inside it, so it never opens the gig, and on iPhone it's its own haptic tap target. The board suggests an order: each chapter marks its first unsolved gig as **NEXT**, and the ledger's "Next lesson" is the earliest unsolved gig. Each theme ends in exactly one **challenge** gig (`challenge:true`), which hides the parts list and missing-part names (showing only "N/M modules") and gives guiding questions instead of steps.
+## Curriculum (81 gigs in 19 chapters + Free Jam)
+Structure: **Basics** (7 gigs) is the suggested starting point, followed by fourteen **themes**, three **advanced** chapters (marked ADVANCED on the board, `level:'advanced'`) and a **Bonus** chapter (`bonus:true`, exempt from the one-challenge rule). **Every gig is open from the start** (playtest, 2026-11-22: let people explore and skip ahead); progress is still recorded per gig. **Browsing (78 gigs was too many to scroll):** a sticky contents bar above the gigs has a chip per chapter, grouped START · THEMES · ADVANCED · EXTRAS, each with its progress (✓ when complete), plus Free Jam. Tapping a chip shows just that chapter, and ALL shows everything. An **All / To do / Done** filter hides gigs by progress, with a note when nothing matches. The view is saved (`boardView`). Filtering only hides cards, so a playing preview keeps going. On phones the chips scroll sideways.
+
+Each gig card has a round **▶ preview** button that plays a short **demo song** on the target patch right on the board, so players can browse by ear before picking a gig. Tap again to stop. Starting another preview or opening a gig stops the current one. It sits beside the card rather than inside it, so it never opens the gig, and on iPhone it's its own haptic tap target. The board suggests an order: each chapter marks its first unsolved gig as **NEXT**, and the ledger's "Next lesson" is the earliest unsolved gig. Each theme ends in exactly one **challenge** gig (`challenge:true`), which hides the parts list and missing-part names (showing only "N/M modules") and gives guiding questions instead of steps.
 - **Basics:** Dial Tone (oscillator, pitch, cables) · Shape of Sound (waveforms) · Pixel Knight (intervals) · Thin Walls (low-pass) · Curtain Call (VCA + envelope: sustain & release, with OSC → VCA → OUT pre-wired) · Pluck (all four ADSR stages, built from scratch) · Vibrato (LFO, modulation)
 - **Filter Lab:** Squelch (resonance) · Payphone (filter types) · Thin Air (high-pass) · Talk Box (formants) · The Scoop (notch) · Upside Down (inverted filter envelope) · ★ Acid Test
 - **Bass:** Sub Club (sub bass) · Wow Bass (filter envelope, presets) · Pluck Bass · Wobble (LFO → filter) · ★ Reese
@@ -113,6 +124,7 @@ Structure: **Basics** (7 gigs) is the suggested starting point, followed by thir
 - **FM Studio:** Metal Ring (carrier, modulator, ratio) · Bell Tower (FM bells) · Electric Piano (modulation envelope via a VCA) · ★ Temple Gong
 - **Effects Rack:** Slapback (delay, presets) · Canyon Echo (feedback, tone) · Big Room (reverb) · Chorus (modulated delay) · Fuzz Box (distortion) · ★ Dub Stab
 - **Strings & Plucks:** Plucked String (Karplus–Strong, presets) · Nylon (damping) · ★ Harp
+- **Step Sequencer:** First Steps (pitch + gate) · Pluck Every Step (retriggered envelope) · Slide (glide, legato gate) · ★ Warehouse Line (acid bassline: resonant filter with a per-step envelope, gate fanned out to the VCA and the ENV TRIG)
 - **Random & Generative:** Computer Bleeps (sample & hold) · Random Filter · ★ Robot Babble
 - **Repair Shop:** broken, unlocked presets to diagnose. No Signal (signal flow) · Muffled Mess (diagnosing tone) · Wrong Jack (audio vs. control) · Seasick (modulation depth) · ★ Total Wreck
 - **Sync & Ring** (advanced): Torn Edge (hard sync) · Sync Sweep (envelope → ratio) · Robot Voice (ring modulation) · ★ Screamer
@@ -142,7 +154,7 @@ Calibrated outcomes: exact = 100; cutoff +0.2 oct ≈ 94; decay −9% ≈ 88; wr
 
 ## Roadmap / open ideas
 - Melodic targets: play A1 → C2 → E2 prompts, then riffs; glide/portamento; arpeggiators.
-- Tremolo (LFO → VCA) as its own lesson; pulse width and PWM; step sequencer + glide + quantizer (multi-note `seq` targets already work); physical-modeling exciter/resonator; FM operators with feedback; self-oscillating filter; translation challenges (match a subtractive target with only FM or folding).
+- Tremolo (LFO → VCA) as its own lesson; pulse width and PWM; quantizer for the sequencer and S&H; accents and rests on sequencer steps; physical-modeling exciter/resonator; FM operators with feedback; self-oscillating filter; translation challenges (match a subtractive target with only FM or folding).
 - Blind "ear" gigs that hide the graphs; budget gigs with a hard cost cap; remix gigs that change one quality of an existing patch.
 - Vocabulary quizzes between chapters (which knob makes it "brighter", "plucky", "wider"?).
 - More presets in later gigs (e.g. a prebuilt filter section in Wobble, so the lesson focuses on the LFO).

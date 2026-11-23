@@ -1,7 +1,7 @@
 /* Synth Patch Hero · Gig board, level screen, slot board, knobs, cables, compare panel. */
 'use strict';
 /* iPhone: these become tap targets with a switch under the finger (see js/haptics.js). Must run before handlers are attached. */
-['#briefBtn','#keysBtn','#focusBtn','#btnSettings','#btnHome','#kbClose'].forEach(sel=>Haptics.upgrade(document.querySelector(sel)));
+['#briefBtn','#songBtn','#keysBtn','#focusBtn','#btnSettings','#btnHome','#kbClose'].forEach(sel=>Haptics.upgrade(document.querySelector(sel)));
 /* =====================================================================
    BOARD
    ===================================================================== */
@@ -9,11 +9,11 @@
 let previewing=null;
 function stopPreview(){ if(!previewing) return; clearTimeout(previewing.t); previewing.b.classList.remove('lit'); previewing.b.setAttribute('aria-label','Preview '+previewing.L.title); previewing.b.querySelector('.pvIcon').textContent='▶'; previewing=null; stopOneShots(); }
 function previewButton(L){
-  let b=el('button',{class:'gigPv',title:'Hear the target sound','aria-label':'Preview '+L.title}); b.innerHTML='<span class="pvIcon">▶</span>';
+  let b=el('button',{class:'gigPv',title:'Hear the client\'s sound in a short demo song','aria-label':'Preview '+L.title}); b.innerHTML='<span class="pvIcon">▶</span>';
   b=Haptics.upgrade(b);
   b.addEventListener('click',e=>{ e.stopPropagation(); const mine=previewing&&previewing.b===b; stopPreview(); if(mine) return;
-    playFixed(targetPatch(L),L,null); b.classList.add('lit'); b.querySelector('.pvIcon').textContent='■'; b.setAttribute('aria-label','Stop preview');
-    previewing={b,L,t:setTimeout(stopPreview,(L.dur+0.1)*1000)}; Haptics.select(); });
+    const dur=playSong(targetPatch(L),L); b.classList.add('lit'); b.querySelector('.pvIcon').textContent='■'; b.setAttribute('aria-label','Stop preview');
+    previewing={b,L,t:setTimeout(stopPreview,(dur+0.1)*1000)}; Haptics.select(); });
   return b;
 }
 function showBoard(){
@@ -29,7 +29,7 @@ function showBoard(){
   const g=$('#gigs'); g.innerHTML='';
   CHAPTERS.forEach(c=>{
     const done=c.levels.filter(i=>progress.solved[LEVELS[i].id]).length;
-    const sec=el('section',{class:'chapter'}), nxt=nextInChapter(c);
+    const sec=el('section',{class:'chapter'}), nxt=nextInChapter(c); sec.dataset.ch=c.id;
     sec.innerHTML=`<div class="chHead"><div><h2>${c.title}${c.level==='advanced'?' <span class="chBadge">ADVANCED</span>':c.bonus?' <span class="chBadge bonus">BONUS</span>':''}</h2><p>${c.blurb}</p></div><span class="chProg">${done===c.levels.length?'✓ complete':done+' / '+c.levels.length}</span></div>`;
     const grid=el('div',{class:'gigs'});
     c.levels.forEach((i,k)=>{
@@ -39,14 +39,47 @@ function showBoard(){
         <div class="client">${L.client} · ${L.role}</div>
         <div class="concept"><span class="tag">${L.concept}</span>${sv?`<span class="stamp">PAID · ${sv.cost}¢ · ${Math.round(sv.match)}%${progress.played&&progress.played[L.id]?' · ♪':''}${progress.helped&&progress.helped[L.id]?' · helped':''}</span>`:i===nxt?'<span class="nextTag">NEXT</span>':''}</div>`;
       b=Haptics.upgrade(b); b.addEventListener('click',()=>{ stopPreview(); openLevel(i); });
-      const w=el('div',{class:'gigWrap'}); w.appendChild(b); w.appendChild(previewButton(L)); grid.appendChild(w);
+      const w=el('div',{class:'gigWrap'}); w.dataset.done=sv?'1':''; w.appendChild(b); w.appendChild(previewButton(L)); grid.appendChild(w);
     });
     sec.appendChild(grid); g.appendChild(sec);
   });
-  const jam=el('section',{class:'chapter'}); jam.innerHTML='<div class="chHead"><div><h2>After hours</h2><p>No clients, no rent. Just you and the rack.</p></div></div>';
+  const jam=el('section',{class:'chapter'}); jam.dataset.ch='jam'; jam.innerHTML='<div class="chHead"><div><h2>After hours</h2><p>No clients, no rent. Just you and the rack.</p></div></div>';
   const jg=el('div',{class:'gigs'}); let j=el('button',{class:'gig jam'});
   j.innerHTML=`<div class="num">SANDBOX</div><div class="title">Free Jam</div><div class="client">All modules, no target. Play it like an instrument.</div><div class="concept"><span class="tag">Sandbox</span></div>`;
   j=Haptics.upgrade(j); j.addEventListener('click',()=>openLevel(-1)); jg.appendChild(j); jam.appendChild(jg); g.appendChild(jam);
+  g.appendChild(el('p',{class:'boardEmpty',id:'boardEmpty',hidden:''},'Nothing here with this filter. Every gig in this chapter is done!'));
+  renderBoardNav(); applyBoardFilter();
+}
+
+/* ---------- gig board browsing: chapter chips (a table of contents) + a status filter ---------- */
+const BV=Object.assign({ch:null,status:'all'},store.get('boardView',{}));
+const CH_GROUPS=[['START',c=>c.id==='basics'],['THEMES',c=>c.id!=='basics'&&!c.level&&!c.bonus],['ADVANCED',c=>c.level==='advanced'],['EXTRAS',c=>c.bonus]];
+function renderBoardNav(){
+  const nav=$('#boardNav'); nav.innerHTML='';
+  const chips=el('div',{class:'bnChips'});
+  const chip=(id,label,sub,done)=>{ let b=el('button',{class:'bnChip'+(done?' done':''),'data-ch':id||''}); b.innerHTML=`<span>${label}</span>${sub?`<small>${sub}</small>`:''}`;
+    b=Haptics.upgrade(b); b.addEventListener('click',()=>{ BV.ch=id; saveBV(); applyBoardFilter(); Haptics.select(); $('#boardNav').scrollIntoView({block:'start',behavior:'smooth'}); }); return b; };
+  chips.appendChild(chip(null,'ALL',`${Object.keys(progress.solved).length}/${LEVELS.length}`));
+  CH_GROUPS.forEach(([name,f])=>{ const cs=CHAPTERS.filter(f); if(!cs.length) return; chips.appendChild(el('span',{class:'bnGroup'},name));
+    cs.forEach(c=>{ const done=c.levels.filter(i=>progress.solved[LEVELS[i].id]).length; chips.appendChild(chip(c.id,c.short,done===c.levels.length?'✓':`${done}/${c.levels.length}`,done===c.levels.length)); }); });
+  chips.appendChild(chip('jam','FREE JAM',''));
+  const st=el('div',{class:'bnStatus',role:'group','aria-label':'Show'});
+  [['all','All'],['todo','To do'],['done','Done']].forEach(([k,l])=>{ let b=el('button',{class:'bnSt','data-st':k},l); b=Haptics.upgrade(b);
+    b.addEventListener('click',()=>{ BV.status=k; saveBV(); applyBoardFilter(); Haptics.select(); }); st.appendChild(b); });
+  nav.appendChild(chips); nav.appendChild(st);
+}
+function saveBV(){ store.set('boardView',{ch:BV.ch,status:BV.status}); }
+function applyBoardFilter(){
+  if(BV.ch&&BV.ch!=='jam'&&!CHAPTERS.some(c=>c.id===BV.ch)) BV.ch=null;
+  document.querySelectorAll('#boardNav .bnChip').forEach(b=>b.classList.toggle('on',(b.dataset.ch||null)===BV.ch));
+  document.querySelectorAll('#boardNav .bnSt').forEach(b=>b.classList.toggle('on',b.dataset.st===BV.status));
+  let shown=0;
+  document.querySelectorAll('#gigs .chapter').forEach(sec=>{
+    const chOk=!BV.ch||sec.dataset.ch===BV.ch; let any=sec.dataset.ch==='jam'&&BV.status==='all';
+    sec.querySelectorAll('.gigWrap').forEach(w=>{ const ok=BV.status==='all'||(BV.status==='done')===!!w.dataset.done; w.hidden=!ok; if(ok) any=true; });
+    sec.hidden=!(chOk&&any); if(!sec.hidden) shown++; });
+  $('#boardEmpty').hidden=shown>0;
+  $('#boardEmpty').textContent=BV.status==='done'?'Nothing finished here yet. Pick a gig and get paid!':'Nothing left to do here. Every gig is done!';
 }
 
 
@@ -76,7 +109,7 @@ function missing(){ const n=needs(), out=[]; for(const t in n){ const h=countTyp
 function playerCost(p){ return p.modules.reduce((s,m)=>s+(m.preset?0:MT[m.type].cost),0); }
 function parCost(L){ const pre=(L.start||[]).reduce((s,x)=>s+MT[x.type].cost,0); return patchCost(targetPatch(L))-pre; }
 
-function openLevel(i){
+function openLevel(i){ S.moving=null;
   S.sandbox=i<0; S.li=i; S.L=S.sandbox?SANDBOX:LEVELS[i];
   S.feats=S.sandbox?new Set(ALL_FEATURES):featuresFor(i);
   S.palette=S.L.palette; S.slots=slotCount(S.L); S.mine=null; S.cmp=null; S.slotMenu=null;
@@ -143,11 +176,11 @@ function addModule(t,slot){
   if(countType(t)>=S.palette[t]){ toast(`No ${MT[t].name} modules left for this gig.`); return; }
   if(slot==null){ const e=emptySlots(); if(!e.length){ toast('The rack is full. Remove a module first.'); return; } slot=e[0]; }
   const id='m'+(idc++);
-  S.patch.modules.push({id,type:t,slot,params:defaultParams(t)});
+  S.moving=null; S.patch.modules.push({id,type:t,slot,params:defaultParams(t)});
   S.slotMenu=null; Haptics.thunk(); refreshRack(); scheduleAnalyze(); revealSlot(slot);
 }
 function removeModule(id){
-  const m=S.patch.modules.find(x=>x.id===id); if(!m||m.locked) return;
+  const m=S.patch.modules.find(x=>x.id===id); if(!m||m.locked) return; S.moving=null;
   if(S.pick&&S.pick.mid===id) clearPick();
   S.patch.modules=S.patch.modules.filter(x=>x.id!==id);
   S.patch.cables=S.patch.cables.filter(c=>c.from.m!==id&&c.to.m!==id);
@@ -163,7 +196,10 @@ function renderRack(){
   for(let i=0;i<S.slots-1;i++){
     const [x,y]=slotXY(i), occ=occupant(i);
     const s=el(!occ&&S.slotMenu!==i?'label':'div',{class:'slot'+(occ?' filled':' empty'+(wanted?' wanted':'')),'data-slot':i}); s.style.left=x+'px'; s.style.top=y+'px';
-    if(!occ){
+    if(!occ&&S.moving){
+      s.classList.add('moveTarget'); s.innerHTML='<div class="plus">↘</div><div>MOVE HERE</div>'; Haptics.addSwitch(s);
+      s.addEventListener('click',()=>Haptics.later(()=>moveModuleTo(i)));
+    } else if(!occ){
       if(S.slotMenu===i){
         const avail=Object.entries(S.palette).filter(([t,max])=>max-countType(t)>0);
         s.innerHTML=`<div class="slotMenu"><div class="t">ADD TO THIS SLOT</div>${avail.map(([t])=>`<button data-t="${t}"><i style="background:${MT[t].color}"></i>${MT[t].name}</button>`).join('')}<button class="x">Cancel</button></div>`;
@@ -180,19 +216,21 @@ function renderRack(){
   for(const m of S.patch.modules){
     const T=MT[m.type], [x,y]=slotXY(m.slot);
     const d=el('div',{class:'module'+(m.locked?' locked':''),'data-id':m.id}); d.style.left=(x+6)+'px'; d.style.top=(y+6)+'px';
-    const head=el('div',{class:'mhead'},`<span class="stripe" style="background:${T.color}"></span><span class="name">${T.name}</span>${m.preset&&m.type!=='out'?'<span class="lock">PRESET</span>':''}<span class="cost">${T.cost&&!m.preset?T.cost+'¢':''}</span>`);
+    const head=el('div',{class:'mhead',title:m.locked?'':'Drag to move, or tap to pick up and tap where it should go'},`${m.locked?'':'<span class="grip" aria-hidden="true">⠿</span>'}<span class="stripe" style="background:${T.color}"></span><span class="name">${T.name}</span>${m.preset&&m.type!=='out'?'<span class="lock">PRESET</span>':''}<span class="cost">${T.cost&&!m.preset?T.cost+'¢':''}</span>`);
     if(!m.locked){ const xb=el('button',{class:'del',title:'Remove module'},'×'); xb.addEventListener('pointerdown',e=>e.stopPropagation()); xb.addEventListener('click',()=>removeModule(m.id)); head.appendChild(xb); }
     d.appendChild(head);
     const body=el('div',{class:'mbody'}), ins=el('div',{class:'ins'}), prm=el('div',{class:'params'}), outs=el('div',{class:'outs'});
     T.ins.filter(p=>!p.req||S.feats.has(p.req)).forEach(p=>ins.appendChild(makePort(m,p,'in')));
     T.outs.forEach(p=>outs.appendChild(makePort(m,p,'out')));
     const vis=T.params.filter(p=>!p.req||S.feats.has(p.req)), knobs=vis.filter(p=>!p.type).length;
-    if(knobs>4) d.classList.add('dense'); if(vis.some(p=>p.type==='bar')) d.classList.add('bars');
+    if(knobs>4) d.classList.add('dense'); if(m.type==='seq') d.classList.add('seqmod'); else if(vis.some(p=>p.type==='bar')) d.classList.add('bars');
     vis.forEach(p=>prm.appendChild(p.type==='choice'?makeChoice(m,p):makeKnob(m,p)));
     if(m.type==='out') prm.innerHTML='<div class="outBox"><div class="spk"></div>to speakers</div>';
     if(m.type==='noise') prm.innerHTML='<div class="outBox" style="font-family:var(--mono)">∿∿ white ∿∿</div>';
     body.append(ins,prm,outs); d.appendChild(body); box.appendChild(d);
     d.addEventListener('pointerdown',e=>e.stopPropagation());
+    if(S.moving===m.id) d.classList.add('moving');
+    else if(S.moving&&!m.locked&&m.type!=='out'){ d.classList.add('moveTarget'); d.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); moveModuleTo(m.slot); },true); }
     if(!m.locked) dragModule(head,m,d);
   }
   renderParts();
@@ -209,6 +247,17 @@ function makePort(m,p,dir){
 }
 function stagePoint(ev){ const r=$('#stage').getBoundingClientRect(); return [(ev.clientX-r.left)/S.view.s,(ev.clientY-r.top)/S.view.s]; }
 function slotAt(p){ for(let i=0;i<S.slots;i++){ const [x,y]=slotXY(i); if(p[0]>=x&&p[0]<=x+SW&&p[1]>=y&&p[1]<=y+SH) return i; } return null; }
+/* Tap-to-move: tap a module's name bar to pick it up, then tap a free slot (move) or another module (swap). */
+function toggleMove(m){
+  S.moving=S.moving===m.id?null:m.id; S.slotMenu=null; renderRack();
+  if(S.moving) toast(`Tap a free slot to move ${MT[m.type].name} there, or another module to swap. Tap its name again to cancel.`);
+}
+function moveModuleTo(t){
+  const m=S.patch&&S.patch.modules.find(x=>x.id===S.moving); S.moving=null;
+  if(m&&t!=null&&t!==m.slot&&t!==S.slots-1){ const o=occupant(t);
+    if(!o){ m.slot=t; Haptics.thunk(); } else if(!o.locked){ o.slot=m.slot; m.slot=t; Haptics.thunk(); } else toast('That slot holds a preset module.'); }
+  renderRack(); saveDraft();
+}
 function dragModule(head,m,d){
   head.addEventListener('pointerdown',e=>{
     if(e.target.closest('.del')) return;
@@ -220,7 +269,7 @@ function dragModule(head,m,d){
       drawCables(); };
     const up=ev=>{ head.removeEventListener('pointermove',mv); head.removeEventListener('pointerup',up); head.removeEventListener('pointercancel',up);
       d.style.transform=''; d.classList.remove('dragging'); document.querySelectorAll('.slot.drop').forEach(s=>s.classList.remove('drop'));
-      if(!moved) return;
+      if(!moved){ if(S.moving&&S.moving!==m.id) moveModuleTo(m.slot); else toggleMove(m); return; }
       const t=slotAt(stagePoint(ev));
       if(t!=null&&t!==m.slot&&t!==S.slots-1){ const o=occupant(t);
         if(!o){ m.slot=t; Haptics.thunk(); } else if(!o.locked){ o.slot=m.slot; m.slot=t; Haptics.thunk(); } else toast('That slot holds a preset module.'); }
@@ -313,8 +362,8 @@ function makeKnob(m,d){
   const locked=!!(m.locks&&m.locks[d.id]);
   const k=el('label',{class:'knob'+(d.type==='bar'?' bar':'')+(locked?' locked':''),'data-param':d.id,title:locked?`${d.label} is locked by Help. Tap to see why, or to unlock it.`:`${d.label} · drag up/down (Shift = fine) · click for precise control`});
   const kc=el('span',{class:'kc'}); k.appendChild(kc); Haptics.addSwitch(k);
-  const barSVG=n=>`<svg width="16" height="58" viewBox="0 0 16 58"><rect x="4" y="1" width="8" height="56" rx="3" fill="#0f0c0a" stroke="#4d433a"/><rect x="5" y="${2+54*(1-n)}" width="6" height="${54*n}" rx="2" fill="${col}"/><rect x="1" y="${Math.min(52,Math.max(0,54*(1-n)))}" width="14" height="5" rx="1.5" fill="#efe6d8"/></svg>`;
-  const draw=()=>{ const n=toN(d,m.params[d.id]); kc.innerHTML=(d.type==='bar'?barSVG(n):knobSVG(n,col,d.bipolar))+`<span class="kl">${d.label}</span><span class="kv">${d.fmt(m.params[d.id])}</span>`; };
+  const barSVG=(n,bip)=>{ const top=bip?2+54*(1-Math.max(n,.5)):2+54*(1-n), h=bip?54*Math.abs(n-.5):54*n; return `<svg width="16" height="58" viewBox="0 0 16 58"><rect x="4" y="1" width="8" height="56" rx="3" fill="#0f0c0a" stroke="#4d433a"/>${bip?'<rect x="3" y="28.5" width="10" height="1" fill="#6b5f54"/>':''}<rect x="5" y="${top}" width="6" height="${h}" rx="2" fill="${col}"/><rect x="1" y="${Math.min(52,Math.max(0,54*(1-n)))}" width="14" height="5" rx="1.5" fill="#efe6d8"/></svg>`; };
+  const draw=()=>{ const n=toN(d,m.params[d.id]); kc.innerHTML=(d.type==='bar'?barSVG(n,d.bipolar):knobSVG(n,col,d.bipolar))+`<span class="kl">${d.label}</span><span class="kv">${d.fmt(m.params[d.id])}</span>`; };
   draw();
   const steps=d.step?(d.max-d.min)/d.step:0, notch=n=>steps&&steps<=60?Math.round(n*steps):Math.floor(n*20+1e-9);
   const set=v=>{ const old=m.params[d.id]; if(v===old) return; m.params[d.id]=v; draw(); scheduleAnalyze();
@@ -497,9 +546,9 @@ function renderCompare(){
       <div class="stats" id="stats"></div>
     </div>`;
   ['#pT','#pY','#btnHelp','#btnSubmit'].forEach(sel=>Haptics.upgrade(c.querySelector(sel)));
-  if(!sb){ $('#pT').onclick=()=>playFixed(targetPatch(S.L),S.L,'pT'); $('#btnSubmit').onclick=submit; $('#btnHelp').onclick=requestHelp;
+  if(!sb){ $('#pT').onclick=()=>playTarget(); $('#btnSubmit').onclick=submit; $('#btnHelp').onclick=requestHelp;
     $('#hints').addEventListener('click',()=>{ if(S.mobile) toggleExpanded(); }); }
-  $('#pY').onclick=()=>playFixed(S.patch,S.L,'pY');
+  $('#pY').onclick=()=>playYours();
   c.querySelectorAll('.plotTabs button').forEach(b=>b.addEventListener('click',()=>{
     if(b.dataset.v==='more'){ toggleExpanded(); return; }
     S.plotView=b.dataset.v; $('#plots').dataset.view=S.plotView; paintPlotTabs(); requestAnimationFrame(drawPlots); }));
@@ -508,6 +557,13 @@ function renderCompare(){
 function toggleExpanded(){ const c=$('#compare'); c.classList.toggle('expanded'); const m=c.querySelector('[data-v=more]'); if(m) m.textContent=c.classList.contains('expanded')?'LESS ▴':'MORE ▾';
   requestAnimationFrame(()=>{ if(!S.userZoom) fitView(); }); }
 function paintPlotTabs(){ document.querySelectorAll('.plotTabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.plotView)); }
+/* ▶ Target / ▶ Yours: one note, or in song mode (♫) a short demo song on that patch. */
+S.songMode=!!store.get('songMode',false);
+function playTarget(){ if(S.songMode&&!S.sandbox) flashPlay('pT',playSong(targetPatch(S.L),S.L)); else playFixed(targetPatch(S.L),S.L,'pT'); }
+function playYours(){ if(S.songMode) flashPlay('pY',playSong(S.patch,S.L||{note:45,ch:'basics'})); else playFixed(S.patch,S.L,'pY'); }
+function setSongMode(on){ S.songMode=on; store.set('songMode',on); stopOneShots(); const b=$('#songBtn'); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on);
+  b.title=on?'Song mode is on: ▶ Target and ▶ Yours play a demo song. Tap for single notes.':'Song mode: ▶ Target and ▶ Yours play a short demo song instead of one note';
+  if(on) toast('Song mode: ▶ Target and ▶ Yours now play a short demo song.'); }
 function flashPlay(id,dur){ const b=document.getElementById(id); if(!b) return; b.classList.add('lit'); setTimeout(()=>b.classList.remove('lit'),dur*1000); }
 
 let aTimer=null, aSeq=0;
@@ -626,12 +682,12 @@ function toast(msg){ let t=document.querySelector('.toast'); if(!t){ t=el('div',
 const KEYMAP={a:0,w:1,s:2,e:3,d:4,f:5,t:6,g:7,y:8,h:9,u:10,j:11,k:12,o:13,l:14};
 let octShift=0;
 window.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){ clearPick(); $('#sheet').hidden=true; closeSide(); if(S.slotMenu!=null){ S.slotMenu=null; renderRack(); } return; }
+  if(e.key==='Escape'){ if(S.moving){ S.moving=null; renderRack(); } clearPick(); $('#sheet').hidden=true; closeSide(); if(S.slotMenu!=null){ S.slotMenu=null; renderRack(); } return; }
   if(!S.L||e.metaKey||e.ctrlKey||e.altKey||e.repeat) return;
   if(!$('#modal').hidden||!$('#sheet').hidden) return;
   const k=e.key.toLowerCase();
-  if(k===' '){ e.preventDefault(); playFixed(S.patch,S.L,'pY'); return; }
-  if(k==='t'&&e.shiftKey&&!S.sandbox){ playFixed(targetPatch(S.L),S.L,'pT'); return; }
+  if(k===' '){ e.preventDefault(); playYours(); return; }
+  if(k==='t'&&e.shiftKey&&!S.sandbox){ playTarget(); return; }
   if(k==='f'&&e.shiftKey){ setFocus(!S.focus); return; }
   if(k==='='||k==='+'){ zoomCenter(1.2); return; } if(k==='-'){ zoomCenter(1/1.2); return; } if(k==='0'){ fitView(); return; }
   if(k==='z'){ octShift=Math.max(-3,octShift-1); toast('Keyboard octave '+fmtSigned(octShift)); return; }
@@ -644,6 +700,7 @@ let rzT=null;
 window.addEventListener('resize',()=>{ clearTimeout(rzT); rzT=setTimeout(()=>{ if(!S.L) return; if(!S.userZoom) fitView(); else { clampView(); applyView(); } drawCables(); drawPlots(); renderKeys(); },80); });
 $('#kbDn').onclick=()=>{ S.kbLo-=12; renderKeys(); };
 $('#kbUp').onclick=()=>{ S.kbLo+=12; renderKeys(); };
+$('#songBtn').onclick=()=>setSongMode(!S.songMode); $('#songBtn').classList.toggle('on',S.songMode);
 $('#keysBtn').onclick=()=>setKeysOpen(!S.keysOpen);
 $('#focusBtn').onclick=()=>setFocus(!S.focus);
 function resetRack(){ S.pick=null; showPatchbar(); freshPatch(); refreshRack(); scheduleAnalyze(); toast('Rack reset'); }

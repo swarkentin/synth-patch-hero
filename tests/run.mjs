@@ -32,6 +32,7 @@ const BANDS = {
   'build-square|h.h3=0.3': [93, 100], 'build-square|h.h5=0': [40, 85], 'metal-ring|m.semi=7': [0, 35], 'fm-bell|m.semi=7': [0, 35], 'epiano|me.d=1.2': [0, 60],
   'slapback|d.time=0.16': [0, 65], 'canyon|d.time=0.25': [0, 50], 'chorus|d.modAmt=0.004': [40, 85], 'fuzz|d.drive=1': [0, 60], 'fuzz|d.drive=13': [90, 100],
   // advanced tier: sync, ring, function generator, mod VCA, folder, low-pass gate, key tracking
+  'first-steps|q.s2=5': [0, 80], 'slide|q.glide=0': [0, 60], 'warehouse|q.bpm=120': [0, 70],
   'torn-edge|s.ratio=2': [0, 50], 'sync-sweep|s.sweepAmt=2': [0, 85], 'robot-voice|b.semi=5': [0, 45], 'strike-once|f.fall=0.4': [0, 50],
   'late-vibrato|o.pitchAmt=60': [0, 85], 'fold|f.fold=2.5': [0, 45], 'fold|f.fold=3.3': [90, 100], 'bonk|e.d=0.15': [0, 50], 'bonk|e.d=0.27': [90, 100], 'even-keel|f.track=0': [0, 75],
   'ks-string|d.tone=3000': [0, 70], 'ks-string|d.fb=0.95': [70, 89.9], 'robot|f.type=lowpass': [0, 65],
@@ -156,6 +157,18 @@ try {
     submit(); await new Promise(r=>setTimeout(r,900));
     const dots=document.querySelectorAll('#jDots i').length, playing=!!jingleNow; document.querySelector('#mStay').click(); const stopped=!jingleNow;
     delete progress.solved.pluck; saveProgress(); showBoard(); return {dots,playing,stopped}; })()`);
+  console.log('\nEvery gig has an audible demo song on its patch');
+  const songs = await page.evaluate(`(async()=>{ const out=[];
+    for(const L of LEVELS){ const x=await renderSong(targetPatch(L),L); let peak=0, nan=false;
+      for(let i=0;i<x.length;i++){ const v=x[i]; if(v!==v){ nan=true; break; } const a=Math.abs(v); if(a>peak) peak=a; }
+      out.push({id:L.id,peak,nan,secs:songLength(L,targetPatch(L))}); }
+    return out; })()`);
+  for (const j of songs) ok(!j.nan && j.peak > 0.01 && j.peak < 4 && j.secs > 2 && j.secs < 9, `${j.id.padEnd(13)} song peak ${j.peak.toFixed(2)}, ${j.secs.toFixed(1)}s`);
+  const songMode = await page.evaluate(`(async()=>{ const i=LEVELS.findIndex(l=>l.id==='acid'); openLevel(i);
+    setSongMode(true); playTarget(); const t=!!songNow&&$('#pT').classList.contains('lit'); playYours(); const y=!!songNow&&$('#pY').classList.contains('lit');
+    setSongMode(false); const off=!songNow; playTarget(); const note=!songNow&&oneShots.length===1; stopOneShots(); showBoard(); return {t,y,off,note}; })()`);
+  ok(songMode.t && songMode.y, 'with ♫ Song on, ▶ Target and ▶ Yours play the demo song');
+  ok(songMode.off && songMode.note, 'turning ♫ Song off stops it and goes back to single notes');
   ok(modal.dots >= 4 && modal.playing && modal.stopped, `result screen plays the jingle (${modal.dots} note markers) and stops it when closed`);
 
   console.log('\nHaptics on a phone');
@@ -236,16 +249,45 @@ try {
   const pv = await page.evaluate(`(async()=>{
     showBoard(); const cards=document.querySelectorAll('.gigWrap'), btns=document.querySelectorAll('.gigWrap > .gigPv');
     const b=btns[3]; b.click(); await new Promise(r=>setTimeout(r,80));
-    const playing=oneShots.length===1&&b.classList.contains('lit'), stayed=!$('#screenBoard').hidden&&S.L===null;
-    b.click(); const stopped=oneShots.length===0&&!b.classList.contains('lit');
-    btns[0].click(); btns[1].click(); const switched=oneShots.length===1&&!btns[0].classList.contains('lit')&&btns[1].classList.contains('lit');
+    const playing=!!songNow&&b.classList.contains('lit'), stayed=!$('#screenBoard').hidden&&S.L===null;
+    b.click(); const stopped=!songNow&&!b.classList.contains('lit');
+    btns[0].click(); btns[1].click(); const switched=!!songNow&&!btns[0].classList.contains('lit')&&btns[1].classList.contains('lit');
     cards[0].querySelector('.gig').click(); await new Promise(r=>setTimeout(r,50)); const opened=S.L&&S.L.id===LEVELS[0].id&&!btns[1].classList.contains('lit');
     const all=btns.length===LEVELS.length; showBoard(); return {all,playing,stayed,stopped,switched,opened}; })()`);
   ok(pv.all, 'every gig card has a ▶ preview button');
-  ok(pv.playing && pv.stayed, 'preview plays the target sound without opening the gig');
+  ok(pv.playing && pv.stayed, 'preview plays a demo song on the target patch without opening the gig');
   ok(pv.stopped, 'tapping ▶ again stops the preview');
   ok(pv.switched, 'starting another preview stops the first');
   ok(pv.opened, 'opening a gig stops the preview');
+
+  console.log('\nMoving modules');
+  const mv = await page.evaluate(`(async()=>{ const i=LEVELS.findIndex(l=>l.id==='squelch'); store.del('draft2.squelch'); openLevel(i); addModule('osc'); addModule('filter');
+    const o=S.patch.modules.find(m=>m.type==='osc'), f=S.patch.modules.find(m=>m.type==='filter'); const grip=!!document.querySelector('.module .mhead .grip');
+    toggleMove(o); const pick=!!document.querySelector('.module.moving')&&document.querySelectorAll('.slot.moveTarget').length>0&&!!document.querySelector('.module.moveTarget');
+    const free=document.querySelector('.slot.moveTarget'), t=+free.dataset.slot; free.click(); await new Promise(r=>setTimeout(r,60)); const moved=o.slot===t&&!S.moving;
+    const fs=f.slot; toggleMove(o); document.querySelector('.module.moveTarget').click(); const swapped=o.slot===fs&&f.slot===t&&!S.moving;
+    toggleMove(o); toggleMove(o); const cancelled=!S.moving&&!document.querySelector('.moveTarget');
+    const outSafe=S.patch.modules.find(m=>m.type==='out').slot===S.slots-1; showBoard(); return {grip,pick,moved,swapped,cancelled,outSafe}; })()`);
+  ok(mv.grip, 'movable modules show a grip on their name bar');
+  ok(mv.pick && mv.moved, 'tapping a name bar picks the module up; tapping a free slot moves it there');
+  ok(mv.swapped, 'tapping another module swaps the two');
+  ok(mv.cancelled && mv.outSafe, 'tapping the name bar again cancels, and OUTPUT stays in its slot');
+
+  console.log('\nGig board browsing');
+  const nav = await page.evaluate(`(async()=>{ showBoard(); const q=s=>document.querySelector(s), vis=()=>[...document.querySelectorAll('#gigs .chapter')].filter(x=>!x.hidden).map(x=>x.dataset.ch);
+    const chips=[...document.querySelectorAll('#boardNav .bnChip')].map(b=>b.dataset.ch).filter(Boolean);
+    const allChips=CHAPTERS.every(c=>chips.includes(c.id))&&chips.includes('jam');
+    q('.bnChip[data-ch="fm"]').click(); const one=vis().join()==='fm';
+    q('.bnSt[data-st="done"]').click(); const doneEmpty=vis().length===0&&!q('#boardEmpty').hidden;
+    progress.solved['metal-ring']={cost:4,match:95}; showBoard(); const doneOne=vis().join()==='fm'&&[...document.querySelectorAll('[data-ch="fm"] .gigWrap')].filter(w=>!w.hidden).length===1;
+    q('.bnSt[data-st="todo"]').click(); const todo=[...document.querySelectorAll('[data-ch="fm"] .gigWrap')].filter(w=>!w.hidden).length===3;
+    const remembered=store.get('boardView').ch==='fm'&&store.get('boardView').status==='todo';
+    delete progress.solved['metal-ring']; q('.bnSt[data-st="all"]').click(); q('.bnChip[data-ch=""]').click();
+    const all=vis().length===CHAPTERS.length+1; return {allChips,one,doneEmpty,doneOne,todo,remembered,all}; })()`);
+  ok(nav.allChips, 'the contents bar has a chip for every chapter and Free Jam');
+  ok(nav.one, 'a chapter chip shows just that chapter');
+  ok(nav.doneEmpty && nav.doneOne && nav.todo, 'the To do / Done filter hides and shows gigs by progress, with a note when nothing matches');
+  ok(nav.remembered && nav.all, 'the view is remembered, and All brings every chapter back');
 } catch (e) {
   console.error(e); failures++;
 } finally {

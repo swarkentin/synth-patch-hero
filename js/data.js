@@ -39,7 +39,7 @@ const MT = {
   vca: {name:'VCA', long:'Amplifier', color:'var(--red)', cost:1,
     ins:[{id:'in',kind:'audio',label:'IN'},{id:'gain',kind:'mod',label:'CV'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
     params:[{id:'level',label:'LEVEL',min:0,max:1,step:0.01,def:0.8,fmt:fmtPct}]},
-  env: {name:'ENV', long:'ADSR envelope', color:'var(--violet)', cost:2, ins:[], outs:[{id:'out',kind:'mod',label:'ENV'}],
+  env: {name:'ENV', long:'ADSR envelope', color:'var(--violet)', cost:2, ins:[{id:'trig',kind:'mod',label:'TRIG',req:'seq'}], outs:[{id:'out',kind:'mod',label:'ENV'}],
     params:[
       {id:'a',label:'ATTACK',min:0.001,max:3,scale:'log',def:0.01,fmt:fmtT},
       {id:'d',label:'DECAY',min:0.005,max:3,scale:'log',def:0.3,fmt:fmtT},
@@ -85,6 +85,15 @@ const MT = {
     ]},
   sh: {name:'S&H', long:'Sample & hold (random steps)', color:'var(--lime)', cost:2, ins:[], outs:[{id:'out',kind:'mod',label:'S&H'}],
     params:[{id:'rate',label:'RATE',min:0.5,max:30,scale:'log',step:0.5,def:6,fmt:v=>v.toFixed(v<10?2:1)+'Hz'}]},
+  seq: {name:'SEQ', long:'Step sequencer (8 steps of 16th notes)', color:'var(--mint)', cost:3,
+    ins:[], outs:[{id:'pitch',kind:'mod',label:'PITCH'},{id:'gate',kind:'mod',label:'GATE'}],
+    params:[
+      ...[1,2,3,4,5,6,7,8].map(i=>({id:'s'+i,label:String(i),type:'bar',min:-12,max:12,step:1,def:0,bipolar:true,fmt:v=>(v>0?'+':'')+v})),
+      {id:'len',label:'STEPS',min:1,max:8,step:1,def:8,fmt:v=>String(v)},
+      {id:'bpm',label:'BPM',min:60,max:180,step:1,def:120,fmt:v=>String(v)},
+      {id:'gate',label:'GATE',min:0.05,max:1,step:0.01,def:0.5,fmt:fmtPct},
+      {id:'glide',label:'GLIDE',min:0,max:0.3,step:0.005,def:0,fmt:v=>v?Math.round(v*1000)+'ms':'off'},
+    ]},
   /* ---- advanced tier ---- */
   sync: {name:'SYNC OSC', long:'Hard-sync oscillator', color:'var(--rust)', cost:3,
     ins:[{id:'sweep',kind:'mod',label:'SWEEP',req:'mod'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
@@ -119,7 +128,7 @@ const MT = {
     params:[{id:'open',label:'OPEN',min:0,max:1,step:0.01,def:0,fmt:fmtPct}]},
   out: {name:'OUTPUT', long:'Speaker', color:'var(--cream)', cost:0, ins:[{id:'in',kind:'audio',label:'IN'}], outs:[], params:[]},
 };
-const ALL_FEATURES = ['osc','wave','filter','res','ftype','vca','env','mod','lfo','fine','noise','fm','keytrk'];
+const ALL_FEATURES = ['osc','wave','filter','res','ftype','vca','env','mod','lfo','fine','noise','fm','keytrk','seq'];
 
 /* =====================================================================
    DATA: levels
@@ -743,6 +752,48 @@ const LEVELS = [
   target:{mods:[{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{type:'bandpass',cutoff:900,res:0.55,cutAmt:2400}},{id:'s',type:'sh',p:{rate:9}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.03,d:0.2,s:0.85,r:0.15}}],
     cables:['o.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain','s.out>f.cut']},
   reply:`Blip-blorp-bleep means "thank you" in Robot. We checked.`},
+/* ---------------- STEP SEQUENCER ---------------- */
+{ id:'first-steps', ch:'seqlab', title:'First Steps', concept:'Step sequencer', client:'Noor Haddad', role:'Chiptune composer',
+  unlock:[], palette:{seq:1,osc:1,vca:1}, note:45, gate:2.0, dur:2.1,
+  brief:`I need a little looping riff for a game's title screen: four notes going round and round. Root, fifth, octave, fifth. Short and bouncy.`,
+  manual:`<h4>The step sequencer</h4>
+  <p>So far every gig has been one held note. A <b>SEQ</b> plays a <b>pattern</b> by itself, one step every 16th note, looping while the key is held.</p>
+  <ul><li>Each numbered bar is one step's note, in semitones from the key you play: +7 is a fifth up, +12 an octave.</li><li><b>STEPS</b> is how many steps loop. <b>BPM</b> is the tempo.</li><li><b>PITCH</b> out → the OSC's PITCH jack. The oscillator follows it exactly (MOD AMT doesn't apply to the sequencer).</li><li><b>GATE</b> out is on for part of each step (the <b>GATE</b> knob). Into a VCA's CV, it chops the sound into notes.</li></ul>
+  <div class="tip">This riff: STEPS 4, notes 0, +7, +12, +7, at 120 BPM.</div>`,
+  target:{mods:[{id:'q',type:'seq',p:{s1:0,s2:7,s3:12,s4:7,s5:0,s6:0,s7:0,s8:0,len:4,bpm:120,gate:0.5,glide:0}},{id:'o',type:'osc',p:{wave:'square'}},{id:'v',type:'vca',p:{level:0.85}}],
+    cables:['q.pitch>o.pitch','o.out>v.in','v.out>out.in','q.gate>v.gain']},
+  reply:`Press START. That loop is going to live in people's heads for decades.`},
+{ id:'step-pluck', ch:'seqlab', title:'Pluck Every Step', concept:'Retriggered envelopes', client:'Noor Haddad', role:'Chiptune composer, level 2',
+  unlock:[], palette:{seq:1,osc:1,vca:1,env:1}, note:45, gate:2.0, dur:2.2,
+  brief:`The title riff is great. For level 2 I want eight notes, and each one should be a quick pluck, not a hard on/off chop.`,
+  manual:`<h4>One envelope per step</h4>
+  <p>A gate straight into a VCA is just on/off. To give every step a <b>shape</b>, patch the SEQ's GATE into an ENV's <b>TRIG</b> jack. The envelope then restarts on every step.</p>
+  <ul><li>ENV → VCA CV, as usual.</li><li>A fast attack and a short decay with no sustain make each step a pluck.</li><li>The steps this time: 0, 0, +12, 0, +10, 0, +7, +5.</li></ul>
+  <div class="tip">On the loudness graph every step is a little spike. Match the spike's shape with the envelope.</div>`,
+  target:{mods:[{id:'q',type:'seq',p:{s1:0,s2:0,s3:12,s4:0,s5:10,s6:0,s7:7,s8:5,len:8,bpm:120,gate:0.5,glide:0}},{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'v',type:'vca',p:{level:0.85}},{id:'e',type:'env',p:{a:0.003,d:0.12,s:0,r:0.05}}],
+    cables:['q.pitch>o.pitch','o.out>v.in','v.out>out.in','e.out>v.gain','q.gate>e.trig']},
+  reply:`Level 2 approved. The boss music is next, I'll be back.`},
+{ id:'slide', ch:'seqlab', title:'Slide', concept:'Glide', client:'Moss Delacroix', role:'Deep house producer',
+  unlock:['res'], palette:{seq:1,osc:1,filter:1,vca:1}, note:45, gate:2.0, dur:2.2,
+  brief:`My bassline steps from note to note. I want it to <i>slide</i>, so every note bends smoothly into the next one, rubbery and connected.`,
+  manual:`<h4>Glide (portamento)</h4>
+  <p><b>GLIDE</b> on the SEQ makes the pitch slide to each new step instead of jumping. Longer glide, slower slide.</p>
+  <ul><li>Set GATE near 100% so the notes run into each other (legato). Gaps between notes break the slide's effect.</li><li>A warm low-pass on a saw keeps it bassy.</li><li>The steps: 0, +12, 0, +12, +7, +5, +3, 0.</li></ul>
+  <div class="tip">On the spectrum, the pitch line bends between steps instead of jumping. The steeper the bend, the shorter the glide.</div>`,
+  target:{mods:[{id:'q',type:'seq',p:{s1:0,s2:12,s3:0,s4:12,s5:7,s6:5,s7:3,s8:0,len:8,bpm:110,gate:1,glide:0.08}},{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:900,res:0.3}},{id:'v',type:'vca',p:{level:0.85}}],
+    cables:['q.pitch>o.pitch','o.out>f.in','f.out>v.in','v.out>out.in','q.gate>v.gain']},
+  reply:`It's like the bassline is skating. Smooth. Thank you.`},
+{ id:'warehouse', ch:'seqlab', challenge:true, tol:1.5, title:'Warehouse Line', concept:'Challenge', client:'DJ Ferrite', role:'Acid house night promoter',
+  unlock:['res','mod'], palette:{seq:1,osc:1,filter:1,env:1,vca:1,lfo:1}, note:33, gate:2.0, dur:2.2,
+  brief:`The classic squelchy acid bassline. A fast eight-step loop at 128, rubbery slides between some notes, and every step "yowps" through a screaming resonant filter. Low and nasty.`,
+  manual:`<h4>Challenge: the acid line</h4>
+  <p>No parts list. You know every piece:</p>
+  <ul><li>The notes: listen, or read the pitch line on the spectrum. The loop uses the root, an octave, and a couple of notes in between.</li><li>"Yowp" on every step: what restarts on each step, and what does it move?</li><li>"Slides": a SEQ knob.</li><li>The gate does two jobs at once. One output can feed two jacks.</li></ul>
+  <div class="tip">Build the loop first (pitch, gate, tempo), then the squelch.</div>`,
+  target:{mods:[{id:'q',type:'seq',p:{s1:0,s2:0,s3:12,s4:0,s5:10,s6:0,s7:0,s8:3,len:8,bpm:128,gate:0.5,glide:0.04}},{id:'o',type:'osc',p:{wave:'sawtooth'}},{id:'f',type:'filter',p:{cutoff:350,res:0.75,cutAmt:3600}},
+      {id:'e',type:'env',p:{a:0.003,d:0.16,s:0,r:0.05}},{id:'v',type:'vca',p:{level:0.9}}],
+    cables:['q.pitch>o.pitch','o.out>f.in','f.out>v.in','v.out>out.in','q.gate>v.gain','q.gate>e.trig','e.out>f.cut']},
+  reply:`The warehouse is shaking and somebody just yelled "ACIEEED". Booked for next month.`},
 /* ---------------- REPAIR SHOP ---------------- */
 { id:'no-signal', ch:'repair', title:'No Signal', concept:'Signal flow', client:'Hank Pruitt', role:'Pawn shop owner',
   unlock:[], palette:{osc:1,filter:1,vca:1,env:1}, note:45, gate:0.6, dur:1.0,
@@ -964,6 +1015,7 @@ const CHAPTERS = [
   {id:'fxrack', title:'Effects Rack', short:'EFFECTS', blurb:'Delay, reverb, chorus and drive: the space and grit around a sound.'},
   {id:'strings', title:'Strings & Plucks', short:'STRINGS', blurb:'Turn a click and a delay into a real-sounding string.'},
   {id:'random', title:'Random & Generative', short:'RANDOM', blurb:'Sample & hold: controlled chaos that still repeats.'},
+  {id:'seqlab', title:'Step Sequencer', short:'SEQUENCER', blurb:'Patterns that play themselves: steps, gates, retriggered envelopes and glide.'},
   {id:'repair', title:'Repair Shop', short:'REPAIR', blurb:'Broken patches come in. Diagnose them and get them working.'},
   {id:'sync', title:'Sync & Ring', short:'SYNC', level:'advanced', blurb:'Hard sync and ring modulation: tearing leads and clangy robots.'},
   {id:'modlab', title:'Modulation Deep Dive', short:'MOD LAB', level:'advanced', blurb:'Draw your own shapes, and let modulation control modulation.'},

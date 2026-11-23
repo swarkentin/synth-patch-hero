@@ -2,7 +2,7 @@
   --bg:#13100e; --panel:#1d1916; --panel2:#26211d; --line:#3a322b; --line2:#4d433a;
   --text:#efe6d8; --dim:#a09482; --faint:#6d6356;
   --amber:#f2a541; --teal:#4fb3a9; --red:#e0604f; --violet:#a58be8; --green:#8cc152; --grey:#b5ada3; --cream:#efe6d8;
-  --rust:#d9643a; --gold:#d8b04a; --lilac:#c39be8; --cyan:#5fc7c0; --coral:#ef7f7a; --olive:#a6b85c;
+  --mint:#7fd6a4; --rust:#d9643a; --gold:#d8b04a; --lilac:#c39be8; --cyan:#5fc7c0; --coral:#ef7f7a; --olive:#a6b85c;
   --sand:#cbb894; --pink:#e58fb4; --blue:#6fa8dc; --sky:#8fc6e6; --orange:#e07a3f; --lime:#c4d65a;
   --audio:#f2c14e; --mod:#7fb2f0; --good:#8cc152; --bad:#e0604f;
   --mono:'IBM Plex Mono',ui-monospace,monospace; --head:'Chakra Petch',system-ui,sans-serif; --sans:'IBM Plex Sans',system-ui,sans-serif;
@@ -56,6 +56,21 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .gig.solved{border-color:#3d4a2c}
 .gig.jam{border-style:dashed}
 .chapter{margin-bottom:26px}
+.boardNav{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;justify-content:space-between;margin:0 -4px 16px;padding:10px 4px;background:linear-gradient(var(--bg) 82%,transparent);}
+.bnChips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}
+.bnGroup{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--faint);margin:0 2px 0 8px}
+.bnChip{display:inline-flex;align-items:baseline;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--line2);background:var(--panel);color:var(--text);font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;cursor:pointer;white-space:nowrap}
+.bnChip small{color:var(--faint);font-size:10px}
+.bnChip.done small{color:var(--good)}
+.bnChip:hover{border-color:var(--amber)}
+.bnChip.on{background:var(--amber);border-color:var(--amber);color:#1a130b}
+.bnChip.on small{color:#3a2a14}
+.bnStatus{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden;flex:none}
+.bnSt{padding:6px 11px;background:transparent;border:0;border-right:1px solid var(--line2);color:var(--dim);font-family:var(--mono);font-size:11.5px;cursor:pointer}
+.bnSt:last-child{border-right:0}
+.bnSt.on{background:var(--line2);color:var(--text)}
+.boardEmpty{color:var(--dim);font-family:var(--mono);font-size:13px;padding:30px 0;text-align:center}
+#songBtn.on{border-color:var(--amber);color:var(--amber)}
 .chHead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:10px}
 .chHead h2{font-family:var(--head);font-size:20px;margin:0;letter-spacing:.04em}
 .chHead p{margin:2px 0 0;color:var(--dim);font-size:13px}
@@ -420,13 +435,17 @@ body.focus .work{flex:1}
   .topbar,.compare,.toolbar,.keysDock{max-width:100vw}
   .cmpTop>*{min-width:0}
   .crumbs{min-width:0}
-  #btnHome .lbl,#btnSettings .lbl,#keysBtn .lbl{display:none}
+  #btnHome .lbl,#btnSettings .lbl,#keysBtn .lbl,#songBtn .lbl{display:none}
   #btnHome,#btnSettings{padding:6px 11px;font-size:15px}
   .toolbar{overflow:visible;gap:5px}
   #palette{order:1;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
   #palette::-webkit-scrollbar{display:none}
-  #briefBtn{order:0} #keysBtn{order:2} #focusBtn{order:3}
-  #briefBtn,#keysBtn,#focusBtn{flex:none;padding:6px 9px}
+  #briefBtn{order:0} #songBtn{order:2} #keysBtn{order:3} #focusBtn{order:4}
+  #briefBtn,#songBtn,#keysBtn,#focusBtn{flex:none;padding:6px 9px}
+  .boardNav{flex-direction:column;align-items:stretch;gap:8px;margin:0 -12px 12px;padding:8px 12px}
+  .bnChips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+  .bnChips::-webkit-scrollbar{display:none}
+  .bnStatus{align-self:flex-start}
   .toolbar .spacer,#clearBtn{display:none}
   .compare{gap:5px;padding:7px 8px}
   .compare>.bar{display:none}
@@ -491,6 +510,20 @@ label.kbClose,#btnHelp[role=button]{display:inline-flex;align-items:center;justi
 .knob.bar .kl{font-size:7.5px;margin-top:2px}
 .knob.bar .kv{font-size:7.5px;color:var(--dim)}
 @media (max-width:760px){ .module.dense .knob{width:40px} .knob.bar{width:20px} }
+.module.seqmod .params{gap:0;justify-content:flex-start}
+.module.seqmod .knob.bar{width:12.5%}
+.module.seqmod .knob.bar svg{width:13px;height:50px}
+.module.seqmod .knob:not(.bar){width:25%}
+.module.seqmod .knob:not(.bar) svg{width:30px;height:27px}
+@media (max-width:760px){ .module.seqmod .knob.bar{width:12.5%} .module.seqmod .knob:not(.bar){width:25%} }
 
 .chBadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--coral);border:1px solid currentColor;border-radius:4px;padding:2px 6px;vertical-align:middle;margin-left:8px;font-weight:600}
 .chBadge.bonus{color:var(--cyan)}
+.gigWrap[hidden],.chapter[hidden],.boardEmpty[hidden]{display:none}
+/* tap-to-move */
+.mhead .grip{color:var(--faint);font-size:13px;line-height:1;margin-right:-2px;letter-spacing:-1px}
+.mhead:hover .grip{color:var(--text)}
+.module.moving{outline:2px solid var(--amber);outline-offset:3px;box-shadow:0 12px 30px rgba(0,0,0,.55)}
+.module.moving .grip{color:var(--amber)}
+.module.moveTarget::after{content:'SWAP HERE';position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;border:2px dashed var(--amber);border-radius:10px;background:rgba(20,16,12,.66);color:var(--amber);font-family:var(--mono);font-size:12px;letter-spacing:.16em;cursor:pointer}
+.slot.moveTarget{border-color:var(--amber)!important;color:var(--amber)!important;background:rgba(240,165,60,.06);cursor:pointer}

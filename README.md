@@ -17,13 +17,14 @@ There's no build step and there are no dependencies: it's plain HTML, CSS and Ja
 
 ## How it plays
 
-1. **Pick a gig.** Tap ▶ on any gig card to hear what the client wants before you take it on. Then open it and read the brief and the manual page for that lesson.
+1. **Pick a gig.** Browse by chapter with the chips at the top, or filter to what's left to do. Tap ▶ on any gig card to hear the client's sound in a short demo song before you take it on. Then open it and read the brief and the manual page for that lesson.
 2. **Fill the board.** OUTPUT sits in the top-right slot, and some gigs start with **preset** modules already wired. Tap an empty slot (or a palette button) to add a module. The **Parts** chips (`FILTER 0/1`) tell you what's still missing.
-3. **Patch.** Drag from jack to jack, or tap one jack and then another. Yellow cables carry audio, blue cables carry control signals. Click a cable to unplug it.
-4. **Tune.** Drag knobs up and down (Shift for fine control), or **click a knob** for a precise editor with fine −/+ steps and arrow keys.
-5. **Compare.** ▶ Target vs ▶ Yours, plus an oscilloscope, loudness and spectrum overlays and hints, are always on screen. Press **⛶ Focus** (or Shift+F) for a full-screen board with a compact compare bar.
-6. **Stuck?** Press **Help**. It first points out missing modules or cables (and can patch them for you), then names the knob that matters most and explains it. Press again and it can **lock** that knob at the client's value. Tap a locked knob to see why, or to unlock it.
-7. **Send** at a 90% match or better. Your patch plays a short **jingle** to celebrate. Then come back and beat par on cost.
+3. **Patch.** Drag from jack to jack, or tap one jack and then another. To rearrange, drag a module by its ⠿ name bar, or tap the name bar and then tap where it should go. Yellow cables carry audio, blue cables carry control signals. Click a cable to unplug it.
+4. **Listen.** ▶ Target and ▶ Yours play one note. Switch on **♫ Song** to hear both in a short demo song instead.
+5. **Tune.** Drag knobs up and down (Shift for fine control), or **click a knob** for a precise editor with fine −/+ steps and arrow keys.
+6. **Compare.** ▶ Target vs ▶ Yours, plus an oscilloscope, loudness and spectrum overlays and hints, are always on screen. Press **⛶ Focus** (or Shift+F) for a full-screen board with a compact compare bar.
+7. **Stuck?** Press **Help**. It first points out missing modules or cables (and can patch them for you), then names the knob that matters most and explains it. Press again and it can **lock** that knob at the client's value. Tap a locked knob to see why, or to unlock it.
+8. **Send** at a 90% match or better. Your patch plays a short **jingle** to celebrate. Then come back and beat par on cost.
 
 On phones, knobs, cables and modules give **haptic feedback** (Android fully; iPhone on iOS 18+). Switch it off in ⚙ Settings.
 
@@ -31,7 +32,7 @@ On phones, knobs, cables and modules give **haptic feedback** (Android fully; iP
 
 ## Curriculum
 
-**Basics** is a seven-lesson tutorial on the building blocks, followed by thirteen **themes**, three **advanced** chapters and a bonus. **Every gig is open**, so start with Basics or skip ahead; your progress is saved either way, and each chapter marks its next gig. Each theme teaches its style through several lessons and ends with a **challenge**: no parts list, just the brief, the sound and how many modules the patch uses.
+**Basics** is a seven-lesson tutorial on the building blocks, followed by fourteen **themes**, three **advanced** chapters and a bonus. **Every gig is open**, so start with Basics or skip ahead; your progress is saved either way, and each chapter marks its next gig. Each theme teaches its style through several lessons and ends with a **challenge**: no parts list, just the brief, the sound and how many modules the patch uses.
 
 | Chapter | Gigs (★ = challenge) |
 |---|---|
@@ -48,6 +49,7 @@ On phones, knobs, cables and modules give **haptic feedback** (Android fully; iP
 | **Effects Rack** | Slapback (delay) · Canyon Echo (feedback) · Big Room (reverb) · Chorus (modulated delay) · Fuzz Box (distortion) · ★ Dub Stab |
 | **Strings & Plucks** | Plucked String (Karplus–Strong) · Nylon (damping) · ★ Harp |
 | **Random & Generative** | Computer Bleeps (sample & hold) · Random Filter · ★ Robot Babble |
+| **Step Sequencer** | First Steps (pitch + gate) · Pluck Every Step (retriggered envelope) · Slide (glide) · ★ Warehouse Line |
 | **Repair Shop** | No Signal (signal flow) · Muffled Mess (diagnosing tone) · Wrong Jack (audio vs. control) · Seasick (modulation depth) · ★ Total Wreck |
 | **Sync & Ring** (advanced) | Torn Edge (hard sync) · Sync Sweep · Robot Voice (ring modulation) · ★ Screamer |
 | **Modulation Deep Dive** (advanced) | Strike Once (function generator) · Pump (looping shapes) · Late Vibrato (modulating modulation) · ★ Tidal Wobble |
