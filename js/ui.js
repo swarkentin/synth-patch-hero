@@ -95,12 +95,23 @@ function layoutBoard(){
   const n=S.slots, cols=S.mobile?2:(n<=4?n:Math.ceil(n/2)), rows=Math.ceil(n/cols);
   const outCell=[cols-1,0], cells=[];
   for(let r=0;r<rows;r++) for(let c=0;c<cols;c++) if(!(c===outCell[0]&&r===outCell[1])) cells.push([c,r]);
-  S.grid={cols,rows,cells,outCell,W:PAD*2+cols*SW+(cols-1)*GAP,H:PAD*2+rows*SH+(rows-1)*GAP};
+  S.grid={cols,rows,cells,outCell,W:PAD*2+cols*SW+(cols-1)*GAP,H:PAD*2+rows*SH+(rows-1)*GAP}; S.grid.baseW=S.grid.W; S.grid.baseH=S.grid.H;
   const st=$('#stage'); st.style.width=S.grid.W+'px'; st.style.height=S.grid.H+'px';
 }
 function slotXY(i){ const [c,r]= i===S.slots-1 ? S.grid.outCell : S.grid.cells[i]; return [PAD+c*(SW+GAP), PAD+r*(SH+GAP)]; }
 const occupant=i=>S.patch.modules.find(m=>m.slot===i);
-function emptySlots(){ const out=[]; for(let i=0;i<S.slots-1;i++) if(!occupant(i)) out.push(i); return out; }
+/* Free placement: a module either sits in a box (m.slot) or floats at m.x,m.y (m.slot === null) when Snap is off.
+   A floating module doesn't hold a box, but a box it mostly covers stops offering itself. */
+const MW=188;
+function modXY(m){ if(m.slot!=null){ const [x,y]=slotXY(m.slot); return [x+6,y+6]; } return [m.x,m.y]; }
+function coveredSlot(i){ if(!S.grid||!S.patch.modules.some(m=>m.slot==null)) return false; const [x,y]=slotXY(i); return S.patch.modules.some(m=>{ if(m.slot!=null) return false;
+  const ox=Math.max(0,Math.min(x+SW,m.x+MW)-Math.max(x,m.x)), oy=Math.max(0,Math.min(y+SH,m.y+SH-12)-Math.max(y,m.y)); return ox*oy>SW*SH*0.3; }); }
+function emptySlots(){ const out=[]; for(let i=0;i<S.slots-1;i++) if(!occupant(i)&&!coveredSlot(i)) out.push(i); return out; }
+/* Grow the board to hold floating modules (never smaller than the box grid). */
+function sizeStage(){ const g=S.grid; let W=g.baseW, H=g.baseH;
+  for(const m of S.patch.modules) if(m.slot==null){ W=Math.max(W,m.x+MW+PAD); H=Math.max(H,m.y+SH+PAD); }
+  g.W=W; g.H=H; const st=$('#stage'); st.style.width=W+'px'; st.style.height=H+'px'; }
+S.snap=store.get('snap',true);
 function needs(){ if(S.sandbox) return {}; const n={}; S.L.target.mods.forEach(m=>n[m.type]=(n[m.type]||0)+1); return n; }
 const isChallenge=()=>!S.sandbox&&!!S.L.challenge;
 const placedCount=()=>S.patch.modules.filter(m=>m.type!=='out').length;
@@ -133,7 +144,9 @@ function openLevel(i){ S.moving=null; pushRoute(i);
 function validDraft(d){
   if(!d||!Array.isArray(d.modules)||!Array.isArray(d.cables)) return false;
   const seen=new Set();
-  for(const m of d.modules){ if(!MT[m.type]||!Number.isInteger(m.slot)||m.slot<0||m.slot>=S.slots||seen.has(m.slot)) return false; seen.add(m.slot); }
+  for(const m of d.modules){ if(!MT[m.type]) return false;
+    if(m.slot==null){ if(m.type==='out'||!Number.isFinite(m.x)||!Number.isFinite(m.y)||m.x<0||m.y<0) return false; continue; }
+    if(!Number.isInteger(m.slot)||m.slot<0||m.slot>=S.slots||seen.has(m.slot)) return false; seen.add(m.slot); }
   const o=d.modules.find(m=>m.type==='out'); return !!o&&o.slot===S.slots-1;
 }
 function freshPatch(){
@@ -174,10 +187,15 @@ function renderParts(){
 }
 function addModule(t,slot){
   if(countType(t)>=S.palette[t]){ toast(`No ${MT[t].name} modules left for this gig.`); return; }
-  if(slot==null){ const e=emptySlots(); if(!e.length){ toast('The rack is full. Remove a module first.'); return; } slot=e[0]; }
+  let place;
+  if(slot!=null) place={slot};
+  else { const e=emptySlots(); if(e.length) place={slot:e[0]};
+    else if(S.patch.modules.some(m=>m.slot==null)){ // boxes are covered by floating modules: float the new one below everything
+      const bottom=Math.max(S.grid.baseH,...S.patch.modules.map(m=>modXY(m)[1]+SH)); place={slot:null,x:PAD,y:bottom+GAP}; }
+    else { toast('The rack is full. Remove a module first.'); return; } }
   const id='m'+(idc++);
-  S.moving=null; S.patch.modules.push({id,type:t,slot,params:defaultParams(t)});
-  S.slotMenu=null; Haptics.thunk(); refreshRack(); scheduleAnalyze(); revealSlot(slot);
+  S.moving=null; S.patch.modules.push(Object.assign({id,type:t,params:defaultParams(t)},place));
+  S.slotMenu=null; Haptics.thunk(); refreshRack(); scheduleAnalyze(); if(place.slot!=null) revealSlot(place.slot);
 }
 function removeModule(id){
   const m=S.patch.modules.find(x=>x.id===id); if(!m||m.locked) return; S.moving=null;
@@ -193,8 +211,10 @@ function refreshRack(){ renderPalette(); renderRack(); if(S.cmp) updateCompare()
 function renderRack(){
   const slotsEl=$('#slots'), box=$('#mods'); slotsEl.innerHTML=''; box.innerHTML='';
   const wanted=needsMore();
+  sizeStage();
   for(let i=0;i<S.slots-1;i++){
     const [x,y]=slotXY(i), occ=occupant(i);
+    if(!occ&&coveredSlot(i)){ const c=el('div',{class:'slot covered','data-slot':i}); c.style.left=x+'px'; c.style.top=y+'px'; slotsEl.appendChild(c); continue; }
     const s=el(!occ&&S.slotMenu!==i?'label':'div',{class:'slot'+(occ?' filled':' empty'+(wanted?' wanted':'')),'data-slot':i}); s.style.left=x+'px'; s.style.top=y+'px';
     if(!occ&&S.moving){
       s.classList.add('moveTarget'); s.innerHTML='<div class="plus">↘</div><div>MOVE HERE</div>'; Haptics.addSwitch(s);
@@ -214,8 +234,8 @@ function renderRack(){
     slotsEl.appendChild(s);
   }
   for(const m of S.patch.modules){
-    const T=MT[m.type], [x,y]=slotXY(m.slot);
-    const d=el('div',{class:'module'+(m.locked?' locked':''),'data-id':m.id}); d.style.left=(x+6)+'px'; d.style.top=(y+6)+'px';
+    const T=MT[m.type], [x,y]=modXY(m);
+    const d=el('div',{class:'module'+(m.locked?' locked':'')+(m.slot==null?' floating':''),'data-id':m.id}); d.style.left=x+'px'; d.style.top=y+'px';
     const head=el('div',{class:'mhead',title:m.locked?'':'Drag to move, or tap to pick up and tap where it should go'},`${m.locked?'':'<span class="grip" aria-hidden="true">⠿</span>'}<span class="stripe" style="background:${T.color}"></span><span class="name">${T.name}</span>${m.preset&&m.type!=='out'?'<span class="lock">PRESET</span>':''}<span class="cost">${T.cost&&!m.preset?T.cost+'¢':''}</span>`);
     if(!m.locked){ const xb=el('button',{class:'del',title:'Remove module'},'×'); xb.addEventListener('pointerdown',e=>e.stopPropagation()); xb.addEventListener('click',()=>removeModule(m.id)); head.appendChild(xb); }
     d.appendChild(head);
@@ -230,7 +250,7 @@ function renderRack(){
     body.append(ins,prm,outs); d.appendChild(body); box.appendChild(d);
     d.addEventListener('pointerdown',e=>e.stopPropagation());
     if(S.moving===m.id) d.classList.add('moving');
-    else if(S.moving&&!m.locked&&m.type!=='out'){ d.classList.add('moveTarget'); d.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); moveModuleTo(m.slot); },true); }
+    else if(S.moving&&!m.locked&&m.type!=='out'){ d.classList.add('moveTarget'); d.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); swapWith(m); },true); }
     if(!m.locked) dragModule(head,m,d);
   }
   renderParts();
@@ -249,7 +269,7 @@ function stagePoint(ev){ const r=$('#stage').getBoundingClientRect(); return [(e
 /* Where a dragged module lands: the slot nearest the module's own centre (not the pointer, which sits on the
    name bar at the very top, so lining the module up with a slot used to leave the pointer in the gap above it). */
 function dropSlot(m,dx,dy){
-  const [x0,y0]=slotXY(m.slot), cx=x0+SW/2+dx, cy=y0+SH/2+dy; let best=null, bd=Infinity;
+  const [x0,y0]=modXY(m), cx=x0-6+SW/2+dx, cy=y0-6+SH/2+dy; let best=null, bd=Infinity;
   for(let i=0;i<S.slots;i++){ const [x,y]=slotXY(i), d=Math.hypot(x+SW/2-cx,(y+SH/2-cy)*SW/SH); if(d<bd){ bd=d; best=i; } }
   return bd<SW*0.75?best:null;
 }
@@ -257,30 +277,46 @@ function slotAt(p){ for(let i=0;i<S.slots;i++){ const [x,y]=slotXY(i); if(p[0]>=
 /* Tap-to-move: tap a module's name bar to pick it up, then tap a free slot (move) or another module (swap). */
 function toggleMove(m){
   S.moving=S.moving===m.id?null:m.id; S.slotMenu=null; renderRack();
-  if(S.moving) toast(`Tap a free slot to move ${MT[m.type].name} there, or another module to swap. Tap its name again to cancel.`);
+  if(S.moving) toast(S.snap?`Tap a free slot to move ${MT[m.type].name} there, or another module to swap. Tap its name again to cancel.`:`Tap anywhere on the board to put ${MT[m.type].name} there, a box to snap it in, or another module to swap.`);
 }
+function placeIn(m,t){ m.slot=t; delete m.x; delete m.y; }
+function swapPlaces(a,b){ const pa={slot:a.slot,x:a.x,y:a.y}; Object.assign(a,{slot:b.slot,x:b.x,y:b.y}); Object.assign(b,pa);
+  [a,b].forEach(m=>{ if(m.slot!=null){ delete m.x; delete m.y; } }); }
 function moveModuleTo(t){
   const m=S.patch&&S.patch.modules.find(x=>x.id===S.moving); S.moving=null;
   if(m&&t!=null&&t!==m.slot&&t!==S.slots-1){ const o=occupant(t);
-    if(!o){ m.slot=t; Haptics.thunk(); } else if(!o.locked){ o.slot=m.slot; m.slot=t; Haptics.thunk(); } else toast('That slot holds a preset module.'); }
+    if(!o){ placeIn(m,t); Haptics.thunk(); } else if(!o.locked){ swapPlaces(m,o); Haptics.thunk(); } else toast('That slot holds a preset module.'); }
   renderRack(); saveDraft();
 }
+function swapWith(o){ const m=S.patch&&S.patch.modules.find(x=>x.id===S.moving); S.moving=null; if(m&&o&&m!==o&&!o.locked){ swapPlaces(m,o); Haptics.thunk(); } renderRack(); saveDraft(); }
+/* Snap off: put a module down at a stage point (its name bar under the point), clear of OUTPUT. */
+function floatAt(m,x,y){
+  const [ox,oy]=slotXY(S.slots-1); x=Math.max(0,Math.round(x)); y=Math.max(0,Math.round(y));
+  const cx=x+MW/2, cy=y+SH/2; if(cx>ox&&cx<ox+SW&&cy>oy&&cy<oy+SH){ toast('OUTPUT always stays in the top-right slot.'); return false; }
+  m.slot=null; m.x=x; m.y=y; return true;
+}
+function setSnap(on){ S.snap=on; store.set('snap',on); const b=$('#zSnap'); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on);
+  b.title=on?'Snap is on: modules drop into the nearest box. Hold Alt or Shift while dragging to place freely.':'Snap is off: modules stay where you drop them. Hold Alt or Shift while dragging to snap to a box.'; }
 function dragModule(head,m,d){
   head.addEventListener('pointerdown',e=>{
     if(e.target.closest('.del')) return;
     e.preventDefault(); e.stopPropagation(); try{head.setPointerCapture(e.pointerId);}catch(_){}
     const x0=e.clientX, y0=e.clientY; let moved=false, over=null;
+    const snapNow=ev=>S.snap!==!!(ev.altKey||ev.shiftKey);
     const mv=ev=>{ if(S.pinching) return; const dx=(ev.clientX-x0)/S.view.s, dy=(ev.clientY-y0)/S.view.s;
       if(!moved&&Math.hypot(dx,dy)<5) return; moved=true; d.classList.add('dragging'); d.style.transform=`translate(${dx}px,${dy}px)`;
-      const t=dropSlot(m,dx,dy); if(t!==over){ document.querySelectorAll('.slot.drop').forEach(s=>s.classList.remove('drop')); over=t; const se=t!=null&&document.querySelector(`.slot[data-slot="${t}"]`); if(se&&t!==m.slot) se.classList.add('drop'); }
+      const t=snapNow(ev)?dropSlot(m,dx,dy):null; if(t!==over){ document.querySelectorAll('.slot.drop').forEach(s=>s.classList.remove('drop')); over=t; const se=t!=null&&document.querySelector(`.slot[data-slot="${t}"]`); if(se&&t!==m.slot) se.classList.add('drop'); }
       drawCables(); };
     const up=ev=>{ head.removeEventListener('pointermove',mv); head.removeEventListener('pointerup',up); head.removeEventListener('pointercancel',up);
       d.style.transform=''; d.classList.remove('dragging'); document.querySelectorAll('.slot.drop').forEach(s=>s.classList.remove('drop'));
       if(!moved){ if(S.moving&&S.moving!==m.id) moveModuleTo(m.slot); else toggleMove(m); return; }
-      const t=dropSlot(m,(ev.clientX-x0)/S.view.s,(ev.clientY-y0)/S.view.s);
-      if(t===S.slots-1) toast('OUTPUT always stays in the top-right slot.');
-      else if(t!=null&&t!==m.slot){ const o=occupant(t);
-        if(!o){ m.slot=t; Haptics.thunk(); } else if(!o.locked){ o.slot=m.slot; m.slot=t; Haptics.thunk(); } else toast('That slot holds a preset module, so it can\'t move.'); }
+      const dx=(ev.clientX-x0)/S.view.s, dy=(ev.clientY-y0)/S.view.s;
+      if(!snapNow(ev)){ const [mx,my]=modXY(m); if(floatAt(m,mx+dx,my+dy)) Haptics.thunk(); }
+      else { const t=dropSlot(m,dx,dy);
+        if(t===S.slots-1) toast('OUTPUT always stays in the top-right slot.');
+        else if(t!=null&&t!==m.slot){ const o=occupant(t);
+          if(!o){ placeIn(m,t); Haptics.thunk(); } else if(!o.locked){ swapPlaces(m,o); Haptics.thunk(); } else toast('That slot holds a preset module, so it can\'t move.'); }
+        else if(t===m.slot&&m.slot!=null){ /* dropped back home */ } }
       renderRack(); saveDraft(); };
     head.addEventListener('pointermove',mv); head.addEventListener('pointerup',up); head.addEventListener('pointercancel',up);
   });
@@ -317,7 +353,8 @@ function revealSlot(i){
     const dx=e.clientX-pan.x0, dy=e.clientY-pan.y0; if(!pan.moved&&Math.hypot(dx,dy)<5) return;
     pan.moved=true; vp.classList.add('panning'); S.view.x=pan.vx+dx; S.view.y=pan.vy+dy; S.userZoom=true; clampView(); applyView(); });
   const end=e=>{ if(!pan||e.pointerId!==pan.id) return; vp.classList.remove('panning');
-    if(!pan.moved&&!e.target.closest('#cables g')){ if(S.pick) clearPick(); if(S.slotMenu!=null){ S.slotMenu=null; renderRack(); } }
+    if(!pan.moved&&!e.target.closest('#cables g')){ if(S.moving&&!S.snap){ const m=S.patch.modules.find(x=>x.id===S.moving), [px,py]=stagePoint(e); S.moving=null; if(m&&floatAt(m,px-MW/2,py-14)) Haptics.thunk(); renderRack(); saveDraft(); pan=null; return; }
+      if(S.pick) clearPick(); if(S.slotMenu!=null){ S.slotMenu=null; renderRack(); } }
     pan=null; };
   vp.addEventListener('pointerup',end); vp.addEventListener('pointercancel',end);
   vp.addEventListener('wheel',e=>{ e.preventDefault(); const r=vp.getBoundingClientRect();
@@ -333,6 +370,7 @@ function revealSlot(i){
   const tEnd=e=>{ if(pinch&&e.touches.length<2){ pinch=null; setTimeout(()=>{ S.pinching=false; },80); } };
   vp.addEventListener('touchend',tEnd); vp.addEventListener('touchcancel',tEnd);
   document.addEventListener('gesturestart',e=>e.preventDefault());
+  $('#zSnap').onclick=()=>setSnap(!S.snap); setSnap(S.snap);
   $('#zIn').onclick=()=>zoomCenter(1.2); $('#zOut').onclick=()=>zoomCenter(1/1.2); $('#zFit').onclick=()=>fitView();
 })();
 function setFocus(on){
@@ -748,7 +786,7 @@ function dataInfo(){
 function dataSummary(){ const d=dataInfo(); return store.available()?`Saved only in this browser on this device: ${d.solved} gig${d.solved===1?'':'s'} paid, ${d.drafts} patch${d.drafts===1?'':'es'} in progress, ${d.kb.toFixed(1)} KB.`:'This browser isn\'t letting the game save anything (private mode or storage blocked), so progress lasts only until you close the page.'; }
 function openDataSheet(){
   const sh=$('#sheet'); sh.hidden=false; const d=dataInfo();
-  const PREF={haptics:'Haptics on/off',keysOpen:'On-screen keyboard shown',songMode:'♫ Song mode',boardView:'Gig board chapter and filter',midiAuto:'Reconnect MIDI automatically'};
+  const PREF={haptics:'Haptics on/off',keysOpen:'On-screen keyboard shown',songMode:'♫ Song mode',boardView:'Gig board chapter and filter',midiAuto:'Reconnect MIDI automatically',snap:'Snap modules to boxes'};
   sh.innerHTML=`<div class="sheetCard dataCard"><div class="shHead"><span class="shTitle">YOUR DATA</span><button class="btn primary" id="shDone">Done</button></div>
     <p><b>Where it lives:</b> in this browser's local storage, on this device only. There are no accounts, nothing is uploaded, and there are no analytics or cookies.</p>
     <p><b>What that means:</b> another browser or device, a private window, or the other copy of the game (GitHub Pages vs. claude.ai) each keeps its own separate progress. Clearing this site's data in your browser settings erases it. Use Export to move it.</p>

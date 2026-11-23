@@ -323,6 +323,40 @@ try {
     const landed = await page.evaluate(`S.patch.modules.find(m=>m.type==='osc').slot`);
     ok(landed === g.free, `${mob ? 'finger' : 'mouse'} drag lands in the slot the module is lined up with, even when let go a little high (slot ${landed}, wanted ${g.free})`);
   }
+
+  // Free placement: with Snap off a module stays exactly where it's dropped (anywhere, even past the box grid).
+  {
+    await page.open(URL, { width: 1280, height: 800 }); await page.waitFor("document.querySelector('.gig')");
+    const g = JSON.parse(await page.evaluate(`(async()=>{ store.del('draft2.squelch'); openLevel(LEVELS.findIndex(l=>l.id==='squelch')); addModule('osc'); addModule('filter');
+      setSnap(false); fitView(); await new Promise(r=>setTimeout(r,300));
+      const o=S.patch.modules.find(m=>m.type==='osc'), h=[...document.querySelectorAll('.module')].find(x=>x.querySelector('.name').textContent==='OSC').querySelector('.mhead').getBoundingClientRect();
+      const [ox,oy]=modXY(o); return JSON.stringify({px:h.left+12,py:h.top+h.height/2,ox,oy,k:S.view.s}); })()`));
+    const dx = 37, dy = 260;   // screen px: lands between and below the boxes
+    await page.cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: g.px, y: g.py });
+    await page.cdp('Input.dispatchMouseEvent', { type: 'mousePressed', x: g.px, y: g.py, button: 'left', buttons: 1, clickCount: 1 });
+    for (let k = 1; k <= 8; k++) await page.cdp('Input.dispatchMouseEvent', { type: 'mouseMoved', x: g.px + dx * k / 8, y: g.py + dy * k / 8, button: 'left', buttons: 1 });
+    await page.cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x: g.px + dx, y: g.py + dy, button: 'left', buttons: 0, clickCount: 1 });
+    await new Promise(r => setTimeout(r, 250));
+    const f = await page.evaluate(`(async()=>{ const o=S.patch.modules.find(m=>m.type==='osc'), d=[...document.querySelectorAll('.module')].find(x=>x.querySelector('.name').textContent==='OSC');
+      const at=[o.x,o.y], floating=o.slot===null&&d.classList.contains('floating');
+      const grew=S.grid.H>=o.y+SH;
+      const freed=emptySlots().length;
+      // reopen: position is saved with the patch
+      openLevel(LEVELS.findIndex(l=>l.id==='squelch')); const o2=S.patch.modules.find(m=>m.type==='osc'); const kept=o2.slot===null&&o2.x===at[0]&&o2.y===at[1];
+      // snap back on: dragging into a box puts it back in the grid
+      setSnap(true); const snapPref=store.get('snap')===true;
+      S.moving=o2.id; const free=emptySlots()[0]; moveModuleTo(free); const boxed=o2.slot===free&&o2.x===undefined;
+      // help still works with a floating module present
+      o2.slot=null; o2.x=40; o2.y=600; renderRack(); for(let k=0;k<16;k++){ if(!(await autoHelp())) break; }
+      const helped=S.patch.modules.filter(m=>m.type!=='out').length>=2;
+      return {at,floating,grew,freed,kept,snapPref,boxed,helped}; })()`);
+    const want = [Math.round(g.ox + dx / g.k), Math.round(g.oy + dy / g.k)];
+    ok(f.floating && Math.abs(f.at[0] - want[0]) <= 1 && Math.abs(f.at[1] - want[1]) <= 1, `with Snap off a dragged module stays where it's dropped (${f.at} vs ${want})`);
+    ok(f.grew && f.freed >= 1, 'the board grows to hold it, and the box it left is free again');
+    ok(f.kept, 'a free position is saved with the patch');
+    ok(f.snapPref && f.boxed, 'with Snap on, moving a floating module puts it back in a box');
+    ok(f.helped, 'Help still works when modules float');
+  }
   await page.open(URL, { width: 1280, height: 800 }); await page.waitFor("document.querySelector('.gig')");
 
   console.log('\nGig board browsing');

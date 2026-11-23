@@ -124,11 +124,12 @@ function describeCable(p,c){ const f=modOf(p,c.from.m), t=modOf(p,c.to.m); retur
 function applyStructure(si){
   const notes=[], P=S.patch;
   for(const t of si.missingMods){
-    let slot=emptySlots()[0];
-    if(slot==null){ const spare=P.modules.find(m=>!m.locked&&m.type!=='out'&&!Object.values(si.map).includes(m.id));
-      if(spare){ slot=spare.slot; P.modules=P.modules.filter(m=>m!==spare); P.cables=P.cables.filter(c=>c.from.m!==spare.id&&c.to.m!==spare.id); notes.push(`Removed an unused ${MT[spare.type].name} to make room.`); } }
-    if(slot==null) continue;
-    const id='m'+(idc++); P.modules.push({id,type:t.type,slot,params:defaultParams(t.type)}); si.map[t.id]=id;
+    let place=emptySlots().length?{slot:emptySlots()[0]}:null;
+    if(!place){ const spare=P.modules.find(m=>!m.locked&&m.type!=='out'&&!Object.values(si.map).includes(m.id));
+      if(spare){ place=spare.slot!=null?{slot:spare.slot}:{slot:null,x:spare.x,y:spare.y}; P.modules=P.modules.filter(m=>m!==spare); P.cables=P.cables.filter(c=>c.from.m!==spare.id&&c.to.m!==spare.id); notes.push(`Removed an unused ${MT[spare.type].name} to make room.`); } }
+    if(!place){ // every box is taken or covered by floating modules: float the new one below the board
+      const bottom=Math.max(S.grid.baseH,...P.modules.map(m=>modXY(m)[1]+SH)); place={slot:null,x:PAD,y:bottom+GAP}; }
+    const id='m'+(idc++); P.modules.push(Object.assign({id,type:t.type,params:defaultParams(t.type)},place)); si.map[t.id]=id;
     notes.push(`Added a <b>${MT[t.type].name}</b>. ${MODULE_WHY[t.type]}`);
   }
   const required=si.T.cables.filter(c=>si.map[c.from.m]&&si.map[c.to.m]).map(c=>({from:{m:si.map[c.from.m],p:c.from.p},to:{m:si.map[c.to.m],p:c.to.p}}));

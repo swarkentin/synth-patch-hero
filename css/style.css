@@ -540,3 +540,9 @@ label.kbClose,#btnHelp[role=button]{display:inline-flex;align-items:center;justi
 .btn.danger{border-color:#8a3b32;color:#f08a7a}
 .dataNote{display:block;margin-top:8px;font-family:var(--mono);font-size:10.5px;color:var(--faint)}
 @media (max-width:760px){ .dataList li{flex-direction:column;gap:2px} .dataList li b{flex:none} }
+
+/* Free placement */
+.zoomCtl .snap{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;padding:0 10px;color:var(--faint);border-right:1px solid var(--line2);width:auto!important}
+.zoomCtl .snap.on{color:var(--amber)}
+.slot.covered{border:1px dashed rgba(255,255,255,.05);background:transparent;pointer-events:none}
+.module.floating{box-shadow:0 10px 24px rgba(0,0,0,.55);z-index:3}
