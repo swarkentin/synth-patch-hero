@@ -48,6 +48,7 @@
       <div id="palette" style="display:flex;gap:6px"></div>
       <span class="spacer"></span>
       <div class="viewGrp" role="group" aria-label="View">
+        <button class="btn ghost" id="gearBtn" hidden aria-pressed="false" title="On your box: make this sound on your own synth, step by step"><span class="ico">▦</span><span class="lbl"> Box</span></button>
         <button class="btn ghost" id="songBtn" title="Song mode: ▶ Target and ▶ Yours play a short demo song instead of one note"><span class="ico">♫</span><span class="lbl"> Song</span></button>
         <button class="btn ghost" id="keysBtn" title="Show the keyboard (USB/MIDI keyboards work even when hidden)"><span class="ico">♪</span><span class="lbl"> Keys</span></button>
         <button class="btn ghost" id="focusBtn" title="Full-screen focus mode: big board, compact compare bar (Shift+F)"><span class="ico">⛶</span><span class="lbl"> Focus</span></button>
@@ -58,6 +59,7 @@
       <div class="partsBar" id="partsBar"></div>
       <div class="zoomCtl"><button class="snap" id="zSnap" aria-pressed="true">⊞ SNAP</button><button id="zOut" title="Zoom out (−)">−</button><span id="zoomPct">100%</span><button id="zIn" title="Zoom in (+)">+</button><button class="fit" id="zFit" title="Fit the rack (0)">FIT</button></div>
     </div>
+    <div class="gearDock" id="gearDock" hidden></div>
     <div class="keysDock" id="keysDock" hidden>
       <div class="kbBar"><div class="kbPrompt" id="kbPrompt"></div>
         <div class="kbCtl"><button class="oct" id="kbDn" title="Lower octaves">‹</button><span class="kbRange" id="kbRange"></span><button class="oct" id="kbUp" title="Higher octaves">›</button>
@@ -78,6 +80,7 @@
 <script src="js/haptics.js"></script>
 <script src="js/keys.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/gear.js"></script>
 <script src="js/help.js"></script>
 <script src="js/selftest.js"></script>
 <script src="js/main.js"></script>

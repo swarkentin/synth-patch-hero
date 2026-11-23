@@ -81,7 +81,7 @@ Feedback that drove it: difficulty rises fast (especially the VCA lesson); playe
 - **Rule:** keep what plays, how you're doing, and how the screen looks in separate, consistent places, in normal and focus mode.
 - **Compare panel, Listen group:** ▶ Target and ▶ Yours, plus a **Note | Song** switch directly under them. It decides what ▶ plays: one held note, or the demo song that's also the end-of-gig jingle.
 - **Compare panel, Score group:** match %, **Send** and **Help**, under a divider. In focus mode on wide screens, Listen | Score | hints | graphs run left to right in one bar.
-- **Toolbar right side, view switches only:** ♪ Keys and ⛶ Focus (✕ Exit focus while focused, amber). **Reset** moved to ⚙ Settings → Reset this rack, so a destructive button doesn't sit beside view toggles.
+- **Toolbar right side, view switches only:** ▦ Box (only on gigs with a guide for the player's gear; see On your box), ♪ Keys and ⛶ Focus (✕ Exit focus while focused, amber). **Reset** moved to ⚙ Settings → Reset this rack, so a destructive button doesn't sit beside view toggles.
 - **Phones:** keep the compact strip (▶ Target · ▶ Yours · % · Send · ?). Song mode stays as the ♫ icon beside Keys and Focus for space.
 - **No layout jump on open:** graphs are sized when the panel renders, and on phones the hint area reserves two lines. Before this, the first analysis resized both, shifting the toolbar 31 px about 250 ms after a gig opened, so taps could land on the wrong control. Test: the phone layout holds still.
 
@@ -102,7 +102,7 @@ Playtest, 2026-11-22: it was unclear where and what session data is stored.
 - **What's stored:**
   - `progress`: paid gigs with cost and match %, `played` (the note was played), `helped`;
   - `draft2.<gig>`: each gig's rack in progress;
-  - preferences: `haptics`, `keysOpen`, `songMode`, `boardView`, `midiAuto`, `snapOn`. (An old `engine` key from the A/B toggle is removed on load.)
+  - preferences: `haptics`, `keysOpen`, `songMode`, `boardView`, `midiAuto`, `snapOn`, `gear` (instruments picked in My gear). (An old `engine` key from the A/B toggle is removed on load.)
 - **The panel** explains this in plain words, shows counts and size, and offers:
   - **Export:** a JSON file `{game, version, exported, data}`;
   - **Import:** replaces everything from such a file;
@@ -205,6 +205,20 @@ Calibrated outcomes: exact = 100; cutoff +0.2 oct ≈ 94; decay −9% ≈ 88; wr
 - The keyboard highlights the client's note and describes it relative to middle C ("the third A below middle C"). Wrong notes get coaching by semitones or octaves. Success saves `progress.played[gig]` and adds ♪ to the gig card. After that, every key plays the patch.
 - MIDI, on-screen keys and computer keys share one `keyDown`/`keyUp` path. Velocity maps to loudness 0.35–1.0. Sustain pedal (CC64) and all-notes-off are supported.
 - Web MIDI works in Chrome/Edge/Opera/Firefox desktop and Chrome on Android; iOS Safari has none. The hosted artifact frame may block MIDI, so GitHub Pages (or opening `index.html` directly) works around that.
+
+## On your box (first cut, 2026-11-23)
+The game stays a modular synth. A standalone synth or groovebox is the affordable way to practise the same ideas, so a gig can carry a guide for making its sound on a real instrument. Design mockup: `docs/mockups/real-gear/`.
+- **Settings → My gear** (saved as `gear`): a modular rack (later), then standalone boxes: Digitone II (live), MiniFreak and MC-707 (later). Nothing is picked by default.
+- **Gig board:** gigs with a guide for your gear get a small teal badge (e.g. `DT II`).
+- **In a gig:** a ▦ **Box** button appears in the toolbar's view switches, only on gigs with a guide. It opens a drawer under the rack (like the keyboard), closed by default, so the default fit and OUTPUT are unchanged. The compare panel stays put.
+  - Steps on the left. The current step has its text, the game's own words for it, Back and **Done on my box**. Step ticks last until you leave the gig; nothing new is saved.
+  - A wireframe panel: a copy of the box's screen (same page layout and parameter names, in the game's type, values to change shown inverted), the page keys with the current one lit, and the eight knobs A–H with the ones to turn lit and a pointer at roughly where to aim.
+  - A "Same idea, its words" row, a note about which cables the box already has inside, and the source manual with a not-affiliated line.
+  - Cables the box has built in (on the Digitone II, envelope → filter CUT and envelope → VCA gain) get a dashed teal overlay and an **IN YOUR BOX** tag on the rack while the drawer is open. Matching is by module type and jack, so it works on the player's own patch.
+- **Honesty:** names come from the maker's manual; positions are rough ("~1/4"), and the drawer says ROUGH POSITIONS. Where we haven't confirmed which knob a value sits on, the order is our best reading of the manual.
+- **Layout:** with ▦ Box showing on screens under 1400 px, Keys and Focus go icon-only so the toolbar doesn't grow. Phones show only the current step, the screen, page keys and knobs; the drawer caps at 46% of the height.
+- **Data:** `GEAR` and `GEAR_GUIDES` in `js/data.js`, the drawer in `js/gear.js`. Tests check every guide points at a real gig, real jacks and the box's own page keys, and that the drawer works on desktop and phone.
+- **First guide:** Acid Test on the Digitone II (Wavetone → Lowpass 4 → its filter envelope → AMP).
 
 ## Roadmap / open ideas
 See **[docs/ideas.md](ideas.md)**. It's the single ideas bucket, including the real-gear track (Digitone II, MiniFreak, MC-707): concept→gear map, panel maps that show where to reach on the real box, device racks, MIDI knob reading, and a stretch "listening mode" that scores the real box.

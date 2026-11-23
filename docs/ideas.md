@@ -45,7 +45,7 @@ Gear guidance should teach that translation explicitly: "this cable is already w
 
 ### Building blocks, smallest first
 
-1. 🟢 **"On your box" notes and panel maps in existing gigs.** A short, optional panel per gig, for example "On a MiniFreak: the cycling envelope in Loop mode is this gig's FUNC." It's shown for gear the player picks in Settings ("My gear": none / Digitone II / MiniFreak / MC-707), with a panel map highlighting where the control lives (see Showing the real gear). This is cheap and immediately useful, but every note must be checked against the manual.
+1. 🟢 **"On your box" notes and panel maps in existing gigs.** *First cut built: Acid Test on the Digitone II (see docs/design.md, On your box). Next: more gigs, then MiniFreak.* A short, optional panel per gig, for example "On a MiniFreak: the cycling envelope in Loop mode is this gig's FUNC." It's shown for gear the player picks in Settings ("My gear": none / Digitone II / MiniFreak / MC-707), with a panel map highlighting where the control lives (see Showing the real gear). This is cheap and immediately useful, but every note must be checked against the manual.
 2. 🟡 **Device racks.** Locked, pre-wired preset racks that mirror each box's signal flow, with its labels and value ranges (e.g. 0–127), so the numbers learned transfer to the real knobs. Presets, locks and Help already support most of this.
 3. 🟡 **Engine additions to cover the boxes:**
    - Comb± filters.

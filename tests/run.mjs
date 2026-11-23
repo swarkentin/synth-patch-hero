@@ -170,13 +170,13 @@ try {
   const groups = await page.evaluate(`(async()=>{ openLevel(LEVELS.findIndex(l=>l.id==='acid')); const q=s=>document.querySelector(s), vis=e=>!!e&&getComputedStyle(e).display!=='none';
     const listen=q('.cmpTop .grp.listen'), score=q('.cmpTop .grp.score');
     const ok1=listen&&listen.contains(q('#pT'))&&listen.contains(q('#pY'))&&listen.contains(q('#playSeg'))&&score.contains(q('#btnSubmit'))&&score.contains(q('#btnHelp'))&&score.contains(q('#pct'));
-    const viewOnly=[...q('.viewGrp').children].every(b=>['songBtn','keysBtn','focusBtn'].includes(b.id))&&!q('#clearBtn')&&!vis(q('#songBtn'));
+    const viewOnly=[...q('.viewGrp').children].every(b=>['gearBtn','songBtn','keysBtn','focusBtn'].includes(b.id))&&!q('#clearBtn')&&!vis(q('#songBtn'));
     q('#playSeg [data-m=song]').click(); await new Promise(r=>setTimeout(r,40)); const segOn=S.songMode&&q('#playSeg [data-m=song]').classList.contains('on');
     q('#playSeg [data-m=note]').click(); await new Promise(r=>setTimeout(r,40)); const segOff=!S.songMode&&q('#playSeg [data-m=note]').classList.contains('on');
     setFocus(true); await new Promise(r=>setTimeout(r,100)); const fr=q('.cmpTop').getBoundingClientRect(), lr=listen.getBoundingClientRect(), sr=score.getBoundingClientRect();
     const focusRow=sr.left>=lr.right-1&&Math.abs((sr.top+sr.bottom)/2-(lr.top+lr.bottom)/2)<30; setFocus(false); showBoard(); return {ok1,viewOnly,segOn,segOff,focusRow}; })()`);
   ok(groups.ok1, 'the compare panel groups Listen (▶ Target, ▶ Yours, Note | Song) apart from Score (match, Send, Help)');
-  ok(groups.viewOnly, 'the toolbar\'s right side holds only view switches (Keys, Focus); Reset lives in Settings');
+  ok(groups.viewOnly, 'the toolbar\'s right side holds only view switches (Box, Keys, Focus); Reset lives in Settings');
   ok(groups.segOn && groups.segOff, 'the Note | Song switch sets what ▶ plays');
   ok(groups.focusRow, 'in focus mode Listen and Score sit side by side in the compare bar');
   ok(modal.dots >= 4 && modal.playing && modal.stopped, `result screen plays the client's song on your patch (${modal.dots} note markers) and stops it when closed`);
@@ -441,6 +441,44 @@ try {
   ok(nav.one, 'a chapter chip shows just that chapter');
   ok(nav.doneEmpty && nav.doneOne && nav.todo, 'the To do / Done filter hides and shows gigs by progress, with a note when nothing matches');
   ok(nav.remembered && nav.all, 'the view is remembered, and All brings every chapter back');
+
+  console.log('\nOn your box (real-gear guides)');
+  await page.open(URL, { width: 1280, height: 800 }); await page.waitFor("document.querySelector('.gig')");
+  const gearData = await page.evaluate(`(()=>{ const bad=[];
+    for(const gid in GEAR_GUIDES){ if(!LEVELS.some(L=>L.id===gid)) bad.push(gid+': no such gig');
+      for(const id in GEAR_GUIDES[gid]){ const g=GEAR[id], G=GEAR_GUIDES[gid][id]; if(!g||g.soon){ bad.push(gid+'/'+id+': unknown or unreleased gear'); continue; }
+        G.steps.forEach((st,i)=>{ if(st.knobs.length!==8) bad.push(gid+'/'+id+' step '+(i+1)+': needs 8 knobs (A–H)'); if(!g.pages.includes(st.page)) bad.push(gid+'/'+id+' step '+(i+1)+': page '+st.page+' is not on the box'); });
+        G.prewired.forEach(p=>{ if(!MT[p[0]]||!MT[p[2]]||!MT[p[0]].outs.some(o=>o.id===p[1])||!MT[p[2]].ins.some(o=>o.id===p[3])) bad.push(gid+'/'+id+': prewired '+p.join(' ')+' is not a real jack'); }); } }
+    return bad.join('; '); })()`);
+  ok(!gearData, 'every guide points at a real gig, real jacks and the box\'s own page keys' + (gearData ? ` (${gearData})` : ''));
+  for (const vp of [{ name: 'desktop', width: 1280, height: 800 }, { name: 'phone', width: 390, height: 664, mobile: true }]) {
+    await page.open(URL, vp); await page.waitFor("document.querySelector('.gig')");
+    const gr = JSON.parse(await page.evaluate(`(async()=>{ const acid=LEVELS.findIndex(l=>l.id==='acid'), q=s=>document.querySelector(s), wait=ms=>new Promise(r=>setTimeout(r,ms));
+      store.del('gear'); store.del('draft2.acid'); store.del('keysOpen'); if(S.focus) setFocus(false); showBoard(); const noBadge=!q('.gearTag');
+      openLevel(acid); closeSide(); await wait(150); const noBtn=q('#gearBtn').hidden, sw0=Math.max(q('#toolbar').scrollWidth,q('#toolbar').clientWidth);
+      store.set('gear',['dt2']); showBoard(); const badges=[...document.querySelectorAll('.gearTag')].map(t=>t.closest('.gigWrap').querySelector('.title').textContent);
+      openLevel(LEVELS.findIndex(l=>l.id==='squelch')); const otherHidden=q('#gearBtn').hidden;
+      openLevel(acid); closeSide(); const shown=!q('#gearBtn').hidden&&q('#gearDock').hidden;
+      q('#gearBtn').click(); await wait(250);
+      const open=!q('#gearDock').hidden&&document.querySelectorAll('.gSteps li').length===5&&!!q('.oled')&&document.querySelectorAll('.gKnob').length===8;
+      q('#gDone').click(); const advanced=GR.step===1&&q('.gSteps li.done')!=null&&q('.gPages .on').textContent==='FLTR';
+      // the reference patch: both envelope cables are built into the box
+      const T=targetPatch(S.L); S.patch.modules=S.patch.modules.filter(m=>m.type==='out'); let k=0; T.modules.filter(m=>m.type!=='out').forEach(m=>{ m.slot=k++; S.patch.modules.push(m); }); S.patch.cables=T.cables; renderRack(); drawCables();
+      const prewired=document.querySelectorAll('#cables .prewired').length;
+      const cmp=q('#compare').getBoundingClientRect(), dock=q('#gearDock').getBoundingClientRect(), tb=q('#toolbar'), f=q('#focusBtn').getBoundingClientRect();
+      const fits=cmp.height>0&&cmp.top>=0&&cmp.top<innerHeight&&dock.bottom<=innerHeight+1&&tb.scrollWidth<=sw0+1;
+      q('.gClose').click(); await wait(250); const closed=q('#gearDock').hidden&&document.querySelectorAll('#cables .prewired').length===0;
+      openSettings(); const row=/Digitone II/.test(q('#sheet').textContent); q('#stData').click(); const listed=/My gear/.test(q('#sheet').textContent); q('#shDone').click();
+      store.del('gear'); store.del('draft2.acid');
+      const geo=[Math.round(cmp.top),Math.round(cmp.height),Math.round(dock.bottom),innerHeight,tb.scrollWidth,sw0].join(' ');
+      return JSON.stringify({noBadge,noBtn,badges,otherHidden,shown,open,advanced,prewired,fits,geo,closed,row,listed}); })()`));
+    ok(gr.noBadge && gr.noBtn, `${vp.name}: with no gear picked there are no badges and no Box button`);
+    ok(gr.badges.join() === 'Acid Test' && gr.otherHidden && gr.shown, `${vp.name}: picking a Digitone II badges Acid Test on the board and shows Box only on gigs with a guide (${gr.badges.join()})`);
+    ok(gr.open && gr.advanced, `${vp.name}: the drawer shows 5 steps, the screen copy and 8 knobs; Done on my box ticks a step and moves to the next page`);
+    ok(gr.prewired === 2, `${vp.name}: both envelope cables are tagged IN YOUR BOX on the reference patch (${gr.prewired})`);
+    ok(gr.fits, `${vp.name}: with the drawer open the compare panel stays in view, and the Box button doesn't push the toolbar wider (${gr.geo})`);
+    ok(gr.closed && gr.row && gr.listed, `${vp.name}: closing removes the tags; Settings shows My gear and Your data lists it`);
+  }
 } catch (e) {
   console.error(e); failures++;
 } finally {

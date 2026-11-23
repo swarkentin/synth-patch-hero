@@ -581,3 +581,88 @@ label.kbClose,#btnHelp[role=button]{display:inline-flex;align-items:center;justi
 }
 @media (max-width:760px){ .viewGrp{order:2;flex:none;gap:5px} }
 @media (max-width:760px){ .compare:not(.expanded) #hints{min-height:38px} }   /* room for the 2-line hint from the start: no layout jump when analysis lands */
+
+/* ---------- On your box: real-gear guide drawer (js/gear.js) ---------- */
+:root{ --gear:#4fd1c5; --gearDim:#2f5f5b; --gearBg:#111a19; --gearInk:#cfe9e6; }
+.gearTag{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--gear);border:1px solid var(--gearDim);border-radius:4px;padding:1px 5px;margin-left:6px;white-space:nowrap}
+#gearBtn.on{border-color:var(--gear);color:var(--gear)}
+.gearDock{flex:none;border-top:2px solid var(--gearDim);background:var(--gearBg);color:var(--gearInk);max-height:46vh;overflow:auto}
+.gHead{display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid #1f3b38;position:sticky;top:0;background:var(--gearBg);z-index:1}
+.gTitle{font-family:var(--head);letter-spacing:.12em;font-size:12px;color:var(--gear)}
+.gTabs{display:flex;border:1px solid var(--gearDim);border-radius:6px;overflow:hidden}
+.gTab{border:0;background:transparent;color:#9cc9c4;padding:4px 10px;font-family:var(--mono);font-size:11px}
+.gTab.on{background:#1f3b38;color:#e6fffc}
+.gDraft{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:#f0c27a;border:1px solid #6b5426;border-radius:4px;padding:2px 6px;cursor:help}
+.gClose{background:transparent;border:1px solid var(--gearDim);color:#9cc9c4;border-radius:6px;width:28px;height:26px;font-size:16px;line-height:1}
+.gBody{display:grid;grid-template-columns:170px minmax(200px,1fr) auto;gap:0}
+.gBody>*{padding:10px 12px}
+.gSteps{list-style:none;margin:0;border-right:1px solid #1f3b38;display:flex;flex-direction:column;gap:3px}
+.gSteps button{width:100%;display:flex;gap:8px;align-items:center;text-align:left;background:transparent;border:1px solid transparent;border-radius:6px;padding:5px 6px;color:#9cc9c4;font-size:12.5px}
+.gSteps .cur button{background:#1f3b38;border-color:var(--gear);color:#e6fffc}
+.gSteps .done button{color:var(--gear)}
+.gN{font-family:var(--mono);font-size:11px;color:var(--gear);min-width:16px}
+.gStepHead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.gStepHead b{font-family:var(--head);font-size:16px;color:#e6fffc;letter-spacing:.02em}
+.gGame{font-family:var(--mono);font-size:10.5px;color:#6f9893}
+.gText{margin:6px 0 10px;font-size:13.5px;line-height:1.5}
+.gText b{font-family:var(--mono);font-weight:600;color:#e6fffc}
+.gNav{display:flex;gap:8px}
+.gNav .btn{border-color:var(--gearDim);color:#9cc9c4}
+.gNav #gDone{background:#1f3b38;border-color:var(--gear);color:#e6fffc}
+.gNav .btn:disabled{opacity:.4;cursor:default}
+.gPanel{border-left:1px solid #1f3b38;display:flex;flex-direction:column;gap:8px;align-items:center}
+/* a copy of the box's monochrome screen: same page layout, the game's type */
+.oled{width:216px;aspect-ratio:2/1;background:#000;border:3px solid #1c2423;border-radius:4px;box-shadow:inset 0 0 0 1px #2a3534;padding:4px 6px;display:flex;flex-direction:column;font-family:var(--mono);font-size:8.5px;line-height:1.15;color:#e4ecef;text-transform:uppercase}
+.oHead,.oFoot{display:flex;justify-content:space-between}
+.oHead{border-bottom:1px solid #e4ecef;padding:0 2px 2px;margin-bottom:2px}
+.oFoot{font-size:7.5px;opacity:.8}
+.oled .inv{background:#e4ecef;color:#000}
+.oGrid{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:2px 4px;text-align:center;align-content:center}
+.oGrid i{font-style:normal;padding:1px 0;white-space:nowrap;overflow:hidden}
+.gPages{display:flex;gap:4px}
+.gPages span{font-family:var(--mono);font-size:9.5px;padding:3px 6px;border:1px solid #22403d;border-radius:4px;color:#6f9893}
+.gPages .on{border-color:var(--gear);background:#1f3b38;color:#e6fffc}
+.gKnobs{display:grid;grid-template-columns:repeat(4,52px);gap:4px 6px}
+.gKnob{text-align:center;font-family:var(--mono)}
+.gKnob svg{width:34px;height:34px;display:block;margin:0 auto}
+.gKnob b{display:block;font-size:9.5px;font-weight:400;color:#6f9893}
+.gKnob span{display:block;font-size:9.5px;color:var(--gear);min-height:11px}
+.gTrack{fill:none;stroke:#22403d;stroke-width:3;stroke-linecap:round}
+.gCap{fill:#13201f;stroke:#2f5f5b;stroke-width:1.5}
+.gAim{stroke:#4d6f6b;stroke-width:2.5;stroke-linecap:round}
+.gKnob.hi .gTrack{stroke:var(--gear)} .gKnob.hi .gCap{fill:#1f3b38;stroke:var(--gear)} .gKnob.hi .gAim{stroke:#e6fffc} .gKnob.hi b{color:#e6fffc}
+.gWords{grid-column:1/-1;border-top:1px solid #1f3b38;font-size:12px}
+.gWords>b{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--gear);font-weight:400}
+.gWords dl{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0;font-family:var(--mono);font-size:10.5px}
+.gWords dl div{white-space:nowrap} .gWords dt{display:inline;color:var(--dim)} .gWords dd{display:inline;margin:0;color:#7fd6cf} .gWords dd::before{content:' → ';color:#4d6f6b}
+.gWords p{margin:6px 0;color:#9cc9c4;line-height:1.45}
+.gWords small{display:block;color:#6f9893;font-size:10.5px;line-height:1.4}
+.gWords a{color:#7fd6cf}
+/* cables the box already has inside */
+.prewired .pwLine{fill:none;stroke:var(--gear);stroke-width:9;stroke-dasharray:2 7;stroke-linecap:round;opacity:.55;pointer-events:none}
+.prewired rect{fill:var(--gearBg);stroke:var(--gear)} .prewired text{font-family:var(--mono);font-size:10px;fill:#7fd6cf;text-anchor:middle}
+/* Settings → My gear */
+.gearCard p{color:var(--dim);font-size:13px;line-height:1.5;margin:10px 0}
+.gearGrp{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--faint);margin:12px 0 6px}
+.gearGrp span{letter-spacing:0}
+.gearPick{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px;cursor:pointer}
+.gearPick:has(input:checked){border-color:var(--gear);background:var(--gearBg)}
+.gearPick input{width:20px;height:20px;accent-color:var(--gear);flex:none}
+.gearPick>span{flex:1} .gearPick b{display:block;font-family:var(--head);font-size:15px} .gearPick>span>span{display:block;font-size:12px;color:var(--dim);margin-top:2px}
+.gearPick em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--gear);white-space:nowrap}
+.gearPick.soon{opacity:.55;cursor:default} .gearPick.soon em{color:var(--faint)}
+@media (max-width:760px){
+  .gearDock{max-height:46vh}
+  #gearBtn .lbl{display:none}
+  .gHead{padding:6px 8px;gap:6px} .gDraft{display:none}
+  .gBody{display:flex;flex-direction:column}
+  .gBody>*{padding:8px 10px}
+  .gSteps{display:none}
+  .gPanel{border:0;border-top:1px solid #1f3b38;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:6px 10px}
+  .oled{width:176px}
+  .gKnobs{grid-template-columns:repeat(4,44px);gap:2px 4px} .gKnob svg{width:28px;height:28px}
+  .gText{font-size:13px;margin:4px 0 8px}
+  .gNav .btn{flex:1;padding:9px}
+}
+/* With the Box button showing, Keys and Focus go icon-only on narrower screens so the toolbar still fits */
+@media (max-width:1399px){ .viewGrp:has(#gearBtn:not([hidden])) #keysBtn .lbl, .viewGrp:has(#gearBtn:not([hidden])) #focusBtn .lbl{display:none} }

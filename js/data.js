@@ -1023,3 +1023,47 @@ const CHAPTERS = [
   {id:'bonus', title:'Bonus', short:'BONUS', bonus:true, blurb:'Great with ♪ Keys or a MIDI keyboard, but nothing here needs one.'},
 ];
 CHAPTERS.forEach(c=>{ c.levels=LEVELS.map((L,i)=>L.ch===c.id?i:-1).filter(i=>i>=0); });
+
+/* =====================================================================
+   ON YOUR BOX: real-gear guides (see docs/ideas.md, "Two paths off the screen")
+   GEAR: instruments a player can pick in Settings → My gear.
+   GEAR_GUIDES[gigId][gearId]: the gig's patch, step by step, on that instrument.
+     step: {t: title, x: text (HTML), game: the game's words for it, page: key to press, pg: page shown,
+            head: [left,right] screen header, hiHead: highlight the header, knobs: 8 × [name, value, aim 0–1|null, highlight]}
+     prewired: [fromType, outPort, toType, inPort, where] cables that are already wired inside the box.
+   Names come from the maker's manual. Positions are rough knob positions, not exact values.
+   ===================================================================== */
+const GEAR = {
+  dt2:{ name:'Digitone II', short:'DT II', blurb:'FM, wavetable and supersaw machines · swappable filters · 3 LFOs',
+    pages:['TRIG','SYN','FLTR','AMP','FX','MOD'], screen:'128 × 64 OLED',
+    source:{label:'Digitone II manual, OS 1.12', url:'https://www.elektron.se/media/2026/10/Digitone-2-User-Manual_ENG_OS1.12_261008.pdf'} },
+  minifreak:{ name:'MiniFreak', short:'MF', soon:true, blurb:'2 digital engines · analog filter · cycling envelope · mod matrix' },
+  mc707:{ name:'MC-707', short:'707', soon:true, blurb:'ZEN-Core tones: up to 4 partials · virtual analog + supersaw' },
+  rack:{ name:'My modular rack', short:'RACK', soon:true, modular:true, blurb:'Any brand: patch it the way the game does, cable for cable' },
+};
+const GEAR_GUIDES = {
+  acid:{
+    dt2:{
+      steps:[
+        {t:'Sound source', game:'OSC · SAW', page:'SYN', pg:'1/3', head:['SYN · WAVETONE','1/3'],
+          x:`Use a track with the <b>Wavetone</b> machine. Turn <b>WAV1</b> until oscillator 1 is a bright, buzzy saw-like wave. Keep <b>LEV1</b> up and turn <b>LEV2</b> down, so only one oscillator plays, like the game's single OSC.`,
+          knobs:[['TUN1','·'],['WAV1','saw',null,1],['PD1','·'],['LEV1','up',0.8,1],['TUN2','·'],['WAV2','·'],['PD2','·'],['LEV2','0',0,1]]},
+        {t:'Filter type', game:'FILTER · ladder', page:'FLTR', pg:'1/2', head:['FLTR · LOWPASS 4','1/2'], hiHead:1,
+          x:`Set the track's filter machine to <b>LOWPASS 4</b>. It's a four-pole low-pass, the closest thing on this box to the game's ladder filter.`,
+          knobs:[['ATK','·'],['DEC','·'],['SUS','·'],['REL','·'],['FREQ','·'],['RESO','·'],['',''],['ENV','·']]},
+        {t:'Cutoff low, resonance high', game:'CUTOFF 400 Hz · RES 82%', page:'FLTR', pg:'1/2', head:['FLTR · LOWPASS 4','1/2'],
+          x:`Turn <b>FREQ</b> down to about a quarter, so the sound goes dark. Turn <b>RESO</b> up to about four fifths, until the filter starts to whistle.`,
+          knobs:[['ATK','·'],['DEC','·'],['SUS','·'],['REL','·'],['FREQ','~1/4',0.25,1],['RESO','~4/5',0.8,1],['',''],['ENV','·']]},
+        {t:'Filter envelope', game:'2nd ENV → FILTER CUT', page:'FLTR', pg:'1/2', head:['FLTR · LOWPASS 4','1/2'],
+          x:`Same page. The filter has its own envelope built in, so no cable is needed. Set <b>ATK</b> to 0, <b>DEC</b> short, <b>SUS</b> to 0 and <b>REL</b> short. Then turn <b>ENV</b> (envelope depth) well up, so each note bites open and snaps shut.`,
+          knobs:[['ATK','0',0,1],['DEC','short',0.3,1],['SUS','0',0,1],['REL','short',0.15,1],['FREQ','~1/4',0.25],['RESO','~4/5',0.8],['',''],['ENV','high',0.8,1]]},
+        {t:'Amp envelope', game:'1st ENV → VCA', page:'AMP', pg:'1/1', head:['AMP','1/1'],
+          x:`The amp has its own envelope too. Set <b>MODE</b> to ADSR. <b>ATK</b> 0, <b>DEC</b> about halfway, <b>SUS</b> about a third, <b>REL</b> short. Then play it next to the client's song (♫ in the game) and flip between them.`,
+          knobs:[['ATK','0',0,1],['HOLD','·'],['DEC','mid',0.45,1],['SUS','~1/3',0.35,1],['REL','short',0.15,1],['MODE','ADSR',null,1],['PAN','·'],['VOL','·']]},
+      ],
+      words:[['OSC','Wavetone (SYN)'],['FILTER · ladder','LOWPASS 4 (FLTR)'],['CUTOFF','FREQ'],['RES','RESO'],['ENV → CUT','FLTR envelope + ENV'],['ENV → VCA','AMP envelope'],['VCA LEVEL','VOL (AMP)']],
+      prewired:[['env','out','filter','cut','FLTR page'],['env','out','vca','gain','AMP page']],
+      note:`Both envelope cables are already wired inside the Digitone II: you set them on a page instead of patching. On a modular rack you'd patch them, the same as here.`,
+    },
+  },
+};

@@ -1,7 +1,7 @@
 /* Synth Patch Hero · Gig board, level screen, slot board, knobs, cables, compare panel. */
 'use strict';
 /* iPhone: these become tap targets with a switch under the finger (see js/haptics.js). Must run before handlers are attached. */
-['#briefBtn','#songBtn','#keysBtn','#focusBtn','#btnSettings','#btnHome','#kbClose'].forEach(sel=>Haptics.upgrade(document.querySelector(sel)));
+['#briefBtn','#gearBtn','#songBtn','#keysBtn','#focusBtn','#btnSettings','#btnHome','#kbClose'].forEach(sel=>Haptics.upgrade(document.querySelector(sel)));
 /* =====================================================================
    BOARD
    ===================================================================== */
@@ -37,7 +37,7 @@ function showBoard(){
       let b=el('button',{class:'gig'+(sv?' solved':'')+(L.challenge?' challenge':'')+(i===nxt?' next':'')});
       b.innerHTML=`<div class="num">${c.short} ${k+1}${L.challenge?' · <span class="chal">CHALLENGE</span>':''}</div><div class="title">${L.title}</div>
         <div class="client">${L.client} · ${L.role}</div>
-        <div class="concept"><span class="tag">${L.concept}</span>${sv?`<span class="stamp">PAID · ${sv.cost}¢ · ${Math.round(sv.match)}%${progress.played&&progress.played[L.id]?' · ♪':''}${progress.helped&&progress.helped[L.id]?' · helped':''}</span>`:i===nxt?'<span class="nextTag">NEXT</span>':''}</div>`;
+        <div class="concept"><span class="tag">${L.concept}</span>${gearBadges(L)}${sv?`<span class="stamp">PAID · ${sv.cost}¢ · ${Math.round(sv.match)}%${progress.played&&progress.played[L.id]?' · ♪':''}${progress.helped&&progress.helped[L.id]?' · helped':''}</span>`:i===nxt?'<span class="nextTag">NEXT</span>':''}</div>`;
       b=Haptics.upgrade(b); b.addEventListener('click',()=>{ stopPreview(); openLevel(i); });
       const w=el('div',{class:'gigWrap'}); w.dataset.done=sv?'1':''; w.appendChild(b); w.appendChild(previewButton(L)); grid.appendChild(w);
     });
@@ -144,6 +144,7 @@ function openLevel(i){ S.moving=null; pushRoute(i); try{ applyEngine(i<0?{studio
   requestAnimationFrame(()=>{ fitView(); drawCables(); });
   if(!draft&&MQ2.matches) openSide(); else closeSide();
   resetStuck();
+  gearOnLevel();
   scheduleAnalyze();
 }
 function validDraft(d){
@@ -550,9 +551,10 @@ function drawCables(temp){
       <circle cx="${a[0]}" cy="${a[1]}" r="5" fill="${col}"/><circle cx="${b[0]}" cy="${b[1]}" r="5" fill="${col}"/>
       <path class="hit" d="${d}" stroke="transparent" stroke-width="16" fill="none"><title>Click to unplug</title></path></g>`;
   });
+  h+=gearCableOverlay();
   if(temp) h+=`<path d="${cablePath(temp.a,temp.b)}" stroke="${temp.kind==='audio'?'var(--audio)':'var(--mod)'}" stroke-width="4" fill="none" stroke-dasharray="6 5" opacity=".9"/>`;
   svg.innerHTML=h;
-  svg.querySelectorAll('g').forEach(g=>{ const hit=g.querySelector('.hit');
+  svg.querySelectorAll('g[data-i]').forEach(g=>{ const hit=g.querySelector('.hit');
     hit.addEventListener('pointerdown',e=>e.stopPropagation());
     hit.addEventListener('click',()=>{ Haptics.unplug(); S.patch.cables.splice(+g.dataset.i,1); drawCables(); scheduleAnalyze(); showPatchbar(); }); });
 }
@@ -778,9 +780,10 @@ function openSettings(){
     ${inLevel?row('On-screen keyboard','Find the client\'s note and play your patch.',`<button class="btn tgl" id="stKeys">${S.keysOpen?'Shown':'Hidden'}</button>`):''}
     ${inLevel?row('Focus mode','Bigger board, compact compare bar.',`<button class="btn tgl" id="stFocus">${S.focus?'On':'Off'}</button>`):''}
     ${inLevel?row('Reset this rack','Removes everything you added to this gig.','<button class="btn" id="stReset">Reset</button>'):''}
+    ${row('My gear',myGear().length?'On your box guides for: '+myGear().map(id=>GEAR[id].name).join(', ')+'.':'Got a synth or groovebox at home? Get guides for making each sound on it.','<button class="btn" id="stGear">Choose</button>')}
     ${row('Your data',dataSummary(),'<button class="btn" id="stData">Details</button>')}</div>`;
   const close=()=>{ sh.hidden=true; sh.innerHTML=''; };
-  $('#shDone').onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); }; $('#stData').onclick=openDataSheet;
+  $('#shDone').onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); }; $('#stData').onclick=openDataSheet; $('#stGear').onclick=openGearSheet;
   // A real iOS switch: on iOS 18 the system itself ticks when it's flipped, so it doubles as a check that switch haptics work here.
   const hs=$('#stHapSw'); if(hs) hs.onchange=()=>{ Haptics.set(hs.checked); if(hs.checked) Haptics.select(); const fb=$('#btnHaptics'); if(fb&&fb.firstChild&&fb.firstChild.nodeType===3) fb.firstChild.nodeValue='Haptics: '+(Haptics.enabled?'on':'off'); };
   if(inLevel){
@@ -800,7 +803,7 @@ function dataInfo(){
 function dataSummary(){ const d=dataInfo(); return store.available()?`Saved only in this browser on this device: ${d.solved} gig${d.solved===1?'':'s'} paid, ${d.drafts} patch${d.drafts===1?'':'es'} in progress, ${d.kb.toFixed(1)} KB.`:'This browser isn\'t letting the game save anything (private mode or storage blocked), so progress lasts only until you close the page.'; }
 function openDataSheet(){
   const sh=$('#sheet'); sh.hidden=false; const d=dataInfo();
-  const PREF={haptics:'Haptics on/off',keysOpen:'On-screen keyboard shown',songMode:'♫ Song mode',boardView:'Gig board chapter and filter',midiAuto:'Reconnect MIDI automatically',snapOn:'Snap modules to boxes'};
+  const PREF={haptics:'Haptics on/off',keysOpen:'On-screen keyboard shown',songMode:'♫ Song mode',boardView:'Gig board chapter and filter',midiAuto:'Reconnect MIDI automatically',snapOn:'Snap modules to boxes',gear:'My gear (for On your box guides)'};
   sh.innerHTML=`<div class="sheetCard dataCard"><div class="shHead"><span class="shTitle">YOUR DATA</span><button class="btn primary" id="shDone">Done</button></div>
     <p><b>Where it lives:</b> in this browser's local storage, on this device only. There are no accounts, nothing is uploaded, and there are no analytics or cookies.</p>
     <p><b>What that means:</b> another browser or device, a private window, or the other copy of the game (GitHub Pages vs. claude.ai) each keeps its own separate progress. Clearing this site's data in your browser settings erases it. Use Export to move it.</p>
