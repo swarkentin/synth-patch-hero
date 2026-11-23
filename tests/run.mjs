@@ -260,6 +260,28 @@ try {
   ok(pv.switched, 'starting another preview stops the first');
   ok(pv.opened, 'opening a gig stops the preview');
 
+  console.log('\nStudio engine (preview on Acid Test and Free Jam)');
+  const eng = await page.evaluate(`(async()=>{ const out={}; const w=ms=>new Promise(r=>setTimeout(r,ms));
+    store.set('engine','studio'); S.enginePref='studio';
+    openLevel(LEVELS.findIndex(l=>l.id==='squelch')); out.classicElsewhere=ENGINE==='classic'&&$('#engBtn').hidden;
+    const ai=LEVELS.findIndex(l=>l.id==='acid'); store.del('draft2.acid'); openLevel(ai); out.studioOnAcid=ENGINE==='studio'&&!$('#engBtn').hidden;
+    const L=LEVELS[ai], T=targetPatch(L), tA=analyze(await renderPatch(T,L)), sc=async p=>levelCompare(L,tA,analyze(await renderPatch(p,L))).overall;
+    out.self=await sc(targetPatch(L)); out.untouched=await sc(S.patch);
+    const near=targetPatch(L); near.modules.find(m=>m.id==='f').params.cutoff*=Math.pow(2,0.2); out.near=await sc(near);
+    const sq=targetPatch(L); sq.modules.find(m=>m.id==='o').params.wave='square'; out.square=await sc(sq);
+    let steps=0; for(;steps<16;steps++){ await runAnalyze(); if(S.cmp&&S.cmp.overall>=90) break; if(!(await autoHelp())) break; } await runAnalyze(); out.help=S.cmp.overall; out.steps=steps;
+    const x=await renderPatch(T,L); let pk=0,nan=false; for(const v of x){ if(v!==v) nan=true; pk=Math.max(pk,Math.abs(v)); } out.sane=!nan&&pk>0.05&&pk<2;
+    $('#engBtn').click(); await w(60); out.toggled=ENGINE==='classic'&&store.get('engine')==='classic'&&!L._tA;
+    $('#engBtn').click(); await w(60); out.back=ENGINE==='studio';
+    openLevel(-1); out.jam=ENGINE==='studio'&&!$('#engBtn').hidden;
+    showBoard(); store.set('engine','studio'); S.enginePref='studio'; setEngine('classic'); LEVELS.forEach(l=>{ delete l._tX; delete l._tA; });
+    return out; })()`);
+  ok(eng.classicElsewhere && eng.studioOnAcid && eng.jam, 'Studio is offered on Acid Test and Free Jam only; other gigs stay on Classic');
+  ok(eng.sane && Math.abs(eng.self - 100) < 0.01, `Studio renders are clean and deterministic (reference scores ${eng.self.toFixed(1)})`);
+  ok(eng.untouched < 80 && eng.near > 80 && eng.near < 95 && eng.square < 60, `Studio scoring: untouched ${eng.untouched.toFixed(1)}, cutoff +0.2 oct ${eng.near.toFixed(1)}, square ${eng.square.toFixed(1)}`);
+  ok(eng.help >= 90, `Help rescues Acid Test on the Studio engine (${eng.steps} steps, ${eng.help.toFixed(1)}%)`);
+  ok(eng.toggled && eng.back, 'the ◆ button switches engines, re-renders the target and remembers the choice');
+
   console.log('\nBack and Forward');
   await page.evaluate(`(()=>{ showBoard(); })()`);
   const r1 = await page.evaluate(`(async()=>{ const w=ms=>new Promise(r=>setTimeout(r,ms)); const onBoard=()=>!$('#screenBoard').hidden;

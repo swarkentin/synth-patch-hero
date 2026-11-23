@@ -56,7 +56,52 @@ class SyncOsc extends AudioWorkletProcessor{
     return this.alive;
   }
 }
-registerProcessor('sync-osc',SyncOsc);`;
+registerProcessor('sync-osc',SyncOsc);
+/* Studio engine: band-limited oscillator (PolyBLEP) with slow analog drift. */
+function rng(seed){ let a=seed>>>0||1; return ()=>{ a=(a+0x6D2B79F5)>>>0; let t=a; t=Math.imul(t^(t>>>15),t|1); t^=t+Math.imul(t^(t>>>7),t|61); return ((t^(t>>>14))>>>0)/4294967296; }; }
+function blep(t,dt){ if(t<dt){ t/=dt; return t+t-t*t-1; } if(t>1-dt){ t=(t-1)/dt; return t*t+t+t+1; } return 0; }
+class VaOsc extends AudioWorkletProcessor{
+  static get parameterDescriptors(){ return [{name:'freq',defaultValue:220,automationRate:'a-rate'},{name:'detune',defaultValue:0,automationRate:'a-rate'}]; }
+  constructor(o){ super(); const op=o.processorOptions||{}; this.w=op.wave||'sawtooth'; this.r=rng(op.seed||1); this.ph=this.r(); this.drift=(this.r()*2-1)*2; this.dt=this.drift; this.n=0; this.alive=true; this.port.onmessage=()=>{ this.alive=false; }; }
+  process(ins,outs,P){
+    const out=outs[0][0]; if(!out) return this.alive; const F=P.freq, D=P.detune, w=this.w;
+    for(let i=0;i<out.length;i++){
+      if((this.n++&511)===0) this.dt=(this.r()*2-1)*3;            // a new drift target every ~10 ms…
+      this.drift+=(this.dt-this.drift)*0.0004;                     // …approached very slowly: a few cents of wander
+      const f=(F.length>1?F[i]:F[0])*Math.pow(2,((D.length>1?D[i]:D[0])+this.drift)/1200); const dt=Math.min(0.49,Math.abs(f)/sampleRate);
+      let p=this.ph, y;
+      if(w==='sawtooth') y=2*p-1-blep(p,dt);
+      else if(w==='square') y=(p<0.5?1:-1)+blep(p,dt)-blep((p+0.5)%1,dt);
+      else if(w==='triangle') y=4*Math.abs(p-0.5)-1;
+      else y=Math.sin(2*Math.PI*p);
+      out[i]=y; p+=f/sampleRate; this.ph=p-Math.floor(p);
+    }
+    return this.alive;
+  }
+}
+registerProcessor('va-osc',VaOsc);
+/* Studio engine: 4-pole zero-delay-feedback ladder low-pass, 2x oversampled, with tanh saturation in the loop. */
+class Ladder extends AudioWorkletProcessor{
+  static get parameterDescriptors(){ return [{name:'cutoff',defaultValue:1000,automationRate:'a-rate'},{name:'cents',defaultValue:0,automationRate:'a-rate'},{name:'res',defaultValue:0,automationRate:'k-rate'}]; }
+  constructor(){ super(); this.s=[0,0,0,0]; this.alive=true; this.port.onmessage=()=>{ this.alive=false; }; }
+  process(ins,outs,P){
+    const out=outs[0][0]; if(!out) return this.alive; const inp=ins[0]&&ins[0][0], C=P.cutoff, M=P.cents, K=Math.min(3.98,P.res[0]*4.3), s=this.s, sr2=sampleRate*2;
+    for(let i=0;i<out.length;i++){
+      const x=inp?inp[i]:0; const fc=Math.min(sr2*0.24,Math.max(10,(C.length>1?C[i]:C[0])*Math.pow(2,(M.length>1?M[i]:M[0])/1200)));
+      const g=Math.tan(Math.PI*fc/sr2), G=g/(1+g), G2=G*G, G4=G2*G2, b=1-G; let acc=0;
+      for(let k=0;k<2;k++){
+        const S=G2*G*b*s[0]+G2*b*s[1]+G*b*s[2]+b*s[3];
+        const y4=(G4*x*0.8*(1+0.45*K)+S)/(1+K*G4);
+        let u=Math.tanh(x*0.8*(1+0.45*K)-K*y4);
+        for(let j=0;j<4;j++){ const v=G*(u-s[j]); const y=v+s[j]; s[j]=y+v; u=y; }
+        acc+=u;
+      }
+      out[i]=acc*0.5/0.8*(1+1.25*P.res[0]);   // makeup gain: a ladder loses low end as resonance rises
+    }
+    return this.alive;
+  }
+}
+registerProcessor('ladder',Ladder);`;
 const workletCache=new WeakMap();
 function ensureWorklets(ctx){
   if(!ctx.audioWorklet||typeof AudioWorkletNode==='undefined') return Promise.resolve(false);
@@ -64,10 +109,25 @@ function ensureWorklets(ctx){
   if(!p){ // Blob URLs fail on file:// (null origin) and data: URLs can be blocked by some hosts, so try both.
     const blob=()=>ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET_SRC],{type:'application/javascript'})));
     const data=()=>ctx.audioWorklet.addModule('data:application/javascript;charset=utf-8,'+encodeURIComponent(WORKLET_SRC));
-    p=(location.protocol==='file:'?data():blob().catch(data)).then(()=>{ ctx.__sync=true; return true; },()=>false); workletCache.set(ctx,p); }
+    p=(location.protocol==='file:'?data():blob().catch(data)).then(()=>{ ctx.__sync=true; ctx.__studio=true; return true; },()=>false); workletCache.set(ctx,p); }
   return p;
 }
-const usesWorklet = patch => patch.modules.some(m=>m.type==='sync');
+/* ENGINE: 'classic' (the browser's stock audio parts) or 'studio' (analog-style oscillators, ladder filter, curved
+   envelopes). Both scoring renders and playback use the same engine, so matching stays fair either way. */
+let ENGINE='classic';
+const usesWorklet = patch => ENGINE==='studio'||patch.modules.some(m=>m.type==='sync');
+/* Studio envelopes: an RC-style attack (curving up to full at A), then decay and release that fall fast and trail off. */
+const EXP_K=3.5;   // time constants per D/R: ~97% of the way there by the knob's time
+function envAtExp(p,t){ if(t<p.a){ const tau=p.a/Math.log(1.3/0.3); return 1.3*(1-Math.exp(-t/tau)); } return p.s+(1-p.s)*Math.exp(-(t-p.a)*EXP_K/Math.max(p.d,1e-4)); }
+function schedEnvExp(prm,p,t0,gate){
+  const ta=p.a/Math.log(1.3/0.3);
+  prm.setValueAtTime(0,t0); prm.setTargetAtTime(1.3,t0,Math.max(ta,1e-4));
+  if(gate!=null&&gate<p.a){ const v=envAtExp(p,gate); prm.setValueAtTime(v,t0+gate); prm.setTargetAtTime(0,t0+gate,Math.max(p.r,1e-3)/EXP_K); return; }
+  prm.setValueAtTime(1,t0+p.a); prm.setTargetAtTime(p.s,t0+p.a,Math.max(p.d,1e-3)/EXP_K);
+  if(gate!=null){ const v=envAtExp(p,gate); prm.setValueAtTime(v,t0+gate); prm.setTargetAtTime(0,t0+gate,Math.max(p.r,1e-3)/EXP_K); }
+}
+/* Same oscillator settings get the same drift on every render, so a matching patch matches exactly. */
+const oscSeed=(P,note,k)=>{ let h=2166136261; for(const c of `${P.wave}|${P.oct}|${P.semi}|${P.fine}|${note}|${k}`) h=Math.imul(h^c.charCodeAt(0),16777619); return h>>>0; };
 function envPoints(p,gate){
   const {a,d,s,r}=p;
   if(gate<=a) return [[0,0],[gate,gate/a],[gate+r,0]];
@@ -86,22 +146,32 @@ function envAt(p,t){ if(t<p.a) return t/p.a; if(t<p.a+p.d) return 1-(1-p.s)*(t-p
 
 /* Build one note of a patch. gate: seconds, or null for a held note (call release()). */
 function buildVoice(ctx, patch, dest, t0, note, gate){
-  const N={}, sources=[], envs=[], funcs=[], workers=[], seqs={};
+  const N={}, sources=[], envs=[], funcs=[], workers=[], seqs={}, seen={};
   const incoming=(id,port)=>patch.cables.some(c=>c.to.m===id&&c.to.p===port);
   let maxR=0.02;
   for(const m of patch.modules){
     const P=m.params, n={ins:{},outs:{}}; N[m.id]=n;
     switch(m.type){
       case 'osc': {
-        const o=ctx.createOscillator(); o.type=P.wave;
-        o.frequency.value=mtof(note)*Math.pow(2,P.oct+P.semi/12); o.detune.value=P.fine;
-        const mg=ctx.createGain(); mg.gain.value=P.pitchAmt; mg.connect(o.detune);
-        const fg=ctx.createGain(); fg.gain.value=P.fmAmt||0; fg.connect(o.frequency);   // linear FM: audio in → ± fmAmt Hz
-        const sg=ctx.createGain(); sg.gain.value=1200; sg.connect(o.detune);   // SEQ pitch is in octaves and is followed exactly (MOD AMT doesn't apply)
-        n.ins.pitch=mg; n.ins.pitchSeq=sg; n.ins.fm=fg; n.outs.out=o; sources.push(o); break; }
+        let o, freq, det, out;
+        if(ENGINE==='studio'&&ctx.__studio){
+          const key=`${P.wave}|${P.oct}|${P.semi}|${P.fine}`; seen[key]=(seen[key]||0)+1;
+          o=new AudioWorkletNode(ctx,'va-osc',{numberOfInputs:0,outputChannelCount:[1],processorOptions:{wave:P.wave,seed:oscSeed(P,note,seen[key])}});
+          freq=o.parameters.get('freq'); det=o.parameters.get('detune'); workers.push(o); out=o;
+        } else { o=ctx.createOscillator(); o.type=P.wave; freq=o.frequency; det=o.detune; sources.push(o); out=o; }
+        freq.value=mtof(note)*Math.pow(2,P.oct+P.semi/12); det.value=P.fine;
+        const mg=ctx.createGain(); mg.gain.value=P.pitchAmt; mg.connect(det);
+        const fg=ctx.createGain(); fg.gain.value=P.fmAmt||0; fg.connect(freq);   // linear FM: audio in → ± fmAmt Hz
+        const sg=ctx.createGain(); sg.gain.value=1200; sg.connect(det);   // SEQ pitch is in octaves and is followed exactly (MOD AMT doesn't apply)
+        n.ins.pitch=mg; n.ins.pitchSeq=sg; n.ins.fm=fg; n.outs.out=out; break; }
       case 'noise': {
         const s=ctx.createBufferSource(); s.buffer=noiseBuffer(ctx); s.loop=true; n.outs.out=s; sources.push(s); break; }
       case 'filter': {
+        if(ENGINE==='studio'&&ctx.__studio&&P.type==='lowpass'){
+          const f=new AudioWorkletNode(ctx,'ladder',{numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[1],channelCount:1,channelCountMode:'explicit'});
+          f.parameters.get('cutoff').value=P.cutoff*Math.pow(2,(P.track||0)*(note-60)/12); f.parameters.get('res').value=P.res;
+          const mg=ctx.createGain(); mg.gain.value=P.cutAmt; mg.connect(f.parameters.get('cents')); workers.push(f);
+          n.ins.in=f; n.ins.cut=mg; n.outs.out=f; break; }
         const f=ctx.createBiquadFilter(); f.type=P.type; f.frequency.value=Math.min(ctx.sampleRate*0.45,P.cutoff*Math.pow(2,(P.track||0)*(note-60)/12));   // KEY TRK: cutoff follows the note (relative to middle C)
         f.Q.value = (P.type==='bandpass'||P.type==='notch') ? 0.6+P.res*14 : -3+P.res*28;
         const mg=ctx.createGain(); mg.gain.value=P.cutAmt; mg.connect(f.detune);
@@ -197,6 +267,7 @@ function buildVoice(ctx, patch, dest, t0, note, gate){
   }
   for(const e of envs){
     if(e.trig) continue;
+    if(ENGINE==='studio'){ schedEnvExp(e.param,e.p,t0,gate); continue; }
     const prm=e.param; prm.setValueAtTime(0,t0);
     const pts = gate!=null ? envPoints(e.p,gate) : [[0,0],[e.p.a,1],[e.p.a+e.p.d,e.p.s]];
     for(let i=1;i<pts.length;i++) prm.linearRampToValueAtTime(pts[i][1],t0+pts[i][0]);
@@ -212,6 +283,7 @@ function buildVoice(ctx, patch, dest, t0, note, gate){
     release(t){
       for(const e of envs){
         if(e.trig){ const prm=e.param; if(prm.cancelAndHoldAtTime) prm.cancelAndHoldAtTime(t); else prm.cancelScheduledValues(t); prm.linearRampToValueAtTime(0,t+e.p.r); continue; }
+        if(ENGINE==='studio'){ const prm=e.param, v=Math.min(1,envAtExp(e.p,t-t0)); prm.cancelScheduledValues(t); prm.setValueAtTime(v,t); prm.setTargetAtTime(0,t,Math.max(e.p.r,1e-3)/EXP_K); continue; }
         const prm=e.param, v=envAt(e.p,t-t0);
         if(prm.cancelAndHoldAtTime){ prm.cancelAndHoldAtTime(t); }
         else { prm.cancelScheduledValues(t0); prm.setValueAtTime(0,t0); const pts=[[0,0],[e.p.a,1],[e.p.a+e.p.d,e.p.s]].filter(q=>q[0]<t-t0); pts.slice(1).forEach(q=>prm.linearRampToValueAtTime(q[1],t0+q[0])); prm.linearRampToValueAtTime(v,t); }
@@ -237,11 +309,23 @@ function outChain(ctx,dest,t0,level=1){
 
 /* ---- Live playback ---- */
 let AC=null, liveBus=null;
+let studioBus=null, plainBus=null;
+/* A short stereo room for the studio finish (seeded noise, different per channel for width). */
+function roomIR(ctx){ const len=Math.floor(ctx.sampleRate*0.9), b=ctx.createBuffer(2,len,ctx.sampleRate);
+  for(let ch=0;ch<2;ch++){ const d=b.getChannelData(ch), r=seeded(77+ch*13); for(let i=0;i<len;i++){ const t=i/ctx.sampleRate; d[i]=r()*Math.exp(-t*6.5)*(t<0.008?t/0.008:1)*0.5; } } return b; }
+function setEngine(e){ ENGINE=e; if(AC) liveBus=(e==='studio'&&studioBus)?studioBus:(plainBus||liveBus); }
 function ac(){
   try{ if(navigator.audioSession) navigator.audioSession.type='playback'; }catch(_){}
   if(!AC){
     AC=new (window.AudioContext||window.webkitAudioContext)();
     const comp=AC.createDynamicsCompressor(); comp.threshold.value=-10; comp.ratio.value=8; comp.connect(AC.destination); liveBus=comp; ensureWorklets(AC);
+    // Studio finish (what you hear only, never scoring): gentle saturation, glue compression, a small stereo room.
+    const sat=AC.createWaveShaper(); sat.curve=(()=>{ const c=new Float32Array(2048); for(let i=0;i<2048;i++){ const x=i/1023.5-1; c[i]=Math.tanh(1.6*x)/Math.tanh(1.6); } return c; })(); sat.oversample='2x';
+    const glue=AC.createDynamicsCompressor(); glue.threshold.value=-18; glue.ratio.value=2.5; glue.attack.value=0.02; glue.release.value=0.18; glue.knee.value=8;
+    const room=AC.createConvolver(); room.buffer=roomIR(AC); const wet=AC.createGain(); wet.gain.value=0.16; const mk=AC.createGain(); mk.gain.value=1.35;
+    sat.connect(glue); glue.connect(mk); mk.connect(AC.destination); glue.connect(room); room.connect(wet); wet.connect(AC.destination);
+    studioBus=sat; plainBus=comp;
+    if(ENGINE==='studio') liveBus=studioBus;
   }
   if(AC.state==='suspended') AC.resume();
   return AC;

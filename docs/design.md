@@ -101,7 +101,7 @@ Playtest, 2026-11-22: it was unclear where and what session data is stored.
 - **What's stored:**
   - `progress`: paid gigs with cost and match %, `played` (the note was played), `helped`;
   - `draft2.<gig>`: each gig's rack in progress;
-  - preferences: `haptics`, `keysOpen`, `songMode`, `boardView`, `midiAuto`, `snap`.
+  - preferences: `haptics`, `keysOpen`, `songMode`, `boardView`, `midiAuto`, `snap`, `engine`.
 - **The panel** explains this in plain words, shows counts and size, and offers:
   - **Export:** a JSON file `{game, version, exported, data}`;
   - **Import:** replaces everything from such a file;
@@ -115,6 +115,18 @@ Playtest, 2026-11-22: it was unclear where and what session data is stored.
 - Some styles have a light backing of a kick and hi-hat. These come from fixed internal patches, so the client's sound stays in front.
 - On the gig board, ▶ plays the song on the target. Inside a gig, the toolbar's **♫ Song** toggle (remembered) makes ▶ Target and ▶ Yours (and Space / Shift+T) play the song instead of one note, so the player can compare their patch in a musical context. Turning it off goes back to single notes.
 - Test: every gig's song renders audible and finite (2–9 s).
+
+## Sound engines: Classic and Studio (preview)
+Playtest, 2026-11-23: "the ideas are right, but most sound like a pretty cheap old Casio".
+- **Classic** is the browser's stock parts: OscillatorNode, a 12 dB BiquadFilter, and linear envelopes.
+- **Studio** replaces the voice core:
+  - **Oscillators:** PolyBLEP band-limited oscillators (AudioWorklet `va-osc`) with a slow, seeded analog drift of a few cents. The seed comes from the oscillator's settings, the note and its ordinal, so identical patches render identically and scoring stays exact.
+  - **Filter:** a 4-pole zero-delay-feedback ladder low-pass (`ladder`), 2× oversampled, with tanh saturation in the feedback loop. Resonance runs up to near self-oscillation. Makeup gain of 1 + 1.25·res keeps loudness within about ±20% of Classic. HP/BP/notch still use the biquad for now.
+  - **Envelopes:** an RC-style attack that curves up to full at A, then exponential decay and release (time constant = knob time / 3.5, so ~97% of the way by the knob's time).
+- **Studio finish:** live playback only, never scoring. Gentle tanh saturation, glue compression (2.5:1), and a short seeded stereo room at 16%. It's applied equally to ▶ Target, ▶ Yours, songs and previews.
+- **Scope:** Studio is offered only on gigs marked `studio:true` (Acid Test so far) and in Free Jam. There, the ◆/◇ toolbar button switches engines; the choice is saved as `engine`, default Studio. Switching re-renders and re-scores the target, so matching stays fair on either engine. Every other gig plays and scores on Classic until it's been calibrated on Studio.
+- **Acid Test on Studio:** reference 100, untouched 1, cutoff +0.2 oct 86, square wave 38. Help rescues it in 12 steps.
+- **Next:** if the A/B confirms the upgrade, convert gigs chapter by chapter, re-tuning calibration bands as we go. After that: ladder-style HP/BP, curved envelopes for sequencer retriggers, a chorus worth the name, and a sound-design pass on targets and demo songs.
 
 ## Modules (cost)
 - OSC 2¢: wave, oct, semi, fine, pitch MOD AMT (bipolar, ±48 st), and an **FM** audio input with FM AMT (linear FM, ± Hz).
