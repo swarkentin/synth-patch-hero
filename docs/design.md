@@ -16,6 +16,8 @@ Feedback that drove it: too much scrolling between panels; you must always be ab
 - **Focus mode** (⛶ Focus button or Shift+F; uses the browser's full screen where available, otherwise CSS only on iPhone): hides the top bar and brief (the Brief button opens it as a drawer), and turns the compare panel into a compact bar above the board. On desktop the bar holds ▶ Target / ▶ Yours / match % / Send, the top two hints, and scope + loudness + spectrum side by side. On phones it holds the same strip with scope and loudness side by side. The board gets the rest of the screen. Esc, ✕ or leaving the gig exits focus mode.
 - **Keyboard:** hidden by default behind **♪ Keys** (the choice is remembered). MIDI and computer keys play while it's hidden.
 
+**The brief opens with every gig on phones and tablets** (playtest 2026-11-23: mobile players went straight to the puzzle and missed the client and the story). Before, it only opened for a gig with no saved rack. Now it opens every time unless focus mode is on, with a **Take the gig ▶** button at the end of the brief (**Back to the rack ▶** once you've started). Wide screens show the brief beside the rack, so the button is hidden there.
+
 ## Slot board
 - The board is a grid of slots. Slot count = target modules + OUTPUT + 2 spares, rounded to even, 4–8 (Free Jam: 12). Desktop uses 1–2 rows; phones use 2 columns.
 - **OUTPUT is always in the top-right slot**, so it's in view at the default zoom.
@@ -111,12 +113,13 @@ Playtest, 2026-11-22: it was unclear where and what session data is stored.
 - **Storage blocked:** if the browser blocks storage (private mode), the Settings row says progress only lasts until the page closes.
 
 ## Demo songs and ♫ Song mode
-- Each gig has a short demo song: a few bars of an **original** phrase in the style the sound is made for. Styles: acid 16ths, funky bass, sub bass, minor pad chords, a lead melody, chord stabs, 16th arpeggios, a drum groove, sparse FX hits, a slow bell melody, offbeat dub stabs, held notes (for sounds that move on their own), and held notes at the sequencer's own tempo for sequencer gigs. Songs never copy existing tracks.
-- Chosen per chapter (`SONG_BY_CH`), with per-gig overrides (`SONG_BY_GIG`, or a `song` field on the gig).
-- Some styles have a light backing of a kick and hi-hat. These come from fixed internal patches, so the client's sound stays in front.
-- On the gig board, ▶ plays the song on the target. Inside a gig, the toolbar's **♫ Song** toggle (remembered) makes ▶ Target and ▶ Yours (and Space / Shift+T) play the song instead of one note, so the player can compare their patch in a musical context. Turning it off goes back to single notes.
-- Test: every gig's song renders audible and finite (2–9 s).
-
+- Each gig has a short demo song: a few bars of club music built around the gig's sound. Playtest 2026-11-23: the first songs (major-key climbs over a plain kick and hat) sounded "corny", so they were rebuilt around dance-music grooves, minor keys and rests. All phrases are original; none copy existing tracks.
+- **Styles** (`SONGS` in audio.js): acid house (303-style 16ths with accents and octave jumps), house bass (offbeat, with octave pops), rolling techno bass, drum & bass (long subs at 172), jungle (sub stabs under a chopped break at 165), half-time wobble (140), a techno lead riff, a melodic-techno arpeggio, deep-house minor-9 chord stabs, lo-fi chords on a swung boom-bap beat, dub-techno chord stabs, a sparse bell riff over dub techno, ambient minor-9 pads (no drums), and held notes alone or over a groove for sounds that move by themselves. Sequencer gigs hold notes at the patch's own SEQ tempo over a groove.
+- **Grooves** (`GROOVES`): house, deep house, techno, acid, dub techno, D&B, jungle, half-time and boom bap, written as 16-step lanes (x accent, o normal, . ghost) with optional swing. The kit (`DRUM_KIT`) is built from the game's own modules: a kick (a sine dropping 2.5 octaves, a little drive, a click), a flammed clap, a snare, closed and open hats, a shaker and a rimshot.
+- **Percussion gigs** put the player's drum in the groove: the kick gig plays its kick in a boom-bap beat with the backing kick left out, the snare gig plays on 2 and 4 with the clap left out, the hat gig plays 16ths with the hats left out.
+- Chosen per chapter (`SONG_BY_CH`), with per-gig overrides that follow the client (`SONG_BY_GIG`, or a `song` field on the gig): the D&B crew gets D&B, the sound-system builder gets jungle, the house DJ gets house, and so on.
+- On the gig board, ▶ plays the song on the target. Inside a gig, the **Note | Song** switch makes ▶ Target and ▶ Yours (and Space / Shift+T) play the song instead of one note, so the player can compare their patch in a musical context. It's also the end-of-gig jingle.
+- Test: every gig's song renders audible and finite (2–9 s; they run 3–6.5 s).
 ## Sound engine (Studio)
 Playtest, 2026-11-23: "the ideas are right, but most sound like a pretty cheap old Casio".
 - **A/B first:** Acid Test and Neon Avenue were A/B'd against the browser's stock parts (OscillatorNode, 12 dB biquad, linear envelopes). Studio won, so it's now the only engine.

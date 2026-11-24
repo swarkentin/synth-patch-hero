@@ -372,56 +372,127 @@ function playJingle(patch, L){
   return jingleNow;
 }
 function stopJingle(){ if(jingleNow&&AC){ jingleNow.stop(AC.currentTime); } jingleNow=null; }
-/* ---- Demo songs: a few bars in the style each sound is made for, played on a patch ----
-   All phrases are original. Events: [semitones from the gig's note, start (beats), length (beats), velocity].
-   drums: 'four' (kick every beat, offbeat hats), 'half' (kick on 1 and 3, eighth hats) or none. */
-const arp=(chords,len=.22)=>chords.flatMap((c,ci)=>[0,1,2,3,2,1,0,1].map((k,i)=>[c[k%c.length],ci*2+i*.25,len,i%4?.75:.95]));
+/* ---- Demo songs: a few bars of club music built around each gig's sound ----
+   All phrases are original. notes: [semitones from the gig's note, start (beats), length (beats), velocity].
+   groove: a drum pattern from GROOVES; skip: drum lanes to leave out (when the gig's own sound is that drum);
+   swing: pushes every second 16th late (0–0.3). Patterns are 16 steps per bar: x accent, o normal, . ghost, - rest. */
+const st16=list=>list.map(([step,n,len=1.6,v=.85])=>[n,step/4,len/4,v]);          // [16th step, semis, length in 16ths, vel]
 const chordsAt=(list,len,vel=.5)=>list.flatMap(([beat,ch])=>ch.map(n=>[n,beat,len,vel]));
-const SONGS = {
-  acid:  { bpm:128, drums:'four', notes:[0,0,12,0,3,0,12,10,0,0,7,0,12,3,0,5, 0,0,12,0,3,0,12,10,0,12,15,12,10,7,3,0].map((n,i)=>[n,i*.25,(i%3===2)?.25:.16,(i%4===0)?1:.75]) },
-  bass:  { bpm:108, drums:'four', notes:[[0,0,.4,1],[0,.75,.2,.7],[12,1,.3,.9],[0,1.5,.4,.8],[10,2,.3,.9],[0,2.5,.2,.7],[7,2.75,.25,.8],[5,3,.5,.9],[3,3.5,.4,.8],
-                                       [0,4,.4,1],[0,4.75,.2,.7],[12,5,.3,.9],[15,5.5,.3,.85],[12,6,.3,.9],[10,6.5,.3,.8],[7,7,.4,.9],[0,7.5,.4,.85]] },
-  sub:   { bpm:120, drums:'half', notes:[[0,0,1.5,1],[0,2,.5,.8],[-2,2.5,1.4,.9],[3,4,1.5,1],[0,6,1.9,.9]] },
-  pads:  { bpm:90,  notes:chordsAt([[0,[0,3,7]],[2,[-4,0,3]],[4,[3,7,10]],[6,[-2,2,5]]],1.9) },
-  lead:  { bpm:120, drums:'half', notes:[[0,0,.45,.9],[3,.5,.45,.85],[7,1,.7,.95],[10,2,.45,.85],[12,2.5,1.4,1],[10,4,.45,.85],[7,4.5,.45,.8],[5,5,.45,.85],[3,5.5,.45,.8],[7,6,1.9,.95]] },
-  keys:  { bpm:96,  drums:'half', notes:chordsAt([[0,[0,3,7,10]],[1.5,[0,3,7,10]],[2.5,[-4,0,3,7]],[4,[3,7,10,14]],[5.5,[3,7,10,14]],[6.5,[-2,2,5,9]]],.6,.45) },
-  pluck: { bpm:120, notes:arp([[0,3,7,12],[-4,0,3,8],[3,7,10,15],[-2,2,5,10]]) },
-  perc:  { bpm:110, notes:[[0,0,.2,1],[0,.75,.2,.6],[0,1.5,.2,.9],[0,2,.2,1],[0,2.75,.2,.6],[0,3,.2,.8],[0,3.5,.2,.7],
-                           [0,4,.2,1],[0,4.75,.2,.6],[0,5.5,.2,.9],[0,6,.2,1],[-2,6.5,.2,.8],[-5,7,.2,.85],[-7,7.25,.2,.85],[-9,7.5,.2,.9],[-12,7.75,.3,1]] },
-  fx:    { bpm:100, notes:[[0,0,1,.9],[7,1.5,1,.85],[-5,3,1,.9],[12,4.5,2,1]] },
-  bell:  { bpm:84,  notes:[[0,0,.4,.9],[7,1,.4,.85],[12,2,.4,.9],[10,3,.4,.85],[7,4,.9,.9],[3,5,.4,.8],[5,6,1.5,.95]] },
-  dub:   { bpm:75,  drums:'half', notes:[[0,.5,.15,1],[7,.5,.15,.8],[0,1.5,.15,.9],[7,1.5,.15,.7],[-2,2.5,.15,1],[5,2.5,.15,.8],[-2,3.5,.15,.9],[5,3.5,.15,.7]] },
-  hold:  { bpm:120, notes:[[0,0,3.7,.9],[5,4,3.7,.9]] },
-  seqhold:{ bpm:120, followSeq:true, drums:'four', notes:[[0,0,3.95,.95],[5,4,3.95,.95],[0,8,3.95,.95]] },
+const rep=(list,beats,times=2)=>Array.from({length:times},(_,k)=>list.map(([n,at,len,v])=>[n,at+k*beats,len,v])).flat();
+const GROOVES={
+  house:  {kick:'x---x---x---x---', clap:'----x-------x---', ohat:'--o---o---o---o-', chat:'-.-.-.-.-.-.-.-.', shaker:'.o..'.repeat(4)},
+  deep:   {kick:'o---o---o---o---', clap:'----.-------.---', ohat:'--.---.---.---.-', shaker:'.o.o.o.o.o.o.o.o', rim:'---.------.----.'},
+  techno: {kick:'x---x---x---x---', ohat:'--x---x---x---x-', chat:'o.-.o.-.o.-.o.-.', rim:'---.------.--.--', clap:'----.-------o---'},
+  acid:   {kick:'x---x---x---x---', clap:'----x-------x---', ohat:'--o---o---o---o-', chat:'.o.-.o.-.o.-.o.-'},
+  dubtech:{kick:'x---x---x---x---', rim:'---o--.---o----.', chat:'--.---.---.---.-', shaker:'.-.-.-.-.-.-.-.-'},
+  dnb:    {kick:'x---------x-----x-x-------x-----', snare:'----x-------x-------x--.----x-.-', chat:'o-o-o-o-o-o-o-o-', ohat:'--------------o-'},
+  jungle: {kick:'x-x-------xx------x---x---x-----', snare:'----x--.-.--x--.-.--x--.--x.x-xx', chat:'o.o.o.o.o.o.o.o.', ohat:'------o---------'},
+  halftime:{kick:'x-------------x-x-----x---------', snare:'--------x---------------x-------', chat:'o-o-o-o-o-o-o-o-', rim:'-----.-----.----'},
+  boom:   {kick:'x------x--x-----x-----x---x---.-', snare:'----x-------x-------x-------x--.', chat:'o-o-o-o-o-o-o-o-'},
 };
-const SONG_BY_CH={basics:'lead',filters:'lead',bass:'bass',pads:'pads',leads:'lead',perc:'perc',fx:'fx',mix:'bass',harm:'keys',fm:'bell',fxrack:'pluck',
-  strings:'pluck',random:'hold',seqlab:'seqhold',repair:'lead',sync:'lead',modlab:'hold',west:'pluck',bonus:'bass'};
-const SONG_BY_GIG={acid:'acid',sub:'sub','wow-bass':'bass',wobble:'sub',reese:'sub',brass:'keys',swell:'pads',payphone:'keys',vowel:'hold',
-  breath:'lead','layer-cake':'lead','octave-up':'lead','build-square':'lead','build-saw':'lead',epiano:'keys',gong:'fx',
-  slapback:'bass',canyon:'bell','big-room':'bell',chorus:'pads',fuzz:'bass','dub-stab':'dub',harp:'pluck',
-  'strike-once':'bell','late-vibrato':'lead',fold:'lead',bloom:'lead','even-keel':'bass',siren:'hold',wind:'hold',ufo:'hold',
-  'no-signal':'bass','muffled':'bass','wrong-jack':'pluck',seasick:'lead','total-wreck':'acid','torn-edge':'bass','robot-voice':'fx'};
+const SONGS = {
+  // acid: 303-style 16ths, rests and accents, octave jumps
+  acid:   { bpm:128, groove:'acid', notes:st16([[0,0,1.6,1],[2,0],[3,12,1.2],[5,0],[6,3,2.4],[8,0,1.6,1],[10,10],[12,0,1.6,1],[13,12,1.2],[15,7],
+            [16,0,1.6,1],[18,0],[19,12,1.2],[21,0],[22,3],[23,5,2.4],[25,0],[26,15,1.2,1],[27,12],[29,10],[30,7],[31,3,1.2]]) },
+  // house: offbeat bass with octave pops
+  bass:   { bpm:124, groove:'house', swing:.1, notes:st16([[2,0,1.8,1],[6,0,1.8],[7,12,.9,.7],[10,0,1.8,1],[13,10,1],[14,0,1.8],
+            [18,0,1.8,1],[22,0,1.8],[23,12,.9,.7],[26,3,1.8,1],[29,5,1],[30,7,1.8]]) },
+  // rolling techno bass: the 2nd and 3rd 16th of every beat
+  techbass:{ bpm:132, groove:'techno', notes:st16(Array.from({length:32},(_,i)=>i%4===1||i%4===2?[i,(i>=24&&i%4===2)?-2:0,1.1,i%4===1?.95:.7]:null).filter(Boolean)) },
+  // drum & bass: long subs, half-time feel at 172
+  dnb:    { bpm:172, groove:'dnb', notes:[[0,0,1.5,1],[0,2.5,.5,.8],[-2,3,1,.9],[-5,4,2.4,1],[-2,6.5,.5,.8],[0,7,1,.9],[0,8,1.5,1],[3,10.5,.5,.8],[2,11,1,.9],[0,12,2.4,1],[-2,14.5,.5,.8],[-5,15,1,.9]] },
+  // jungle: sub stabs under a chopped break
+  jungle: { bpm:165, groove:'jungle', notes:[[0,0,.75,1],[0,1.5,.5,.8],[0,2.5,1.4,.95],[-2,4,.75,1],[-2,5.5,.5,.8],[-5,6.5,1.4,.95],[0,8,.75,1],[0,9.5,.5,.8],[3,10.5,1,.95],[2,12,.75,1],[0,13.5,2.2,1]] },
+  // dubstep / bass music: half-time wobble notes
+  wobble: { bpm:140, groove:'halftime', notes:[[0,0,2,1],[0,2.5,.5,.8],[-2,3,1,.9],[0,4,1.5,1],[3,5.75,.25,.8],[-5,6,2,1]] },
+  // techno lead riff, minor, syncopated
+  lead:   { bpm:130, groove:'techno', notes:st16([[0,0,1.6,1],[3,0],[6,12],[8,10],[10,7],[12,3,2.6],[14,5],[16,0,1.6,1],[19,0],[22,12],[24,15,1.6,1],[26,12],[28,10,3],[31,7,1]]) },
+  // melodic techno arpeggio over i – VI
+  pluck:  { bpm:124, groove:'deep', notes:st16([...[0,7,12,3,7,12,15,12, 0,7,12,3,7,12,10,7].map((n,i)=>[i,n,1.4,i%4?.7:.95]),
+            ...[-4,3,8,0,3,8,12,8, -2,5,10,2,5,10,14,10].map((n,i)=>[16+i,n,1.4,i%4?.7:.95])]) },
+  // deep house: minor-9 chord stabs, syncopated
+  keys:   { bpm:122, groove:'deep', swing:.12, notes:chordsAt([[.5,[0,3,7,10,14]],[1.75,[0,3,7,10,14]],[2.5,[0,3,7,10,14]],[3.75,[-2,3,7,10]],
+            [4.5,[-4,0,3,7,10]],[5.75,[-4,0,3,7,10]],[6.5,[-4,0,3,7,10]],[7.25,[-5,-2,2,5,10]]],.35,.42) },
+  // lo-fi: lazy minor-7 chords on a swung boom-bap beat
+  lofi:   { bpm:84, groove:'boom', swing:.22, notes:chordsAt([[0,[0,3,7,10,14]],[2.75,[0,3,7,10]],[4,[-4,0,3,7,11]],[6.5,[-5,-2,2,5,9]]],1.2,.42) },
+  // dub techno: chord stabs on the offbeats, spaced out
+  dub:    { bpm:118, groove:'dubtech', notes:chordsAt([[.5,[0,3,7,10]],[1.75,[0,3,7,10]],[3.5,[0,3,7,10]],[4.5,[0,3,7,10]],[5.75,[-2,2,5,9]],[7.5,[0,3,7,10]]],.3,.45) },
+  // bells and FM: a sparse minor-pentatonic riff over dub techno
+  bell:   { bpm:120, groove:'dubtech', notes:[[0,0,.5,.95],[7,.75,.5,.8],[10,1.5,.5,.85],[12,2.5,1,.95],[7,3.5,.5,.8],[3,4,.5,.85],[5,4.75,.5,.8],[7,5.5,1,.9],[0,7,.75,.85]] },
+  // ambient pads: slow minor-9 chords, no drums
+  pads:   { bpm:84, notes:chordsAt([[0,[0,3,7,10,14]],[2,[-4,0,3,7,10]],[4,[-7,-4,0,3,7]],[6,[-5,-2,2,5]]],1.9) },
+  // sounds that move by themselves: held notes, alone or over a groove
+  hold:   { bpm:120, notes:[[0,0,3.7,.9],[5,4,3.7,.9]] },
+  techhold:{ bpm:130, groove:'techno', notes:[[0,0,3.8,.9],[-2,4,3.8,.9]] },
+  household:{ bpm:124, groove:'house', notes:[[0,0,3.9,.9],[-2,4,3.9,.9]] },
+  fx:     { bpm:128, groove:'techno', notes:[[0,0,1,.9],[0,3.5,.5,.8],[7,4,1,.95],[-5,7,1,.9]] },
+  // percussion gigs: the gig's own drum takes its place in a groove
+  kick:   { bpm:92, groove:'boom', swing:.2, skip:['kick'], notes:st16([[0,0,1,1],[7,0,1,.8],[10,0,1,.9],[16,0,1,1],[22,0,1,.9],[26,0,1,.9]]) },
+  tom:    { bpm:92, groove:'boom', swing:.2, notes:st16([[3,0,1,.8],[11,-5,1,.8],[24,5,1,.9],[26,0,1,.9],[28,-5,1,.95],[30,-7,1,1]]) },
+  snare:  { bpm:124, groove:'house', skip:['clap','snare'], notes:st16([[4,0,1,1],[12,0,1,1],[15,0,1,.5],[20,0,1,1],[28,0,1,1],[30,0,1,.55],[31,0,1,.65]]) },
+  hat:    { bpm:128, groove:'techno', skip:['chat','ohat','shaker'], notes:st16(Array.from({length:32},(_,i)=>[i,0,1,i%4===2?1:i%2?.55:.75])) },
+  cowbell:{ bpm:124, groove:'house', notes:st16([[0,0,1,1],[3,0,1,.8],[6,7,1,.9],[10,0,1,.85],[12,7,1,.9],[16,0,1,1],[19,0,1,.8],[22,7,1,.9],[26,0,1,.85],[28,12,1,1],[30,7,1,.9]]) },
+  // sequencer gigs: the patch's own SEQ plays, so just hold notes at its tempo over a groove
+  seqhold:{ bpm:120, followSeq:true, groove:'techno', notes:[[0,0,3.95,.95],[5,4,3.95,.95],[0,8,3.95,.95]] },
+  seqacid:{ bpm:120, followSeq:true, groove:'acid', notes:[[0,0,3.95,.95],[5,4,3.95,.95],[0,8,3.95,.95]] },
+  seqdeep:{ bpm:120, followSeq:true, groove:'deep', notes:[[0,0,3.95,.95],[5,4,3.95,.95],[0,8,3.95,.95]] },
+};
+const SONG_BY_CH={basics:'lead',filters:'lead',bass:'bass',pads:'pads',leads:'lead',perc:'cowbell',fx:'fx',mix:'bass',harm:'keys',fm:'bell',fxrack:'pluck',
+  strings:'pluck',random:'hold',seqlab:'seqhold',repair:'bass',sync:'techbass',modlab:'hold',west:'pluck',bonus:'bass'};
+const SONG_BY_GIG={
+  shape:'lead','pixel-knight':'pluck','thin-walls':'lofi',gate:'keys',pluck:'pluck',vibrato:'bell',
+  squelch:'acid',acid:'acid',payphone:'keys',air:'techhold',vowel:'household',notch:'dub',swell:'pads',
+  sub:'jungle','wow-bass':'bass','pluck-bass':'bass',wobble:'wobble',reese:'dnb',
+  brass:'keys',supersaw:'lead',flute:'bell',stadium:'lead',
+  kick:'kick',tom:'tom',snare:'snare',hat:'hat',cowbell:'cowbell',
+  laser:'fx',siren:'hold',wind:'hold',ufo:'hold',
+  'sub-layer':'dnb',breath:'bell','layer-cake':'lead','octave-up':'lead','build-square':'lead','build-saw':'lead',drawbar:'keys',
+  'metal-ring':'fx','fm-bell':'bell',epiano:'keys',gong:'hold',
+  slapback:'bass',canyon:'bell','big-room':'bell',chorus:'pads',fuzz:'techbass','dub-stab':'dub',
+  bleeps:'techhold','rand-filter':'techhold',robot:'hold',
+  slide:'seqdeep',warehouse:'seqacid',
+  'no-signal':'bass',muffled:'bass','wrong-jack':'pluck',seasick:'lead','total-wreck':'acid',
+  'torn-edge':'techbass','sync-sweep':'techhold','robot-voice':'fx',screamer:'lead',
+  'strike-once':'bell',pump:'household','late-vibrato':'bell',tidal:'wobble',
+  fold:'techbass',bloom:'lead','even-keel':'bass'};
 function songFor(L){ return SONGS[(L&&(L.song||SONG_BY_GIG[L.id]||SONG_BY_CH[L.ch]))||'lead']; }
-/* Fixed drum patches for the backing. */
+/* A small drum kit for the backing, built from the game's own modules. */
 const DRUM_KIT=(()=>{ const P=(t,p={})=>Object.fromEntries(MT[t].params.map(d=>[d.id,p[d.id]!==undefined?p[d.id]:d.def]));
   const C=s=>{ const [a,b]=s.split('>'),[am,ap]=a.split('.'),[bm,bp]=b.split('.'); return {from:{m:am,p:ap},to:{m:bm,p:bp}}; };
+  const K=(mods,cables)=>({modules:[...mods.map(([id,type,p])=>({id,type,params:type==='noise'?{}:P(type,p)})),{id:'out',type:'out',params:{}}],cables:cables.map(C)});
+  const noiseHit=(type,cutoff,res,d,a=.001)=>K([['n','noise'],['f','filter',{type,cutoff,res}],['v','vca',{level:1}],['e','env',{a,d,s:0,r:.02}]],['n.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain']);
   return {
-    kick:{modules:[{id:'o',type:'osc',params:P('osc',{wave:'sine',pitchAmt:2400})},{id:'v',type:'vca',params:P('vca',{level:1})},{id:'e',type:'env',params:P('env',{a:.001,d:.22,s:0,r:.05})},{id:'p',type:'env',params:P('env',{a:.001,d:.05,s:0,r:.02})},{id:'out',type:'out',params:{}}],
-      cables:['o.out>v.in','v.out>out.in','e.out>v.gain','p.out>o.pitch'].map(C)},
-    hat:{modules:[{id:'n',type:'noise',params:{}},{id:'f',type:'filter',params:P('filter',{type:'highpass',cutoff:7500,res:.1})},{id:'v',type:'vca',params:P('vca',{level:1})},{id:'e',type:'env',params:P('env',{a:.001,d:.04,s:0,r:.02})},{id:'out',type:'out',params:{}}],
-      cables:['n.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain'].map(C)},
+    // kick: a sine dropping two and a half octaves, a little drive, and a short click on top
+    kick:{note:33, ...K([['o','osc',{wave:'sine',pitchAmt:3000}],['d','drive',{drive:2.2,level:.9}],['v','vca',{level:1}],['e','env',{a:.001,d:.34,s:0,r:.05}],['p','env',{a:.001,d:.045,s:0,r:.02}],
+        ['n','noise'],['h','filter',{type:'highpass',cutoff:3200,res:.1}],['c','vca',{level:.22}],['ce','env',{a:.001,d:.006,s:0,r:.01}]],
+        ['o.out>d.in','d.out>v.in','v.out>out.in','e.out>v.gain','p.out>o.pitch','n.out>h.in','h.out>c.in','c.out>out.in','ce.out>c.gain'])},
+    clap:{note:60, flam:true, ...noiseHit('bandpass',1150,.35,.17)},
+    snare:{note:55, ...K([['o','osc',{wave:'triangle'}],['n','noise'],['f','filter',{type:'bandpass',cutoff:2600,res:.1}],['v','vca',{level:1}],['e','env',{a:.001,d:.15,s:0,r:.04}]],
+        ['o.out>v.in','n.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain'])},
+    chat:{note:60, ...noiseHit('highpass',8200,.1,.035)},
+    ohat:{note:60, ...noiseHit('highpass',7600,.1,.24)},
+    shaker:{note:60, ...noiseHit('bandpass',6500,.2,.05,.006)},
+    rim:{note:86, ...K([['o','osc',{wave:'square'}],['f','filter',{type:'bandpass',cutoff:1750,res:.5}],['v','vca',{level:1}],['e','env',{a:.001,d:.025,s:0,r:.01}]],
+        ['o.out>f.in','f.out>v.in','v.out>out.in','e.out>v.gain'])},
   }; })();
+const DRUM_LVL={kick:.62,clap:.4,snare:.42,chat:.16,ohat:.13,shaker:.1,rim:.2};
+const songBars=S_=>{ const g=S_.groove&&GROOVES[S_.groove], noteEnd=Math.max(...S_.notes.map(n=>n[1]+n[2]));
+  return Math.max(g?Math.max(...Object.values(g).map(p=>p.length/16)):0, Math.ceil(noteEnd/4-1e-6)); };
 function songBpm(S_,patch){ const q=S_.followSeq&&patch.modules.find(m=>m.type==='seq'); return q?q.params.bpm:S_.bpm; }
-function songLength(L,patch){ const S_=songFor(L), beat=60/songBpm(S_,patch); return Math.max(...S_.notes.map(n=>n[1]+n[2]))*beat; }
-/* Schedule a demo song on ctx. Returns {end, stop(t)}. */
+function songLength(L,patch){ const S_=songFor(L), beat=60/songBpm(S_,patch); return Math.max(songBars(S_)*4, Math.max(...S_.notes.map(n=>n[1]+n[2])))*beat; }
+/* Schedule a demo song on ctx. Returns {end, events, beat, stop(t)}. */
 function scheduleSong(ctx, dest, patch, L, t0){
-  const S_=songFor(L), beat=60/songBpm(S_,patch), voices=[], events=[]; let end=0;
+  const S_=songFor(L), beat=60/songBpm(S_,patch), voices=[], events=[], sw=(S_.swing||0)*beat/4; let end=0;
+  const when=at=>t0+at*beat+(Math.round(at*4)%2?sw:0);
   const play=(p,note,t,dur,vel,lvl=1)=>{ const oc=outChain(ctx,dest,t,vel*lvl), v=buildVoice(ctx,p,oc.node,t,note,dur), stopAt=t+dur+Math.min(v.maxR,2.5)+0.06;
     oc.close(stopAt); v.stop(stopAt+0.02); voices.push({oc,v,stopAt}); end=Math.max(end,stopAt); };
-  S_.notes.forEach(([rel,at,len,vel])=>{ play(patch,L.note+rel,t0+at*beat,len*beat,vel); events.push({t:at*beat,dur:len*beat,note:L.note+rel,beat:Math.floor(at+1e-6)}); });
-  if(S_.drums){ const bars=Math.ceil(Math.max(...S_.notes.map(n=>n[1]+n[2]))/4)*4;
-    for(let b=0;b<bars;b+=0.5){ const kick=S_.drums==='four'?b%1===0:(b%4===0||b%4===2), hat=S_.drums==='four'?b%1===0.5:true;
-      if(kick) play(DRUM_KIT.kick,36,t0+b*beat,.1,1,.55); if(hat) play(DRUM_KIT.hat,60,t0+b*beat,.03,b%1?.9:.6,.22); } }
+  S_.notes.forEach(([rel,at,len,vel])=>{ play(patch,L.note+rel,when(at),len*beat,vel); events.push({t:when(at)-t0,dur:len*beat,note:L.note+rel,beat:Math.floor(at+1e-6)}); });
+  const g=S_.groove&&GROOVES[S_.groove];
+  if(g){ const bars=songBars(S_), skip=new Set(S_.skip||[]);
+    Object.entries(g).forEach(([lane,pat])=>{ if(skip.has(lane)) return; const kit=DRUM_KIT[lane];
+      for(let i=0;i<bars*16;i++){ const c=pat[i%pat.length]; if(c==='-') continue; const v=c==='x'?1:c==='o'?.75:.42, t=when(i/4);
+        if(kit.flam){ play(kit,kit.note,t,.01,v*.5,DRUM_LVL[lane]); play(kit,kit.note,t+.011,.01,v*.6,DRUM_LVL[lane]); play(kit,kit.note,t+.022,.02,v,DRUM_LVL[lane]); }
+        else play(kit,kit.note,t,lane==='ohat'?.12:.02,v,DRUM_LVL[lane]); } }); }
   return { end, events, beat, stop(t){ voices.forEach(x=>{ if(x.stopAt>t){ x.oc.close(t+0.03); x.v.stop(t+0.06); } }); } };
 }
 let songNow=null;

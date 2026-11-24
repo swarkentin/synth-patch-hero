@@ -175,7 +175,8 @@ function openLevel(i){ S.moving=null; pushRoute(i); try{ applyEngine(i<0?{studio
   renderBrief(); renderPalette(); layoutBoard(); renderRack(); renderCompare(); renderPrompt(); renderMidiChip(); setKeysOpen(S.mobile?false:store.get('keysOpen',false));
   S.userZoom=false;
   requestAnimationFrame(()=>{ fitView(); drawCables(); });
-  if(!draft&&MQ2.matches) openSide(); else closeSide();
+  // Phones and tablets: the brief opens with every gig (it's the client's story and the lesson), unless in focus mode.
+  if(MQ2.matches&&!S.focus) openSide(); else closeSide();
   resetStuck();
   gearOnLevel();
   scheduleAnalyze();
@@ -199,7 +200,9 @@ function renderBrief(){
   $('#brief').innerHTML=`<h3>${S.sandbox?'Session':'The client'}</h3><div class="clientRow">${S.sandbox?'':portraitImg(L)}<div><div class="who">${L.client}</div><div class="role">${L.role}</div></div></div>
    <blockquote class="${S.sandbox?'':'says'}">${L.brief}</blockquote>
    ${L.presetNote?`<div class="preset">${L.presetNote}</div>`:''}
-   <div class="specs">${L.seq?`<span>NOTES ${L.seq.map(q=>noteName(L.note+q[0])).join(' → ')}</span>`:`<span>NOTE ${noteName(L.note)}</span><span>HOLD ${L.gate}s</span>`}${S.sandbox?'':`<span>PASS ≥ ${PASS}%</span><span>PARTS: ${parts}</span>`}</div>`;
+   <div class="specs">${L.seq?`<span>NOTES ${L.seq.map(q=>noteName(L.note+q[0])).join(' → ')}</span>`:`<span>NOTE ${noteName(L.note)}</span><span>HOLD ${L.gate}s</span>`}${S.sandbox?'':`<span>PASS ≥ ${PASS}%</span><span>PARTS: ${parts}</span>`}</div>
+   ${S.sandbox?'':`<button class="btn primary takeGig" id="takeGig">${S.patch&&S.patch.modules.some(m=>m.type!=='out'&&!m.preset)?'Back to the rack ▶':'Take the gig ▶'}</button>`}`;
+  const tg=$('#takeGig'); if(tg) tg.onclick=closeSide;
   $('#manual').innerHTML=`<h3>Manual · ${L.concept}</h3>`+L.manual;
 }
 function openSide(){ $('#side').classList.add('open'); $('#sideBackdrop').classList.add('open'); }

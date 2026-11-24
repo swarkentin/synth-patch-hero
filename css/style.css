@@ -704,3 +704,8 @@ label.kbClose,#btnHelp[role=button]{display:inline-flex;align-items:center;justi
 blockquote.says{position:relative;margin-top:10px}
 blockquote.says::before{content:'';position:absolute;left:24px;top:-8px;border:8px solid transparent;border-top:0;border-bottom-color:var(--panel2)}
 @media (max-width:760px){ .portrait{width:64px;height:64px} .portrait.big{width:64px;height:64px} }
+
+/* The brief opens as a drawer on phones and tablets; this button takes you to the rack. Wide screens show the brief beside the rack, so it's hidden there. */
+.takeGig{display:none;width:100%;margin-top:12px;padding:11px;font-size:13px}
+@media (max-width:1099px){ .takeGig{display:block} }
+body.focus .takeGig{display:block}

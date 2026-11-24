@@ -474,6 +474,14 @@ try {
   ok(pp.brief, 'the brief shows the client\'s portrait');
   ok(pp.dollars && pp.realistic, 'modules are priced in dollars, at roughly real-module prices ($80–$500)');
 
+  await page.open(URL, { width: 390, height: 664, mobile: true }); await page.waitFor("document.querySelector('.gig')");
+  const mb = await page.evaluate(`(async()=>{ const q=s=>document.querySelector(s), i=LEVELS.findIndex(l=>l.id==='thin-walls');
+    openLevel(i); const fresh=q('#side').classList.contains('open')&&/Take the gig/.test(q('#takeGig').textContent);
+    q('#takeGig').click(); const closed=!q('#side').classList.contains('open');
+    addModule('osc'); saveDraft&&saveDraft(); showBoard(); openLevel(i); const again=q('#side').classList.contains('open')&&/Back to the rack/.test(q('#takeGig').textContent);
+    closeSide(); store.del('draft2.thin-walls'); showBoard(); return {fresh,closed,again}; })()`);
+  ok(mb.fresh && mb.closed && mb.again, 'phone: the brief opens with every gig (even one already started), and Take the gig / Back to the rack goes to the rack');
+
   console.log('\nOn your box (real-gear guides)');
   await page.open(URL, { width: 1280, height: 800 }); await page.waitFor("document.querySelector('.gig')");
   const gearData = await page.evaluate(`(()=>{ const bad=[];
