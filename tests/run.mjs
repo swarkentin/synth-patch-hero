@@ -482,6 +482,29 @@ try {
     closeSide(); store.del('draft2.thin-walls'); showBoard(); return {fresh,closed,again}; })()`);
   ok(mb.fresh && mb.closed && mb.again, 'phone: the brief opens with every gig (even one already started), and Take the gig / Back to the rack goes to the rack');
 
+  console.log('\nMIDI settings and tree previews');
+  await page.open(URL, { width: 1280, height: 800 }); await page.waitFor("document.querySelector('.gig')");
+  const md = await page.evaluate(`(async()=>{ const q=s=>document.querySelector(s), wait=ms=>new Promise(r=>setTimeout(r,ms));
+    BV.ch='bass'; showBoard(); const pvs=document.querySelectorAll('.bnGigRow .gigPv').length===CHAPTERS.find(c=>c.id==='bass').levels.length;
+    q('.bnGigRow .gigPv').click(); await wait(150); const treePv=!!previewing&&previewing.L.id===LEVELS[CHAPTERS.find(c=>c.id==='bass').levels[0]].id&&!q('#screenBoard').hidden; stopPreview();
+    BV.ch=null; saveBV(); showBoard();
+    openLevel(LEVELS.findIndex(l=>l.id==='dial-tone')); closeSide();
+    MIDI.state='on'; MIDI.names=['Box A','Box B']; store.del('midiIn'); store.del('midiCh');
+    const held=()=>Object.keys(S.held||{}).length||document.querySelectorAll('.key.down').length, down=[];
+    const send=(st,n,v,name)=>onMIDI({data:[st,n,v],currentTarget:{name}});
+    send(0x92,57,100,'Box A'); down.push(!!MIDI.last.ok); send(0x82,57,0,'Box A');
+    store.set('midiCh',1); send(0x92,57,100,'Box A'); down.push(!MIDI.last.ok); send(0x82,57,0,'Box A');
+    store.set('midiCh',3); store.set('midiIn','Box B'); send(0x92,57,100,'Box A'); down.push(!MIDI.last.ok); send(0x92,57,100,'Box B'); down.push(!!MIDI.last.ok); send(0x82,57,0,'Box B');
+    openSettings(); const row=/Listening to Box B, channel 3/.test(q('#sheet').textContent); q('#stMidi').click();
+    const sheet=!!q('#midiDev')&&q('#midiDev').value==='Box B'&&q('#midiChSel').value==='3';
+    send(0x92,45,100,'Box A'); const ign=/ignored/.test(q('#midiAct').textContent)&&/channel 3/.test(q('#midiAct').textContent);
+    q('#midiChSel').value='0'; q('#midiChSel').dispatchEvent(new Event('change')); const saved=store.get('midiCh')===0;
+    q('#shDone').click(); store.del('midiIn'); store.del('midiCh'); allNotesOff(); MIDI.state='idle'; MIDI.names=[]; MIDI.last=null; showBoard();
+    return {pvs,treePv,filter:down.every(Boolean),down,row,sheet,ign,saved}; })()`);
+  ok(md.pvs && md.treePv, 'every gig in the lesson tree has its own ▶ preview, which plays without leaving the board');
+  ok(md.filter, `MIDI listens to all devices and channels by default, and to just the chosen device and channel once set (${md.down})`);
+  ok(md.row && md.sheet && md.ign && md.saved, 'Settings → MIDI shows what it listens to, and notes it ignores say which channel they came on');
+
   console.log('\nOn your box (real-gear guides)');
   await page.open(URL, { width: 1280, height: 800 }); await page.waitFor("document.querySelector('.gig')");
   const gearData = await page.evaluate(`(()=>{ const bad=[];

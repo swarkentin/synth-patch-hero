@@ -104,7 +104,7 @@ Playtest, 2026-11-22: it was unclear where and what session data is stored.
 - **What's stored:**
   - `progress`: paid gigs with cost and match %, `played` (the note was played), `helped`;
   - `draft2.<gig>`: each gig's rack in progress;
-  - preferences: `haptics`, `keysOpen`, `songMode`, `boardView`, `midiAuto`, `snapOn`, `gear` (instruments picked in My gear). (An old `engine` key from the A/B toggle is removed on load.)
+  - preferences: `haptics`, `keysOpen`, `songMode`, `boardView`, `midiAuto`, `snapOn`, `gear` (instruments picked in My gear), `midiIn` and `midiCh` (the MIDI device and channel to listen to). (An old `engine` key from the A/B toggle is removed on load.)
 - **The panel** explains this in plain words, shows counts and size, and offers:
   - **Export:** a JSON file `{game, version, exported, data}`;
   - **Import:** replaces everything from such a file;
@@ -171,7 +171,7 @@ Yellow cables = audio, blue = control. Modulation depth lives on the destination
 Structure: **Basics** (7 gigs) is the suggested starting point, followed by fourteen **themes**, three **advanced** chapters (marked ADVANCED on the board, `level:'advanced'`) and a **Bonus** chapter (`bonus:true`, exempt from the one-challenge rule). **Every gig is open from the start** (playtest, 2026-11-22: let people explore and skip ahead); progress is still recorded per gig. **Browsing: a lesson tree** (playtest 2026-11-23: the chips were "really cheesy", took up space and made it hard to see where to start and how to explore). Wide screens get a sticky sidebar beside the gigs:
   - A **Start here / Next up** card opens the earliest unsolved gig.
   - A compact **All / To do / Done** switch, and a **▦ My box** toggle that keeps only gigs with an On your box guide for your gear. With no gear picked, it says **My gear…** and opens that sheet.
-  - The tree: All lessons, then chapters grouped START · THEMES · ADVANCED · EXTRAS, each with a done/total count and a thin progress line, and Free Jam last. Picking a chapter shows just that chapter and opens its gigs in the tree (✓ done, ● next, ○ to do, ★ challenge, ▦ has a guide); tapping a gig opens it. Chapters with nothing left under the current filters are dimmed.
+  - The tree: All lessons, then chapters grouped START · THEMES · ADVANCED · EXTRAS, each with a done/total count and a thin progress line, and Free Jam last. Picking a chapter shows just that chapter and opens its gigs in the tree (✓ done, ● next, ○ to do, ★ challenge, ▦ has a guide); tapping a gig opens it. Each gig in the tree has its own small ▶ to preview its demo song right there (playtest 2026-11-23: picking the chapter, then finding ▶ on the card, was one step too many). The cards keep their ▶ too. Chapters with nothing left under the current filters are dimmed.
   - The view is saved (`boardView`: chapter, status, My box). Filtering only hides cards, so a playing preview keeps going.
   - **Phones:** everything collapses into one bar: a chapter picker (name and count, ▾) beside the filters and My box. The picker opens the tree as a dropdown; picking a chapter closes it.
 
@@ -220,6 +220,13 @@ Calibrated outcomes: exact = 100; cutoff +0.2 oct ≈ 94; decay −9% ≈ 88; wr
 ## Keyboards and "play the note"
 - The keyboard highlights the client's note and describes it relative to middle C ("the third A below middle C"). Wrong notes get coaching by semitones or octaves. Success saves `progress.played[gig]` and adds ♪ to the gig card. After that, every key plays the patch.
 - MIDI, on-screen keys and computer keys share one `keyDown`/`keyUp` path. Velocity maps to loudness 0.35–1.0. Sustain pedal (CC64) and all-notes-off are supported.
+- **Settings → MIDI** (playtest 2026-11-23: "no clue how it is supposed to work"). Also opened from the MIDI chip under the keyboard. It says in plain words what MIDI does today (notes from a keyboard, synth or groovebox play your patch; nothing is sent back yet), and shows:
+  - status with Connect / Reconnect;
+  - **Device:** All devices or one of the connected ones (saved as `midiIn`; a saved device that's unplugged stays listed as "not plugged in");
+  - **Channel:** All channels or 1–16 (saved as `midiCh`);
+  - a light that flashes on every note or knob move, saying which note, channel and device it came from. Messages that don't match the chosen device or channel flash amber and say **ignored**, with what the game is listening to, so a wrong channel is obvious;
+  - tips: start on All channels to find your box's channel; grooveboxes often send per track and need MIDI or USB MIDI out switched on; knob moves aren't used yet; if MIDI is blocked on claude.ai, play on GitHub Pages instead.
+  - Clock, start/stop and other system messages are ignored.
 - Web MIDI works in Chrome/Edge/Opera/Firefox desktop and Chrome on Android; iOS Safari has none. The hosted artifact frame may block MIDI, so GitHub Pages (or opening `index.html` directly) works around that.
 
 ## On your box (first cut, 2026-11-23)

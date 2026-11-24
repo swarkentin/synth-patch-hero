@@ -88,8 +88,9 @@ function renderBoardNav(){
       if(d===c.levels.length) r.classList.add('done'); if(c.level==='advanced') r.title='Advanced'; tree.appendChild(r);
       if(BV.ch===c.id){ const ul=el('div',{class:'bnGigs'}); const cn=nextInChapter(c);
         c.levels.forEach((i,k)=>{ const L=LEVELS[i], sv=progress.solved[L.id];
-          let gb=el('button',{class:'bnGig'+(sv?' done':'')+(i===cn?' next':''),'data-gig':L.id}); gb.innerHTML=`<span class="bnDot">${sv?'✓':i===cn?'●':'○'}</span><span>${L.title}</span>${L.challenge?'<small>★</small>':''}${guidesFor(L).length?'<small class="bnG">▦</small>':''}`;
-          ul.appendChild(tap(gb,()=>{ stopPreview(); openLevel(i); })); });
+          const rowEl=el('div',{class:'bnGigRow'}); rowEl.appendChild(previewButton(L));
+          let gb=el('button',{class:'bnGig'+(sv?' done':'')+(i===cn?' next':''),'data-gig':L.id,title:L.concept}); gb.innerHTML=`<span class="bnDot">${sv?'✓':i===cn?'●':'○'}</span><span>${L.title}</span>${L.challenge?'<small>★</small>':''}${guidesFor(L).length?'<small class="bnG">▦</small>':''}`;
+          rowEl.appendChild(tap(gb,()=>{ stopPreview(); openLevel(i); })); ul.appendChild(rowEl); });
         tree.appendChild(ul); r.classList.add('exp'); } }); });
   tree.appendChild(row('jam','Free Jam',''));
   nav.appendChild(tree);
@@ -816,10 +817,11 @@ function openSettings(){
     ${inLevel?row('On-screen keyboard','Find the client\'s note and play your patch.',`<button class="btn tgl" id="stKeys">${S.keysOpen?'Shown':'Hidden'}</button>`):''}
     ${inLevel?row('Focus mode','Bigger board, compact compare bar.',`<button class="btn tgl" id="stFocus">${S.focus?'On':'Off'}</button>`):''}
     ${inLevel?row('Reset this rack','Removes everything you added to this gig.','<button class="btn" id="stReset">Reset</button>'):''}
+    ${navigator.requestMIDIAccess||MIDI.state!=='unsupported'?row('MIDI',midiSummary(),'<button class="btn" id="stMidi">Set up</button>'):''}
     ${row('My gear',myGear().length?'On your box guides for: '+myGear().map(id=>GEAR[id].name).join(', ')+'.':'Got a synth or groovebox at home? Get guides for making each sound on it.','<button class="btn" id="stGear">Choose</button>')}
     ${row('Your data',dataSummary(),'<button class="btn" id="stData">Details</button>')}</div>`;
   const close=()=>{ sh.hidden=true; sh.innerHTML=''; };
-  $('#shDone').onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); }; $('#stData').onclick=openDataSheet; $('#stGear').onclick=openGearSheet;
+  $('#shDone').onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); }; $('#stData').onclick=openDataSheet; $('#stGear').onclick=openGearSheet; const sm=$('#stMidi'); if(sm) sm.onclick=()=>{ if(MIDI.state==='idle') connectMIDI(false); openMidiSheet(); };
   // A real iOS switch: on iOS 18 the system itself ticks when it's flipped, so it doubles as a check that switch haptics work here.
   const hs=$('#stHapSw'); if(hs) hs.onchange=()=>{ Haptics.set(hs.checked); if(hs.checked) Haptics.select(); const fb=$('#btnHaptics'); if(fb&&fb.firstChild&&fb.firstChild.nodeType===3) fb.firstChild.nodeValue='Haptics: '+(Haptics.enabled?'on':'off'); };
   if(inLevel){
@@ -839,7 +841,7 @@ function dataInfo(){
 function dataSummary(){ const d=dataInfo(); return store.available()?`Saved only in this browser on this device: ${d.solved} gig${d.solved===1?'':'s'} paid, ${d.drafts} patch${d.drafts===1?'':'es'} in progress, ${d.kb.toFixed(1)} KB.`:'This browser isn\'t letting the game save anything (private mode or storage blocked), so progress lasts only until you close the page.'; }
 function openDataSheet(){
   const sh=$('#sheet'); sh.hidden=false; const d=dataInfo();
-  const PREF={haptics:'Haptics on/off',keysOpen:'On-screen keyboard shown',songMode:'♫ Song mode',boardView:'Gig board chapter and filter',midiAuto:'Reconnect MIDI automatically',snapOn:'Snap modules to boxes',gear:'My gear (for On your box guides)'};
+  const PREF={haptics:'Haptics on/off',keysOpen:'On-screen keyboard shown',songMode:'♫ Song mode',boardView:'Gig board chapter and filter',midiAuto:'Reconnect MIDI automatically',snapOn:'Snap modules to boxes',gear:'My gear (for On your box guides)',midiIn:'MIDI device to listen to',midiCh:'MIDI channel to listen to'};
   sh.innerHTML=`<div class="sheetCard dataCard"><div class="shHead"><span class="shTitle">YOUR DATA</span><button class="btn primary" id="shDone">Done</button></div>
     <p><b>Where it lives:</b> in this browser's local storage, on this device only. There are no accounts, nothing is uploaded, and there are no analytics or cookies.</p>
     <p><b>What that means:</b> another browser or device, a private window, or the other copy of the game (GitHub Pages vs. claude.ai) each keeps its own separate progress. Clearing this site's data in your browser settings erases it. Use Export to move it.</p>
@@ -863,7 +865,7 @@ function openDataSheet(){
     store.keys().forEach(k=>store.del(k)); progress={solved:{}}; close(); showBoard(); toast('Deleted all saved data.'); };
 }
 $('#briefBtn').onclick=openSide; $('#sideClose').onclick=closeSide; $('#sideBackdrop').onclick=closeSide;
-$('#midiChip').onclick=()=>{ if(MIDI.state==='on'){ toast('Connected: '+MIDI.names.join(', ')); return; } connectMIDI(false); };
+$('#midiChip').onclick=()=>{ if(MIDI.state==='idle') connectMIDI(false); openMidiSheet(); };
 if(store.get('midiAuto',false)) connectMIDI(true);
 $('#btnHome').onclick=()=>{ if(history.state&&history.state.fromBoard) history.back(); else showBoard(); };
 

@@ -81,37 +81,87 @@ function ensureVisible(n){ if(n<S.kbLo||n>S.kbLo+12*S.kbOct){ S.kbLo=kbRangeFor(
   wrap.addEventListener('contextmenu',e=>e.preventDefault());
 })();
 
-/* ---------- USB / MIDI keyboards (Web MIDI) ---------- */
-const MIDI={state:'idle',names:[],err:''};
+/* ---------- USB / MIDI keyboards and synths (Web MIDI): notes in, your patch plays them ----------
+   Settings → MIDI picks which device and channel to listen to (saved as midiIn / midiCh) and shows each note as it arrives. */
+const MIDI={state:'idle',names:[],err:'',last:null};
+const midiIn=()=>store.get('midiIn','all'), midiCh=()=>store.get('midiCh',0);
 function onMIDI(e){
-  const [st,d1,d2]=e.data, cmd=st&0xf0;
+  const [st,d1,d2]=e.data, cmd=st&0xf0, ch=(st&0x0f)+1, from=(e.currentTarget&&e.currentTarget.name)||(e.target&&e.target.name)||'MIDI';
+  if(cmd<0x80||cmd>0xE0) return;                           // clock, start/stop and other system messages
+  const wantIn=midiIn(), wantCh=midiCh(), ok=(wantIn==='all'||wantIn===from)&&(!wantCh||wantCh===ch);
+  if(cmd===0x90&&d2>0){ MIDI.last={note:d1,ch,from,ok,t:Date.now()}; midiActivity(); }
+  else if(cmd===0xB0&&d1!==64&&d1!==120&&d1!==123){ MIDI.lastCC={cc:d1,ch,from,ok,t:Date.now()}; midiActivity(); }
+  if(!ok) return;
   if(cmd===0x90&&d2>0) keyDown('midi'+d1,d1,0.35+0.65*d2/127);
   else if(cmd===0x80||(cmd===0x90&&d2===0)) keyUp('midi'+d1);
   else if(cmd===0xB0&&d1===64) setSustain(d2>=64);
   else if(cmd===0xB0&&(d1===120||d1===123)) allNotesOff();
 }
 async function connectMIDI(auto){
-  if(!navigator.requestMIDIAccess){ MIDI.state='unsupported'; renderMidiChip(); if(!auto) toast(/iPhone|iPad|iPod/.test(navigator.userAgent)?'iPhone and iPad Safari can\'t use MIDI keyboards. Use the on-screen keys.':'This browser can\'t use MIDI keyboards. Try Chrome or Edge.'); return; }
+  if(!navigator.requestMIDIAccess){ MIDI.state='unsupported'; renderMidiChip(); midiActivity(); if(!auto) toast(/iPhone|iPad|iPod/.test(navigator.userAgent)?'iPhone and iPad Safari can\'t use MIDI. Use the on-screen keys.':'This browser can\'t use MIDI. Try Chrome or Edge.'); return; }
   if(!auto) ac();
   try{
     const acc=await navigator.requestMIDIAccess({sysex:false}); MIDI.acc=acc;
-    const bind=()=>{ MIDI.names=[]; acc.inputs.forEach(inp=>{ inp.onmidimessage=onMIDI; MIDI.names.push(inp.name||'MIDI keyboard'); });
-      const was=MIDI.state; MIDI.state=MIDI.names.length?'on':'none'; renderMidiChip();
+    const bind=()=>{ MIDI.names=[]; acc.inputs.forEach(inp=>{ inp.onmidimessage=onMIDI; MIDI.names.push(inp.name||'MIDI device'); });
+      const was=MIDI.state; MIDI.state=MIDI.names.length?'on':'none'; renderMidiChip(); midiActivity(true);
       if(MIDI.state==='on'&&was!=='on') toast('Connected: '+MIDI.names.join(', ')); };
     acc.onstatechange=bind; bind(); store.set('midiAuto',true);
-    if(!auto&&MIDI.state==='none') toast('MIDI is on, but no keyboard is plugged in yet.');
+    if(!auto&&MIDI.state==='none') toast('MIDI is on, but nothing is plugged in yet.');
   }catch(err){
-    MIDI.state='blocked'; MIDI.err=(err&&err.name)||String(err); renderMidiChip();
-    if(!auto) toast('MIDI is blocked on this page. Open the game file directly in Chrome or Edge to use a USB keyboard.');
+    MIDI.state='blocked'; MIDI.err=(err&&err.name)||String(err); renderMidiChip(); midiActivity(true);
+    if(!auto) toast('MIDI is blocked on this page. Settings → MIDI says how to get around it.');
   }
+}
+const MIDI_STATE={idle:'Not connected yet.',unsupported:'This browser has no MIDI. Desktop Chrome, Edge, Opera or Firefox, or Chrome on Android, do. iPhone and iPad don\'t.',
+  blocked:'Blocked by this page or browser.',none:'Connected, but no device is plugged in. Plug one in and it appears here.',on:'Connected.'};
+function midiSummary(){ return MIDI.state==='on'?'Listening to '+(midiIn()==='all'?MIDI.names.join(', '):midiIn())+', '+(midiCh()?'channel '+midiCh():'all channels')+'.':'Play your patch from a USB keyboard, synth or groovebox. '+MIDI_STATE[MIDI.state]; }
+/* Settings → MIDI */
+function openMidiSheet(){
+  const sh=$('#sheet'); sh.hidden=false;
+  const devs=['all',...MIDI.names], ch=midiCh();
+  sh.innerHTML=`<div class="sheetCard midiCard"><div class="shHead"><span class="shTitle">MIDI</span><button class="btn primary" id="shDone">Done</button></div>
+    <p>Plug in a USB keyboard, or a synth or groovebox with a USB cable. Notes it sends <b>play your patch</b>, so you can try your sound with real keys or your box's own sequencer. Nothing is sent back to your instrument yet.</p>
+    <div class="midiRow"><b>Status</b><span id="midiState"></span><button class="btn" id="midiConnect"></button></div>
+    <label class="midiRow"><b>Device</b><select id="midiDev">${devs.map(d=>`<option value="${d.replace(/"/g,'&quot;')}" ${d===midiIn()?'selected':''}>${d==='all'?'All devices':d}</option>`).join('')}</select></label>
+    <label class="midiRow"><b>Channel</b><select id="midiChSel"><option value="0" ${!ch?'selected':''}>All channels</option>${Array.from({length:16},(_,i)=>`<option value="${i+1}" ${ch===i+1?'selected':''}>Channel ${i+1}</option>`).join('')}</select></label>
+    <div class="midiAct" id="midiAct" aria-live="polite"></div>
+    <ul class="midiTips">
+      <li><b>Nothing plays?</b> Set the channel to All channels and press a key. The light above shows which channel and device your notes come from. Then pick that channel if you only want one.</li>
+      <li><b>Grooveboxes</b> often send each track on its own channel, and need MIDI out (or USB MIDI) switched on in their own settings. Your box's manual has the details.</li>
+      <li>Knob moves arrive too (shown above), but the game doesn't use them yet. Sending the client's phrase to your box is planned.</li>
+      <li><b>Blocked?</b> The copy on claude.ai may not be allowed to use MIDI. Play at <a href="https://swarkentin.github.io/synth-patch-hero/" target="_blank" rel="noopener">swarkentin.github.io/synth-patch-hero</a> in Chrome or Edge instead.</li>
+    </ul>
+    <small class="dataNote">Your device and channel choice are saved on this device only.</small></div>`;
+  const close=()=>{ sh.hidden=true; sh.innerHTML=''; };
+  $('#shDone').onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); };
+  $('#midiDev').onchange=e=>{ store.set('midiIn',e.target.value); midiActivity(true); };
+  $('#midiChSel').onchange=e=>{ store.set('midiCh',+e.target.value); midiActivity(true); };
+  $('#midiConnect').onclick=()=>connectMIDI(false);
+  midiActivity(true);
+}
+let midiFade=null;
+function midiActivity(full){
+  const st=$('#midiState'); if(!st) return;
+  if(full){ st.textContent=MIDI_STATE[MIDI.state]+(MIDI.state==='blocked'&&MIDI.err?' ('+MIDI.err+')':'');
+    const b=$('#midiConnect'); b.textContent=MIDI.state==='on'||MIDI.state==='none'?'Reconnect':'Connect'; b.hidden=MIDI.state==='unsupported';
+    const d=$('#midiDev'), have=[...d.options].map(o=>o.value), want=['all',...MIDI.names];
+    if(have.join('|')!==want.join('|')){ const cur=midiIn(); d.innerHTML=want.map(x=>`<option value="${x.replace(/"/g,'&quot;')}" ${x===cur?'selected':''}>${x==='all'?'All devices':x}</option>`).join('');
+      if(cur!=='all'&&!MIDI.names.includes(cur)) d.insertAdjacentHTML('beforeend',`<option selected value="${cur.replace(/"/g,'&quot;')}">${cur} (not plugged in)</option>`); } }
+  const a=$('#midiAct'), L=MIDI.last, C=MIDI.lastCC; if(!a) return;
+  if(!L&&!C){ a.className='midiAct'; a.innerHTML=`<i></i><span>${MIDI.state==='on'?'Waiting for a note… press a key or start your sequencer.':'Connect, then press a key.'}</span>`; return; }
+  const recent=[L,C].filter(Boolean).sort((x,y)=>y.t-x.t)[0];
+  const what=recent===L?`<b>${noteName(L.note)}</b>`:`knob CC ${C.cc}`;
+  a.className='midiAct '+(recent.ok?'hit':'ign');
+  a.innerHTML=`<i></i><span>${what} · channel ${recent.ch} · from ${recent.from}${recent.ok?'':` · <b>ignored</b> (listening to ${midiIn()==='all'?'':midiIn()+', '}${midiCh()?'channel '+midiCh():'all channels'})`}</span>`;
+  clearTimeout(midiFade); midiFade=setTimeout(()=>{ const x=$('#midiAct'); if(x) x.classList.remove('hit','ign'); },350);
 }
 function renderMidiChip(){
   const c=$('#midiChip'); if(!c) return; c.className='midiChip'; c.hidden=!navigator.requestMIDIAccess; // e.g. iPhone: no MIDI at all, so don't offer it
-  const T={idle:['Connect USB keyboard','Use a USB/MIDI keyboard to play your patch'],
+  const T={idle:['MIDI…','Play your patch from a USB keyboard, synth or groovebox'],
     unsupported:['No MIDI in this browser','This browser has no Web MIDI. Chrome, Edge, Opera, Firefox (desktop) and Chrome on Android do.'],
     blocked:['MIDI blocked · retry','The page or browser blocked MIDI ('+MIDI.err+'). Opening the game file directly in Chrome or Edge usually works.'],
-    none:['No keyboard found','MIDI is on. Plug in a keyboard and it will connect automatically.'],
-    on:['● '+(MIDI.names[0]||'')+(MIDI.names.length>1?' +'+(MIDI.names.length-1):''),'Connected: '+MIDI.names.join(', ')]}[MIDI.state];
+    none:['No MIDI device','MIDI is on. Plug something in and it connects automatically.'],
+    on:['● '+(midiIn()!=='all'?midiIn():(MIDI.names[0]||'')+(MIDI.names.length>1?' +'+(MIDI.names.length-1):''))+(midiCh()?' · ch '+midiCh():''),midiSummary()]}[MIDI.state];
   c.textContent=T[0]; c.title=T[1];
   if(MIDI.state==='on') c.classList.add('on'); if(MIDI.state==='blocked'||MIDI.state==='unsupported') c.classList.add('warn');
 }
