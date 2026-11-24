@@ -387,7 +387,7 @@ const GROOVES={
   dubtech:{kick:'x---x---x---x---', rim:'---o--.---o----.', chat:'--.---.---.---.-', shaker:'.-.-.-.-.-.-.-.-'},
   dnb:    {kick:'x---------x-----x-x-------x-----', snare:'----x-------x-------x--.----x-.-', chat:'o-o-o-o-o-o-o-o-', ohat:'--------------o-'},
   jungle: {kick:'x-x-------xx------x---x---x-----', snare:'----x--.-.--x--.-.--x--.--x.x-xx', chat:'o.o.o.o.o.o.o.o.', ohat:'------o---------'},
-  halftime:{kick:'x-------------x-x-----x---------', snare:'--------x---------------x-------', chat:'o-o-o-o-o-o-o-o-', rim:'-----.-----.----'},
+  halftime:{kick:'x-------------x-x-----x---------', snare:'--------x---------------x-------', chat:'o-.-o-.-o-.-o-.-', rim:'-----.-----.----', ohat:'------------o---'},
   boom:   {kick:'x------x--x-----x-----x---x---.-', snare:'----x-------x-------x-------x--.', chat:'o-o-o-o-o-o-o-o-'},
 };
 const SONGS = {
@@ -397,14 +397,15 @@ const SONGS = {
   // house: offbeat bass with octave pops
   bass:   { bpm:124, groove:'house', swing:.1, notes:st16([[2,0,1.8,1],[6,0,1.8],[7,12,.9,.7],[10,0,1.8,1],[13,10,1],[14,0,1.8],
             [18,0,1.8,1],[22,0,1.8],[23,12,.9,.7],[26,3,1.8,1],[29,5,1],[30,7,1.8]]) },
-  // rolling techno bass: the 2nd and 3rd 16th of every beat
-  techbass:{ bpm:132, groove:'techno', notes:st16(Array.from({length:32},(_,i)=>i%4===1||i%4===2?[i,(i>=24&&i%4===2)?-2:0,1.1,i%4===1?.95:.7]:null).filter(Boolean)) },
+  // techno bass: syncopated offbeat stabs with room to breathe, a pickup and a turnaround
+  techbass:{ bpm:128, groove:'techno', notes:st16([[2,0,2.6,1],[6,0,2.6,.9],[9,0,1,.65],[10,0,2.6,1],[14,-2,2,.85],
+            [18,0,2.6,1],[22,0,2.6,.9],[25,3,1,.65],[26,0,2.6,1],[30,-5,2,.85]]) },
   // drum & bass: long subs, half-time feel at 172
   dnb:    { bpm:172, groove:'dnb', notes:[[0,0,1.5,1],[0,2.5,.5,.8],[-2,3,1,.9],[-5,4,2.4,1],[-2,6.5,.5,.8],[0,7,1,.9],[0,8,1.5,1],[3,10.5,.5,.8],[2,11,1,.9],[0,12,2.4,1],[-2,14.5,.5,.8],[-5,15,1,.9]] },
   // jungle: sub stabs under a chopped break
   jungle: { bpm:165, groove:'jungle', notes:[[0,0,.75,1],[0,1.5,.5,.8],[0,2.5,1.4,.95],[-2,4,.75,1],[-2,5.5,.5,.8],[-5,6.5,1.4,.95],[0,8,.75,1],[0,9.5,.5,.8],[3,10.5,1,.95],[2,12,.75,1],[0,13.5,2.2,1]] },
-  // dubstep / bass music: half-time wobble notes
-  wobble: { bpm:140, groove:'halftime', notes:[[0,0,2,1],[0,2.5,.5,.8],[-2,3,1,.9],[0,4,1.5,1],[3,5.75,.25,.8],[-5,6,2,1]] },
+  // half-time bass music at 180: the wobble gigs' LFOs (3 and 6 Hz) land on quarter and eighth notes here, so the wobble locks to the beat
+  wobble: { bpm:180, groove:'halftime', notes:[[0,0,3.9,1],[0,4,1.9,.9],[-2,6,1.9,.9],[0,8,3.9,1],[3,12,.9,.85],[2,13,.9,.85],[-5,14,1.9,1]] },
   // techno lead riff, minor, syncopated
   lead:   { bpm:130, groove:'techno', notes:st16([[0,0,1.6,1],[3,0],[6,12],[8,10],[10,7],[12,3,2.6],[14,5],[16,0,1.6,1],[19,0],[22,12],[24,15,1.6,1],[26,12],[28,10,3],[31,7,1]]) },
   // melodic techno arpeggio over i – VI
