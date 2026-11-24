@@ -460,6 +460,20 @@ try {
   ok(pnav.closedTree && pnav.oneLine && pnav.fits, 'phone: the lessons collapse into one bar (chapter picker, filters, My box) that fits the screen');
   ok(pnav.opened && pnav.picked, 'phone: the chapter picker opens the tree, and picking a chapter closes it and names the chapter');
 
+  console.log('\nClient portraits and prices');
+  await page.open(URL, { width: 1280, height: 800 }); await page.waitFor("document.querySelector('.gig')");
+  const pp = await page.evaluate(`(async()=>{ const names=[...new Set(LEVELS.map(l=>l.client))];
+    const all=names.every(n=>/^data:image\\/png/.test(portraitURL(n)));
+    const a=portraitURL('Acid Annie'); delete PORTRAITS['Acid Annie']; const same=portraitURL('Acid Annie')===a;
+    const distinct=new Set(names.map(portraitURL)).size===names.length;
+    openLevel(LEVELS.findIndex(l=>l.id==='acid')); const brief=!!document.querySelector('#brief img.portrait')&&document.querySelector('#brief img.portrait').alt.includes('Acid Annie');
+    updateCompare(); const dollars=[...document.querySelectorAll('.palBtn small')].every(x=>/^\\$\\d+$/.test(x.textContent))&&/^\\$/.test(document.querySelector('#stats .stat b').textContent);
+    const realistic=Object.values(MT).filter(t=>t.cost).every(t=>t.cost>=80&&t.cost<=500);
+    return {all,same,distinct,brief,dollars,realistic,n:names.length}; })()`);
+  ok(pp.all && pp.same && pp.distinct, `every client (${pp.n}) gets their own pixel portrait, and it's the same every time`);
+  ok(pp.brief, 'the brief shows the client\'s portrait');
+  ok(pp.dollars && pp.realistic, 'modules are priced in dollars, at roughly real-module prices ($80–$500)');
+
   console.log('\nOn your box (real-gear guides)');
   await page.open(URL, { width: 1280, height: 800 }); await page.waitFor("document.querySelector('.gig')");
   const gearData = await page.evaluate(`(()=>{ const bad=[];

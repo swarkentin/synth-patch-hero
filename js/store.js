@@ -15,6 +15,8 @@ const store = {
 };
 let progress = store.get('progress',{solved:{}});
 const saveProgress = ()=>store.set('progress',progress);
+// Module prices moved from cents to dollars (2026-11-23). Costs saved before that are in the old units, so drop them (match % and cables stay).
+for(const k in progress.solved){ const v=progress.solved[k]; if(v&&!v.usd) delete v.cost; }
 const chapterOf = i => CHAPTERS.find(c=>c.id===LEVELS[i].ch);
 const basicsDone = () => CHAPTERS[0].levels.every(i=>progress.solved[LEVELS[i].id]);
 /* Every gig is open so players can explore and skip ahead. Progress is still recorded; the board suggests an order. */

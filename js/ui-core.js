@@ -19,3 +19,6 @@ const SANDBOX={id:'jam',title:'Free Jam',concept:'Sandbox',client:'You',role:'Af
   palette:{osc:4,noise:2,filter:3,vca:3,env:4,lfo:3,mixer:2,harm:2,delay:2,reverb:1,drive:2,sh:2, sync:1, ring:1, func:2, modvca:2, fold:1, lpg:1},
   brief:`The studio's empty. No client, no reference, no rent check riding on it. Just you and the rack. Make something weird.`,
   manual:`<h4>Free jam</h4><p>Every module and every knob is unlocked. Open <b>♪ Keys</b> to play, use computer keys <code>A</code>–<code>K</code>, or plug in a USB keyboard.</p><div class="tip">The scope, loudness and spectrum graphs show your sound. Use them to learn what each knob does.</div>`};
+
+/* Prices are in dollars, roughly what the real module would cost new. */
+const money=n=>'$'+Math.round(n).toLocaleString('en-US');

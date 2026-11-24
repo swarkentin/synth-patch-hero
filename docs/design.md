@@ -5,7 +5,7 @@
 - **Stack:** plain HTML/CSS/JS with Web Audio and no build step. `index.html` loads `css/style.css` and `js/*.js`.
 
 ## Core loop
-Gig board (▶ on each card plays a short demo song on the client's sound) → client brief + manual page → fill the slot board with modules and patch them → compare against the target in the always-visible compare panel → match ≥ 90% → Send → paid → optimize cost (¢) to beat par.
+Gig board (▶ on each card plays a short demo song on the client's sound) → client brief + manual page → fill the slot board with modules and patch them → compare against the target in the always-visible compare panel → match ≥ 90% → Send → paid → optimize cost ($) to beat par.
 
 ## Screen layout (since 2026-11-21)
 Feedback that drove it: too much scrolling between panels; you must always be able to compare yours with the target and see the scope; the keyboard was a distraction while solving; the board needed zoom; OUTPUT should never need hunting for; it should be obvious when a module is missing.
@@ -19,7 +19,7 @@ Feedback that drove it: too much scrolling between panels; you must always be ab
 ## Slot board
 - The board is a grid of slots. Slot count = target modules + OUTPUT + 2 spares, rounded to even, 4–8 (Free Jam: 12). Desktop uses 1–2 rows; phones use 2 columns.
 - **OUTPUT is always in the top-right slot**, so it's in view at the default zoom.
-- **Presets:** a level can define `start` modules (slot, params, `locked`) and `startCables`. Locked presets can't be moved or deleted, but their knobs can be turned. They're marked PRESET and are free (cost ¢ excludes them; par = target cost − preset cost). Used in Dial Tone (OSC), Wow Bass (OSC→VCA→OUT + amp ENV; the player adds FILTER + filter ENV), and Kick It (OSC→VCA→OUT + amp ENV; the player adds the pitch ENV).
+- **Presets:** a level can define `start` modules (slot, params, `locked`) and `startCables`. Locked presets can't be moved or deleted, but their knobs can be turned. They're marked PRESET and are free (cost excludes them; par = target cost − preset cost). Used in Dial Tone (OSC), Wow Bass (OSC→VCA→OUT + amp ENV; the player adds FILTER + filter ENV), and Kick It (OSC→VCA→OUT + amp ENV; the player adds the pitch ENV).
 - **Parts list:** derived from the target patch, e.g. `OSC ✓ · FILTER 0/1 · ENV 1/2`. When parts are missing, empty slots pulse "NEEDS A MODULE", the palette buttons for the missing types get a dot, and the first hint names the part.
 - Adding: tap an empty slot (picker) or a palette button (first empty slot).
 - **Moving** (playtest 2026-11-22: "having them stuck in slots is annoying"; dragging wasn't discoverable). Movable modules show a ⠿ grip on the name bar. Drag the name bar to another slot, or **tap** it to pick the module up: free slots show MOVE HERE and other movable modules show SWAP HERE. Tap one to move or swap. Tap the name bar again, or press Esc, to cancel. Presets and OUTPUT stay put. A dragged module lands in the slot nearest **its own centre**, not the pointer's. The pointer sits on the name bar at the module's top, so lining a module up with a slot often left the pointer in the gap above, and the module snapped back (playtest, 2026-11-23). Drops on OUTPUT or a preset now say why they were refused.
@@ -138,27 +138,29 @@ Playtest, 2026-11-23: "the ideas are right, but most sound like a pretty cheap o
 - `STUDIO` in audio.js switches parts (ladder, drift, finish) one at a time for listening tests.
 
 ## Modules (cost)
-- OSC 2¢: wave, oct, semi, fine, pitch MOD AMT (bipolar, ±48 st), and an **FM** audio input with FM AMT (linear FM, ± Hz).
-- NOISE 1¢.
-- FILTER 3¢: LP/HP/BP/**notch**, cutoff, res, cutoff MOD AMT (bipolar, ±6 oct).
-- VCA 1¢: level, CV in.
-- ENV 2¢: ADSR, linear segments.
-- LFO 2¢: wave, rate.
-- **MIXER** 1¢: three inputs, three levels.
-- **HARMONIC** 3¢: additive oscillator with six drawbars (H1–H6, sine partials at 1×–6×).
-- **DELAY** 3¢: MS/NOTE sync, time, feedback, mix, tone (low-pass in the feedback loop, peak-free so the loop gain stays below 1), and a TIME mod input with MOD depth (chorus). NOTE sync sets the time to one period of the played note, which gives Karplus–Strong strings. Web Audio's minimum delay inside a feedback loop is 128 frames (5.8 ms at the 22.05 kHz scoring rate), so string gigs keep notes at or below about 170 Hz.
-- **REVERB** 3¢: size (seconds), mix. The impulse response is generated from seeded noise, so renders are deterministic.
-- **DRIVE** 2¢: tanh waveshaper, drive, level.
+Prices are in dollars, roughly what the real module would cost new (playtest 2026-11-23: at 1–3¢ the parts were "way too cheap"). Cost still works as before: the patch's total, compared with par (the reference patch minus presets). Costs saved before the change were in cents, so they're dropped from saved progress; match % and cables stay. Palette chips show the price, with how many are left in a small corner badge, so the toolbar doesn't grow.
+
+- OSC $240: wave, oct, semi, fine, pitch MOD AMT (bipolar, ±48 st), and an **FM** audio input with FM AMT (linear FM, ± Hz).
+- NOISE $90.
+- FILTER $220: LP/HP/BP/**notch**, cutoff, res, cutoff MOD AMT (bipolar, ±6 oct).
+- VCA $110: level, CV in.
+- ENV $140: ADSR, linear segments.
+- LFO $130: wave, rate.
+- **MIXER** $90: three inputs, three levels.
+- **HARMONIC** $320: additive oscillator with six drawbars (H1–H6, sine partials at 1×–6×).
+- **DELAY** $290: MS/NOTE sync, time, feedback, mix, tone (low-pass in the feedback loop, peak-free so the loop gain stays below 1), and a TIME mod input with MOD depth (chorus). NOTE sync sets the time to one period of the played note, which gives Karplus–Strong strings. Web Audio's minimum delay inside a feedback loop is 128 frames (5.8 ms at the 22.05 kHz scoring rate), so string gigs keep notes at or below about 170 Hz.
+- **REVERB** $340: size (seconds), mix. The impulse response is generated from seeded noise, so renders are deterministic.
+- **DRIVE** $160: tanh waveshaper, drive, level.
 - **Advanced tier:**
-  - **SYNC OSC** 3¢: hard-sync oscillator (saw/square, oct, RATIO 1–8×, SWEEP input + amount). Hard sync needs per-sample phase resets, so it runs in a small AudioWorklet (4× oversampled) loaded from a Blob URL, or a data: URL on `file://`. Offline renders await the worklet; until it's ready, live playback falls back to a plain saw. RATIO and SWEEP move in 0.05 steps because sync timbre is very sensitive to ratio.
-  - **RING MOD** 2¢: multiplies inputs A and B (silent without both).
-  - **FUNC** 2¢: function generator. RISE/FALL, ONCE (one AD shape per note, ignores the hold) or LOOP (a drawable LFO).
-  - **MOD VCA** 1¢: a VCA for control signals with a bipolar AMOUNT (attenuverter). Used for modulation controlling modulation, e.g. delayed vibrato.
-  - **FOLDER** 2¢: sine wavefolder (FOLD 1–8×, CV with MOD AMT, LEVEL), 4× oversampled.
-  - **LPG** 2¢: low-pass gate. One CV drives the volume and the cutoff (8 octaves) together. OPEN sets the resting state.
+  - **SYNC OSC** $280: hard-sync oscillator (saw/square, oct, RATIO 1–8×, SWEEP input + amount). Hard sync needs per-sample phase resets, so it runs in a small AudioWorklet (4× oversampled) loaded from a Blob URL, or a data: URL on `file://`. Offline renders await the worklet; until it's ready, live playback falls back to a plain saw. RATIO and SWEEP move in 0.05 steps because sync timbre is very sensitive to ratio.
+  - **RING MOD** $120: multiplies inputs A and B (silent without both).
+  - **FUNC** $260: function generator. RISE/FALL, ONCE (one AD shape per note, ignores the hold) or LOOP (a drawable LFO).
+  - **MOD VCA** $100: a VCA for control signals with a bipolar AMOUNT (attenuverter). Used for modulation controlling modulation, e.g. delayed vibrato.
+  - **FOLDER** $230: sine wavefolder (FOLD 1–8×, CV with MOD AMT, LEVEL), 4× oversampled.
+  - **LPG** $210: low-pass gate. One CV drives the volume and the cutoff (8 octaves) together. OPEN sets the resting state.
   - **FILTER KEY TRK** (feature `keytrk`): the cutoff follows the note relative to middle C. Only the bonus gig uses it.
-- **SEQ** 3¢: 8-step sequencer of 16th notes. Step values are bipolar drawbars (±12 st); STEPS, BPM, GATE %, GLIDE. PITCH out is in octaves and connects straight to an oscillator's detune, so it's followed exactly (MOD AMT doesn't apply). Into a filter's CUT it goes through MOD AMT as usual. GATE out is 0/1 for GATE % of each step. ENV gains a **TRIG** input (feature `seq`): a SEQ GATE there restarts the ADSR on every step instead of once per note. Steps run while the note is held (30 s horizon for live notes).
-- **S&H** 2¢: sample and hold. Random steps from a fixed 32-step seeded sequence, so targets are repeatable. Rate is stepped at 0.5 Hz, so exact values are reachable.
+- **SEQ** $380: 8-step sequencer of 16th notes. Step values are bipolar drawbars (±12 st); STEPS, BPM, GATE %, GLIDE. PITCH out is in octaves and connects straight to an oscillator's detune, so it's followed exactly (MOD AMT doesn't apply). Into a filter's CUT it goes through MOD AMT as usual. GATE out is 0/1 for GATE % of each step. ENV gains a **TRIG** input (feature `seq`): a SEQ GATE there restarts the ADSR on every step instead of once per note. Steps run while the note is held (30 s horizon for live notes).
+- **S&H** $150: sample and hold. Random steps from a fixed 32-step seeded sequence, so targets are repeatable. Rate is stepped at 0.5 Hz, so exact values are reachable.
 
 Yellow cables = audio, blue = control. Modulation depth lives on the destination (MOD AMT knobs). Bipolar knobs fill from the centre. Knobs and jacks unlock per lesson. Modules with five or more knobs use a denser knob layout so they fit a slot.
 
@@ -196,6 +198,12 @@ Each gig card has a round **▶ preview** button that plays a short **demo song*
 **Multi-note targets:** `seq:[[semitones, start, gate], …]` renders several notes of the same patch (each ending after its own gate + release). The brief shows `NOTES A1 → A2 → …` instead of NOTE/HOLD.
 
 **Quality checks per gig** (`npm test`): the reference patch scores 100%; an untouched rack scores under 80%; ids are unique; every theme ends in one challenge; every gig is open; NEXT points at each chapter's earliest unsolved gig, even when later gigs were solved out of order. When authoring, also check that removing any module from the reference patch (bypassing it, so the chain stays connected) scores under 90%, so a gig can't be passed by skipping its lesson, and that the knob a lesson teaches fails when it's clearly wrong.
+
+## Client portraits
+Playtest 2026-11-23: the briefs should feel like a character asking for help. Every client has a 32×32 pixel-art portrait drawn in code (`js/portrait.js`, no image files), shown beside their name in the brief and on the Patch accepted screen. The brief and the reply sit in speech bubbles that point at the portrait.
+- The client's name seeds the look (skin, hair style and colour, shirt, background, expression), so a returning client looks the same every time.
+- Props come from the client's first role: headphones (DJs, producers, promoters), a mic (singers, hosts, podcasts), a guitar neck, drumsticks, keys, a flute, shades (synthwave, acid), glasses (professors, doctors), a clerical collar or veil, a bow tie (orchestra, theatre), a patch cable (modular artists), a cap, closed eyes for the calm ones, and a robot head for robot acts.
+- Duos get one dimmed bandmate behind them; bands, crews and trios get two.
 
 ## Matching
 Offline render at 22.05 kHz, then: spectrogram distance (per-frame normalized, loudness-weighted, 1/36-oct bands) 50%, average-spectrum tone 20%, perceptual loudness envelope 30%. Score = exp(-d/K) per part, geometric mean. Per-level `tol` multiplies K, so above 1 is more forgiving and below 1 stricter. Movement-based gigs get more (vibrato, wobble, detune, chorus, Seasick = 3; fast LFO gigs Siren and Close Encounter, and the S&H gigs = 5; percussive, Temple Gong, Harp, Bonk and Wooden Toy = 1.5; sync gigs = 2, because sync timbre shifts sharply with ratio). The drawbar lessons get 0.7, so a harmonic that's clearly off fails. `tolShape` optionally sets a separate, stricter loudness-shape tolerance (1.2 on slow-movement pads/leads/FX), so a gig can't be passed by leaving out its volume envelope. Calibration: `index.html#selftest`, enforced by `npm test`.

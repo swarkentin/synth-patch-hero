@@ -128,12 +128,13 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .toolbar::-webkit-scrollbar{display:none}
 .toolbar .spacer{flex:1;min-width:6px}
 .briefBtn{display:none}
-.palBtn{position:relative;display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:4px 9px 4px 5px;font-size:12px;flex:none}
+.palBtn{position:relative;display:flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:4px 9px 4px 5px;font-size:12px;flex:none}
 .palBtn:hover:not(:disabled){border-color:var(--text)}
 .palBtn:disabled{opacity:.35;cursor:not-allowed}
 .palBtn .sw{width:8px;height:20px;border-radius:3px}
 .palBtn b{font-family:var(--head);letter-spacing:.06em;font-size:11.5px}
 .palBtn small{font-family:var(--mono);color:var(--dim);font-size:10px}
+.palBtn .left{position:absolute;right:-5px;bottom:-6px;font-style:normal;font-family:var(--mono);font-size:9px;line-height:1;padding:2px 3px;border-radius:5px;background:var(--panel);border:1px solid var(--line2);color:var(--dim)}
 .palBtn.need{border-color:var(--amber)}
 .palBtn.need::after{content:'';position:absolute;top:-4px;right:-4px;width:9px;height:9px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 2px var(--panel);animation:blink 1.2s ease-in-out infinite}
 @keyframes blink{50%{opacity:.35}}
@@ -692,3 +693,14 @@ label.kbClose,#btnHelp[role=button]{display:inline-flex;align-items:center;justi
 }
 /* With the Box button showing, Keys and Focus go icon-only on narrower screens so the toolbar still fits */
 @media (max-width:1399px){ .viewGrp:has(#gearBtn:not([hidden])) #keysBtn .lbl, .viewGrp:has(#gearBtn:not([hidden])) #focusBtn .lbl{display:none} }
+
+/* ---------- client portraits (js/portrait.js): 32×32 pixel art, scaled up crisp ---------- */
+.clientRow{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.clientRow .role{margin-bottom:0}
+.portrait{flex:none;width:64px;height:64px;image-rendering:pixelated;border-radius:8px;border:2px solid var(--line2);background:var(--panel2)}
+.portrait.big{width:96px;height:96px;border-color:var(--good)}
+.modalCard .clientRow .lead{margin:0}
+/* the brief and the reply read as speech: a small tail points up at the portrait */
+blockquote.says{position:relative;margin-top:10px}
+blockquote.says::before{content:'';position:absolute;left:24px;top:-8px;border:8px solid transparent;border-top:0;border-bottom-color:var(--panel2)}
+@media (max-width:760px){ .portrait{width:64px;height:64px} .portrait.big{width:64px;height:64px} }

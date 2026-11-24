@@ -37,7 +37,7 @@ function showBoard(){
       let b=el('button',{class:'gig'+(sv?' solved':'')+(L.challenge?' challenge':'')+(i===nxt?' next':'')});
       b.innerHTML=`<div class="num">${c.short} ${k+1}${L.challenge?' · <span class="chal">CHALLENGE</span>':''}</div><div class="title">${L.title}</div>
         <div class="client">${L.client} · ${L.role}</div>
-        <div class="concept"><span class="tag">${L.concept}</span>${gearBadges(L)}${sv?`<span class="stamp">PAID · ${sv.cost}¢ · ${Math.round(sv.match)}%${progress.played&&progress.played[L.id]?' · ♪':''}${progress.helped&&progress.helped[L.id]?' · helped':''}</span>`:i===nxt?'<span class="nextTag">NEXT</span>':''}</div>`;
+        <div class="concept"><span class="tag">${L.concept}</span>${gearBadges(L)}${sv?`<span class="stamp">PAID · ${sv.usd?money(sv.cost)+' · ':''}${Math.round(sv.match)}%${progress.played&&progress.played[L.id]?' · ♪':''}${progress.helped&&progress.helped[L.id]?' · helped':''}</span>`:i===nxt?'<span class="nextTag">NEXT</span>':''}</div>`;
       b=Haptics.upgrade(b); b.addEventListener('click',()=>{ stopPreview(); openLevel(i); });
       const w=el('div',{class:'gigWrap'}); w.dataset.done=sv?'1':''; w.dataset.gig=L.id; w.appendChild(b); w.appendChild(previewButton(L)); grid.appendChild(w);
     });
@@ -196,8 +196,8 @@ function freshPatch(){
 function renderBrief(){
   const L=S.L, n=needs();
   const parts=isChallenge()?`${L.target.mods.length} modules (challenge: work out which)`:Object.keys(n).map(t=>`${n[t]>1?n[t]+'× ':''}${MT[t].name}`).join(', ');
-  $('#brief').innerHTML=`<h3>${S.sandbox?'Session':'The client'}</h3><div class="who">${L.client}</div><div class="role">${L.role}</div>
-   <blockquote>${L.brief}</blockquote>
+  $('#brief').innerHTML=`<h3>${S.sandbox?'Session':'The client'}</h3><div class="clientRow">${S.sandbox?'':portraitImg(L)}<div><div class="who">${L.client}</div><div class="role">${L.role}</div></div></div>
+   <blockquote class="${S.sandbox?'':'says'}">${L.brief}</blockquote>
    ${L.presetNote?`<div class="preset">${L.presetNote}</div>`:''}
    <div class="specs">${L.seq?`<span>NOTES ${L.seq.map(q=>noteName(L.note+q[0])).join(' → ')}</span>`:`<span>NOTE ${noteName(L.note)}</span><span>HOLD ${L.gate}s</span>`}${S.sandbox?'':`<span>PASS ≥ ${PASS}%</span><span>PARTS: ${parts}</span>`}</div>`;
   $('#manual').innerHTML=`<h3>Manual · ${L.concept}</h3>`+L.manual;
@@ -210,8 +210,8 @@ function renderPalette(){
   const miss=new Set(isChallenge()?[]:missing().map(x=>x[0])), free=emptySlots().length;
   Object.entries(S.palette).forEach(([t,max])=>{
     const left=max-countType(t);
-    let b=el('button',{class:'palBtn'+(miss.has(t)?' need':''),title:`${MT[t].long}${miss.has(t)?' · this sound needs one':''}`},
-      `<span class="sw" style="background:${MT[t].color}"></span><b>${MT[t].name}</b><small>${MT[t].cost}¢·${left}</small>`);
+    let b=el('button',{class:'palBtn'+(miss.has(t)?' need':''),title:`${MT[t].long} · ${money(MT[t].cost)} · ${left} left${miss.has(t)?' · this sound needs one':''}`},
+      `<span class="sw" style="background:${MT[t].color}"></span><b>${MT[t].name}</b><small>${money(MT[t].cost)}</small><i class="left" aria-label="${left} left">×${left}</i>`);
     b.disabled=left<=0||free===0; p.appendChild(b); b=Haptics.upgrade(b); b.addEventListener('click',()=>Haptics.later(()=>addModule(t)));
   });
 }
@@ -275,7 +275,7 @@ function renderRack(){
   for(const m of S.patch.modules){
     const T=MT[m.type], [x,y]=modXY(m);
     const d=el('div',{class:'module'+(m.locked?' locked':'')+(m.slot==null?' floating':''),'data-id':m.id}); d.style.left=x+'px'; d.style.top=y+'px';
-    const head=el('div',{class:'mhead',title:m.locked?'':'Drag to move, or tap to pick up and tap where it should go'},`${m.locked?'':'<span class="grip" aria-hidden="true">⠿</span>'}<span class="stripe" style="background:${T.color}"></span><span class="name">${T.name}</span>${m.preset&&m.type!=='out'?'<span class="lock">PRESET</span>':''}<span class="cost">${T.cost&&!m.preset?T.cost+'¢':''}</span>`);
+    const head=el('div',{class:'mhead',title:m.locked?'':'Drag to move, or tap to pick up and tap where it should go'},`${m.locked?'':'<span class="grip" aria-hidden="true">⠿</span>'}<span class="stripe" style="background:${T.color}"></span><span class="name">${T.name}</span>${m.preset&&m.type!=='out'?'<span class="lock">PRESET</span>':''}<span class="cost">${T.cost&&!m.preset?money(T.cost):''}</span>`);
     if(!m.locked){ const xb=el('button',{class:'del',title:'Remove module'},'×'); xb.addEventListener('pointerdown',e=>e.stopPropagation()); xb.addEventListener('click',()=>removeModule(m.id)); head.appendChild(xb); }
     d.appendChild(head);
     const body=el('div',{class:'mbody'}), ins=el('div',{class:'ins'}), prm=el('div',{class:'params'}), outs=el('div',{class:'outs'});
@@ -677,7 +677,7 @@ async function runAnalyze(){
 }
 function updateCompare(){
   const c=S.cmp, st=$('#stats'); if(!st) return;
-  st.innerHTML=`<div class="stat"><b>${playerCost(S.patch)}¢</b><span>Cost</span></div><div class="stat"><b>${S.patch.modules.filter(m=>m.type!=='out').length}</b><span>Modules</span></div><div class="stat"><b>${S.patch.cables.length}</b><span>Cables</span></div>`;
+  st.innerHTML=`<div class="stat"><b>${money(playerCost(S.patch))}</b><span>Cost</span></div><div class="stat"><b>${S.patch.modules.filter(m=>m.type!=='out').length}</b><span>Modules</span></div><div class="stat"><b>${S.patch.cables.length}</b><span>Cables</span></div>`;
   if(c){
     const ok=c.overall>=PASS-1e-9, pct=$('#pct');
     if(ok&&!S.wasOk) Haptics.success(); S.wasOk=ok;
@@ -746,16 +746,16 @@ function submit(){
   const c=S.cmp; if(!c||c.overall<PASS) return;
   const L=S.L, cost=playerCost(S.patch), mods=S.patch.modules.filter(m=>m.type!=='out'&&!m.preset).length, cab=S.patch.cables.length;
   const prev=progress.solved[L.id];
-  const best={cost:prev?Math.min(prev.cost,cost):cost, cables:prev?Math.min(prev.cables,cab):cab, match:prev?Math.max(prev.match,c.overall):c.overall};
+  const best={cost:prev&&prev.usd&&prev.cost!=null?Math.min(prev.cost,cost):cost, usd:1, cables:prev?Math.min(prev.cables,cab):cab, match:prev?Math.max(prev.match,c.overall):c.overall};
   progress.solved[L.id]=best; saveProgress();
   const ch=chapterOf(S.li), k=ch.levels.indexOf(S.li), nextIdx=ch.levels[k+1], next=nextIdx!=null&&isUnlocked(nextIdx)?nextIdx:null;
   const chDone=ch.levels.every(i=>progress.solved[LEVELS[i].id]), opened=ch.id==='basics'&&chDone;
   const par=parCost(L), m=$('#modal'); m.hidden=false;
-  m.innerHTML=`<div class="modalCard"><h2>Patch accepted</h2><p class="lead">${L.client} · ${L.title}</p>${chDone&&next==null?`<p class="lead" style="color:var(--good)">${opened?'Basics complete! Every theme on the gig board is now open.':ch.title+' complete!'}</p>`:''}
-    <blockquote>${L.reply}</blockquote>
+  m.innerHTML=`<div class="modalCard"><h2>Patch accepted</h2><div class="clientRow">${portraitImg(L,'portrait big')}<p class="lead">${L.client} · ${L.title}</p></div>${chDone&&next==null?`<p class="lead" style="color:var(--good)">${opened?'Basics complete! Every theme on the gig board is now open.':ch.title+' complete!'}</p>`:''}
+    <blockquote class="says">${L.reply}</blockquote>
     <div class="resGrid">
       <div class="res"><b>${Math.floor(c.overall)}%</b><span>Match</span><em>best ${Math.floor(best.match)}%</em></div>
-      <div class="res"><b>${cost}¢</b><span>Cost</span><em>best ${best.cost}¢ / par ${par}</em></div>
+      <div class="res"><b>${money(cost)}</b><span>Cost</span><em>best ${money(best.cost)} / par ${money(par)}</em></div>
       <div class="res"><b>${mods}</b><span>Added</span><em>modules</em></div>
       <div class="res"><b>${cab}</b><span>Cables</span><em>best ${best.cables}</em></div>
     </div>
