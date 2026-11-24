@@ -101,7 +101,29 @@ class Ladder extends AudioWorkletProcessor{
     return true;
   }
 }
-registerProcessor('ladder',Ladder);`;
+registerProcessor('ladder',Ladder);
+/* Feedback comb filter: y = x + fb·lowpass(y delayed by one period). Peaks at FREQ and every multiple (positive fb), or at the odd
+   multiples of half of FREQ (negative fb: hollow, an octave down). Sample-accurate with a fractional delay, so it tunes up to
+   high notes (a DelayNode can't go below 128 frames inside a feedback loop). */
+class Comb extends AudioWorkletProcessor{
+  static get parameterDescriptors(){ return [{name:'freq',defaultValue:220,automationRate:'a-rate'},{name:'oct',defaultValue:0,automationRate:'a-rate'},
+    {name:'fb',defaultValue:0.7,automationRate:'k-rate'},{name:'mix',defaultValue:1,automationRate:'k-rate'},{name:'tone',defaultValue:12000,automationRate:'k-rate'}]; }
+  constructor(o){ super(); const op=(o&&o.processorOptions)||{}; this.buf=new Float32Array(8192); this.w=0; this.lp=0; this.t0=op.t0||0; this.t1=Infinity;
+    this.port.onmessage=e=>{ this.t1=(e.data&&e.data.stopAt!=null)?e.data.stopAt:-1; }; }
+  process(ins,outs,P){
+    if(currentTime>=this.t1) return false; const out=outs[0][0]; if(!out||currentTime+128/sampleRate<this.t0) return true;
+    const inp=ins[0]&&ins[0][0], F=P.freq, O=P.oct, fb=Math.max(-0.985,Math.min(0.985,P.fb[0])), mix=P.mix[0], buf=this.buf, N=buf.length;
+    const a=1-Math.exp(-2*Math.PI*Math.min(P.tone[0],sampleRate*0.45)/sampleRate), norm=Math.sqrt(1-fb*fb);   // noise in keeps about the same level
+    for(let i=0;i<out.length;i++){
+      const x=inp?inp[i]:0, f=Math.max(20,Math.min(sampleRate/2.5,(F.length>1?F[i]:F[0])*Math.pow(2,O.length>1?O[i]:O[0]))), D=Math.min(N-2,sampleRate/f);
+      let r=this.w-D; if(r<0) r+=N; const i0=Math.floor(r), fr=r-i0, d=buf[i0]+(buf[(i0+1)%N]-buf[i0])*fr;
+      this.lp+=a*(d-this.lp); const y=x+fb*this.lp; buf[this.w]=Math.max(-4,Math.min(4,y)); this.w=(this.w+1)%N;
+      out[i]=(1-mix)*x+mix*y*norm;
+    }
+    return true;
+  }
+}
+registerProcessor('comb',Comb);`;
 const workletCache=new WeakMap();
 function ensureWorklets(ctx){
   if(!ctx.audioWorklet||typeof AudioWorkletNode==='undefined') return Promise.resolve(false);
@@ -117,7 +139,7 @@ function ensureWorklets(ctx){
 let ENGINE='studio';
 /* Studio engine parts, switchable one at a time for A/B listening and tuning. */
 const STUDIO={ladder:false, drift:1, finish:true};   // ladder: set per gig (studio:'ladder')
-const usesWorklet = patch => ENGINE==='studio'||patch.modules.some(m=>m.type==='sync');
+const usesWorklet = patch => ENGINE==='studio'||patch.modules.some(m=>m.type==='sync'||m.type==='comb');
 /* Studio envelopes: an RC-style attack (curving up to full at A), then decay and release that fall fast and trail off. */
 const EXP_K=3.5;   // time constants per D/R: ~97% of the way there by the knob's time
 function envAtExp(p,t){ if(t<p.a){ const tau=p.a/Math.log(1.3/0.3); return 1.3*(1-Math.exp(-t/tau)); } return p.s+(1-p.s)*Math.exp(-(t-p.a)*EXP_K/Math.max(p.d,1e-4)); }
@@ -250,6 +272,19 @@ function buildVoice(ctx, patch, dest, t0, note, gate){
         const g=ctx.createGain(); g.gain.value=P.open; f.connect(g);
         const cv=ctx.createGain(); cv.gain.value=1; const cents=ctx.createGain(); cents.gain.value=9600; cv.connect(g.gain); cv.connect(cents); cents.connect(f.detune);
         n.ins.in=f; n.ins.cv=cv; n.outs.out=g; break; }
+      case 'comb': {
+        // Tuned to FREQ, or to the played note in NOTE mode. CV moves the tuning in octaves (MOD AMT), for flanging and sweeps.
+        const f=P.sync==='note'?mtof(note):P.freq, inp=ctx.createGain(), out=ctx.createGain(), cv=ctx.createGain(); cv.gain.value=P.modAmt||0;
+        if(ctx.__studio){ const w=new AudioWorkletNode(ctx,'comb',{numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[1],channelCount:1,channelCountMode:'explicit',processorOptions:{t0}});
+          w.parameters.get('freq').value=f; w.parameters.get('fb').value=P.fb; w.parameters.get('mix').value=P.mix; w.parameters.get('tone').value=P.tone;
+          cv.connect(w.parameters.get('oct')); inp.connect(w); w.connect(out); workers.push(w); }
+        else { // fallback without worklets: a DelayNode loop (can't tune above ~170 Hz, but keeps the patch audible)
+          const d=ctx.createDelay(1), fbg=ctx.createGain(), lp=ctx.createBiquadFilter(), wet=ctx.createGain(), dry=ctx.createGain();
+          d.delayTime.value=1/f; fbg.gain.value=P.fb; lp.type='lowpass'; lp.frequency.value=P.tone; lp.Q.value=-6; wet.gain.value=P.mix*Math.sqrt(1-P.fb*P.fb); dry.gain.value=1-P.mix;
+          const sum=ctx.createGain(); inp.connect(sum); fbg.connect(sum); sum.connect(d); d.connect(lp); lp.connect(fbg);   // y = x + fb·lp(y delayed)
+          inp.connect(dry); dry.connect(out); sum.connect(wet); wet.connect(out); }
+        maxR=Math.max(maxR,Math.min(4,Math.abs(P.fb)>0.01?(1/f)*Math.log(0.001)/Math.log(Math.abs(P.fb)):0.02));
+        n.ins.in=inp; n.ins.cv=cv; n.outs.out=out; break; }
       case 'out': n.ins.in=dest; break;
     }
   }
@@ -428,6 +463,7 @@ const SONGS = {
   household:{ bpm:124, groove:'house', notes:[[0,0,3.9,.9],[-2,4,3.9,.9]] },
   fx:     { bpm:128, groove:'techno', notes:[[0,0,1,.9],[0,3.5,.5,.8],[7,4,1,.95],[-5,7,1,.9]] },
   // percussion gigs: the gig's own drum takes its place in a groove
+  indkick:{ bpm:132, groove:'techno', skip:['kick'], notes:st16([[0,0,1,1],[4,0,1,1],[8,0,1,1],[11,0,1,.7],[12,0,1,1],[16,0,1,1],[20,0,1,1],[24,0,1,1],[28,0,1,1],[30,0,1,.6]]) },
   kick:   { bpm:92, groove:'boom', swing:.2, skip:['kick'], notes:st16([[0,0,1,1],[7,0,1,.8],[10,0,1,.9],[16,0,1,1],[22,0,1,.9],[26,0,1,.9]]) },
   tom:    { bpm:92, groove:'boom', swing:.2, notes:st16([[3,0,1,.8],[11,-5,1,.8],[24,5,1,.9],[26,0,1,.9],[28,-5,1,.95],[30,-7,1,1]]) },
   snare:  { bpm:124, groove:'house', skip:['clap','snare'], notes:st16([[4,0,1,1],[12,0,1,1],[15,0,1,.5],[20,0,1,1],[28,0,1,1],[30,0,1,.55],[31,0,1,.65]]) },
@@ -439,7 +475,7 @@ const SONGS = {
   seqdeep:{ bpm:120, followSeq:true, groove:'deep', notes:[[0,0,3.95,.95],[5,4,3.95,.95],[0,8,3.95,.95]] },
 };
 const SONG_BY_CH={basics:'lead',filters:'lead',bass:'bass',pads:'pads',leads:'lead',perc:'cowbell',fx:'fx',mix:'bass',harm:'keys',fm:'bell',fxrack:'pluck',
-  strings:'pluck',random:'hold',seqlab:'seqhold',repair:'bass',sync:'techbass',modlab:'hold',west:'pluck',bonus:'bass'};
+  strings:'pluck',comb:'bell',industrial:'techhold',random:'hold',seqlab:'seqhold',repair:'bass',sync:'techbass',modlab:'hold',west:'pluck',bonus:'bass'};
 const SONG_BY_GIG={
   shape:'lead','pixel-knight':'pluck','thin-walls':'lofi',gate:'keys',pluck:'pluck',vibrato:'bell',
   squelch:'acid',acid:'acid',payphone:'keys',air:'techhold',vowel:'household',notch:'dub',swell:'pads',
@@ -454,6 +490,7 @@ const SONG_BY_GIG={
   slide:'seqdeep',warehouse:'seqacid',
   'no-signal':'bass',muffled:'bass','wrong-jack':'pluck',seasick:'lead','total-wreck':'acid',
   'torn-edge':'techbass','sync-sweep':'techhold','robot-voice':'fx',screamer:'lead',
+  pipe:'hold',hollow:'bell',jet:'techhold',tunnel:'bell',factory:'indkick','sheet-metal':'fx',grinder:'techhold','machine-room':'techhold',
   'strike-once':'bell',pump:'household','late-vibrato':'bell',tidal:'wobble',
   fold:'techbass',bloom:'lead','even-keel':'bass'};
 function songFor(L){ return SONGS[(L&&(L.song||SONG_BY_GIG[L.id]||SONG_BY_CH[L.ch]))||'lead']; }

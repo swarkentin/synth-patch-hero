@@ -13,7 +13,7 @@ export async function launch() {
   const bin = CANDIDATES.find(c => c.includes('/') ? existsSync(c) : true);
   // Port 0 lets Chrome pick a free port; it writes the choice to DevToolsActivePort in the profile.
   const proc = spawn(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--mute-audio',
-    '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--autoplay-policy=no-user-gesture-required', 'about:blank'],
+    '--remote-debugging-port=0', '--enable-logging=stderr', '--v=0', `--user-data-dir=${profile}`, '--autoplay-policy=no-user-gesture-required', 'about:blank'],
     { stdio: ['ignore', 'ignore', 'pipe'] });
   let stderr = ''; proc.stderr.on('data', d => { stderr = (stderr + d).slice(-4000); });
   let exited = null; proc.on('exit', code => { exited = code; });
@@ -29,18 +29,26 @@ export async function launch() {
   if (!targets) { proc.kill(); throw new Error(`Could not start Chrome (${bin}${exited != null ? ', exit ' + exited : ''}). Set CHROME_PATH.\n${stderr}`); }
   const ws = new WebSocket(targets.find(t => t.type === 'page').webSocketDebuggerUrl);
   await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
-  let id = 0; const pending = new Map(); let errors = [];
+  let id = 0, crashed = false; const pending = new Map(); let errors = [];
   ws.onmessage = m => {
     const d = JSON.parse(m.data);
     if (d.id && pending.has(d.id)) { pending.get(d.id)(d); pending.delete(d.id); }
     if (d.method === 'Runtime.exceptionThrown') errors.push(d.params.exceptionDetails.exception?.description || d.params.exceptionDetails.text);
+    // A crashed page never answers: fail every pending call instead of hanging the run.
+    if (d.method === 'Inspector.targetCrashed') { crashed = true; for (const [, r] of pending) r({ crashed: true }); pending.clear(); }
   };
   const send = (method, params = {}) => new Promise(r => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
-  await send('Runtime.enable'); await send('Page.enable');
+  await send('Runtime.enable'); await send('Page.enable'); await send('Inspector.enable');
 
   const page = {
-    async evaluate(expr) {
-      const r = await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true });
+    // Each step gets a time limit, so a stuck page fails the run with the step's first line instead of hanging forever.
+    async evaluate(expr, timeout = 480000) {
+      if (crashed) throw new Error('The page crashed earlier in the run.');
+      let timer; const r = await Promise.race([send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true }),
+        new Promise(res => { timer = setTimeout(() => res({ timedOut: true }), timeout); })]); clearTimeout(timer);
+      const head = expr.replace(/\s+/g, ' ').slice(0, 140);
+      if (r.crashed) throw new Error('The page crashed during: ' + head + '\nChrome said: ' + stderr.slice(-1500));
+      if (r.timedOut) throw new Error(`Step took over ${timeout / 1000}s: ` + head);
       if (r.result?.exceptionDetails) throw new Error(r.result.exceptionDetails.exception?.description || r.result.exceptionDetails.text);
       return r.result?.result?.value;
     },

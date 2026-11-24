@@ -45,6 +45,12 @@ const PARAM_HELP = {
   'fold.fold': 'FOLD is how hard the wave is pushed into the folder. Each time it passes the edge it folds back, adding bright, rubbery harmonics.',
   'fold.foldAmt': 'MOD AMT sets how far a signal in the CV jack pushes the fold. An envelope here makes the tone bloom and settle.',
   'fold.level': 'LEVEL is the output volume of the folder.',
+  'comb.sync': 'HZ tunes the comb to FREQ. NOTE tunes it to whatever note is played, so the resonance follows the keyboard.',
+  'comb.freq': 'FREQ is the pitch the comb rings at. It boosts that frequency and every multiple of it, so noise going in comes out pitched.',
+  'comb.fb': 'FDBK is how long and strongly the comb rings. Positive gives a bright, metallic ring on every harmonic. Negative keeps only the odd ones: hollow, and an octave lower.',
+  'comb.tone': 'TONE darkens each trip around the comb, so the high ringing dies first, like a softer material.',
+  'comb.mix': 'MIX blends the dry input back in. Around 50% the peaks and dips sit side by side, which is the swooshing sound of a flanger when the tuning moves.',
+  'comb.modAmt': 'MOD AMT sets how far a signal in the FREQ jack sweeps the tuning, in octaves.',
   'lpg.open': 'OPEN is how open the gate rests with no signal in its CV. Usually 0, so the envelope does all the work.',
 };
 const MODULE_WHY = {
@@ -65,6 +71,7 @@ const MODULE_WHY = {
   func: 'A function generator draws a rise-and-fall shape, once per note or looping forever.',
   modvca: 'A MOD VCA lets one control signal set how much of another gets through. Modulation controlling modulation.',
   fold: 'A wavefolder folds loud peaks back on themselves, adding harmonics without a filter.',
+  comb: 'A comb filter is a very short echo fed back on itself. It rings at one pitch and its harmonics: tuned pipes, metal, hollow tubes and jet swooshes.',
   lpg: 'A low-pass gate opens volume and brightness together with one signal, so notes fade darker as they get quieter.',
 };
 const PORT_WHY = {
@@ -80,7 +87,7 @@ const PORT_WHY = {
   'sync.sweep': 'A signal in the SWEEP jack moves the sync ratio over time.',
   'ring.a': 'The ring modulator needs a sound in both A and B: it multiplies them together.', 'ring.b': 'The ring modulator needs a sound in both A and B: it multiplies them together.',
   'modvca.in': 'The control signal you want to scale goes into the MOD VCA\'s IN.', 'modvca.cv': 'A signal in the MOD VCA\'s CV decides how much of IN gets through.',
-  'fold.in': 'Audio has to pass through the folder to be folded.', 'fold.cv': 'A signal in the folder\'s CV jack moves the fold amount.',
+  'comb.in': 'Audio has to pass through the comb to ring at its pitch.', 'comb.cv': 'A signal in the comb\'s FREQ jack sweeps its tuning.', 'fold.in': 'Audio has to pass through the folder to be folded.', 'fold.cv': 'A signal in the folder\'s CV jack moves the fold amount.',
   'lpg.in': 'Audio has to pass through the low-pass gate to be shaped by it.', 'lpg.cv': 'A signal in the LPG\'s CV opens volume and brightness together.',
   'reverb.in': 'Audio has to pass through the reverb to get the room sound.', 'drive.in': 'Audio has to pass through the drive to be distorted.',
 };
@@ -163,7 +170,7 @@ function direction(c){
   const higher=toN(d,mv)>toN(d,tv);
   const word={'env.a':['starts too slowly','starts too quickly'],'env.d':['falls too slowly','falls too quickly'],'env.r':['fades out too slowly','fades out too quickly'],
     'env.s':['holds too loud','holds too quiet'],'filter.cutoff':m.params.type==='highpass'?['cuts too much','cuts too little']:['is too open','is too closed'],
-    'lfo.rate':['moves too fast','moves too slowly'],'osc.oct':['is too high','is too low'],'osc.semi':['is too high','is too low']}[m.type+'.'+d.id]||['is set too high','is set too low'];
+    'lfo.rate':['moves too fast','moves too slowly'],'comb.freq':['rings too high','rings too low'],'comb.fb':['rings too long or too bright','rings too briefly or too hollow'],'osc.oct':['is too high','is too low'],'osc.semi':['is too high','is too low']}[m.type+'.'+d.id]||['is set too high','is set too low'];
   return `Yours ${higher?word[0]:word[1]}.`;
 }
 function lockParam(c){

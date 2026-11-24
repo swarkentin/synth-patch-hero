@@ -128,11 +128,16 @@ try {
     `${r.id.padEnd(13)} fits the board, presets valid, reference scores ${r.score.toFixed(1)}%, untouched rack scores ${r.fresh.toFixed(0)}%`);
 
   console.log('\nHelp can rescue every gig from an untouched rack');
-  await page.open(URL, { width: 1280, height: 800 });
-  await page.waitFor("document.querySelector('.gig')");
-  const rescued = await page.evaluate(`(async()=>{
+  // Each offline render that loads AudioWorklets leaks about 0.5 MB in Chrome (even an empty module does), so this
+  // render-heavy check reloads the page every 15 gigs to stay well clear of the memory limit. See docs/ideas.md.
+  const rescued = [];
+  const nGigs = await page.evaluate('LEVELS.length');
+  for (let from = 0; from < nGigs; from += 15) {
+    await page.open(URL, { width: 1280, height: 800 });
+    await page.waitFor("document.querySelector('.gig')");
+    rescued.push(...await page.evaluate(`(async()=>{
     const out=[];
-    for(let i=0;i<LEVELS.length;i++){
+    for(let i=${from};i<Math.min(LEVELS.length,${from + 15});i++){
       store.del('draft2.'+LEVELS[i].id); openLevel(i); const L=S.L;
       const need={}; L.target.mods.forEach(m=>need[m.type]=(need[m.type]||0)+1);
       const paletteOk=Object.entries(need).every(([t,n])=>(L.palette[t]||0)>=n);
@@ -140,8 +145,12 @@ try {
       let steps=0, score=0;
       for(;steps<25;steps++){ score=levelCompare(L,L._tA,analyze(await renderPatch(S.patch,L))).overall; if(score>=PASS) break; if(!(await autoHelp())) break; }
       out.push({id:L.id,paletteOk,steps,score});
+      store.del('draft2.'+L.id);
     }
-    LEVELS.forEach(L=>store.del('draft2.'+L.id)); progress.helped={}; showBoard(); return out; })()`);
+    progress.helped={}; showBoard(); return out; })()`));
+  }
+  await page.open(URL, { width: 1280, height: 800 });
+  await page.waitFor("document.querySelector('.gig')");
   for (const r of rescued) ok(r.paletteOk && r.score >= 90 && r.steps <= 16, `${r.id.padEnd(13)} palette has the parts; passes after ${r.steps} help step(s) (${r.score.toFixed(0)}%)`);
 
   console.log('\nThe end-of-gig jingle is the demo song on the player\'s patch');

@@ -35,7 +35,7 @@ Gear guidance should teach that translation explicitly: "this cable is already w
 | Wavetables / phase distortion | Wavetone: 2 oscillators, wavetable + phase distortion | Wavetable mode | PCM waves (proprietary) |
 | Low-pass ladder (Acid Test, Squelch) | Lowpass 4 filter machine | Analog 12 dB state-variable LP | Several modeled filter types |
 | Multimode / HP / BP / notch (Filter Lab) | Multi-Mode filter machine, plus a base-width filter on every voice | Analog filter LP/BP/HP; Multi Filter engine mode | Filter types per partial |
-| Comb filter (Karplus–Strong, Strings & Plucks) | Comb− / Comb+ filter machines | Comb Filter mode; Karplus Str. mode | — |
+| Comb filter (Comb Lab; Karplus–Strong in Strings & Plucks) | Comb− / Comb+ filter machines | Comb Filter mode; Karplus Str. mode | — |
 | Function generator / looping envelope (Modulation Deep Dive) | — | **Cycling envelope** (rise / hold / fall; one-shot, Run or Loop, up to audio rate) | — |
 | LFOs, S&H, modulating modulation | 3 assignable LFOs per track | 2 LFOs + custom shapes + mod matrix (incl. mod of mod) | 2 LFOs per partial, matrix control |
 | Layering (Mix Desk) | 16 tracks | 2 engines into the filter | Up to 4 partials per tone |
@@ -48,7 +48,7 @@ Gear guidance should teach that translation explicitly: "this cable is already w
 1. 🟢 **"On your box" notes and panel maps in existing gigs.** *Built for the Digitone II: Thin Walls, Acid Test and Neon Avenue (see docs/design.md, On your box). Next: more gigs, then MiniFreak.* A short, optional panel per gig, for example "On a MiniFreak: the cycling envelope in Loop mode is this gig's FUNC." It's shown for gear the player picks in Settings ("My gear": none / Digitone II / MiniFreak / MC-707), with a panel map highlighting where the control lives (see Showing the real gear). This is cheap and immediately useful, but every note must be checked against the manual.
 2. 🟡 **Device racks.** Locked, pre-wired preset racks that mirror each box's signal flow, with its labels and value ranges (e.g. 0–127), so the numbers learned transfer to the real knobs. Presets, locks and Help already support most of this.
 3. 🟡 **Engine additions to cover the boxes:**
-   - Comb± filters.
+   - ✅ Comb± filters: the COMB module (bipolar feedback), used in Comb Lab and Industrial.
    - A **4-operator FM** voice with algorithms and feedback (Digitone FM Tone).
    - A wavetable / phase-distortion oscillator (Wavetone, MiniFreak Wavetable).
    - A **hold** stage and Run/Loop modes on FUNC (MiniFreak cycling envelope).
@@ -97,6 +97,11 @@ Teaching *where to reach* on the box is central to this track, the same way gear
 - 🔴 Histograms of player scores; story chapters.
 
 ## Sound
+
+- 🟢 **Fix: offline renders leak memory in Chrome.** Found 2026-11-24 while adding Comb Lab, when the test page ran out of memory. Every `OfflineAudioContext` that loads an AudioWorklet module keeps about 0.5 MB for good, even after forced GC, and even with an empty one-line module (Blob or data: URL, file:// or http). Plain contexts don't leak. The game renders offline for every match update and every Help try, so a long session can grow by hundreds of MB, which matters most on phones. Present since the Studio engine started using worklets.
+  - **Plan:** keep one long-lived offline renderer instead of one per render. Use a long `OfflineAudioContext` and `suspend(t)`: at each suspend, build the next patch's voice at that time, let a small recorder worklet collect its samples, and resume. Start a new context only when it runs out (say every 10 minutes of rendered audio). Align start times to 128-frame blocks so renders stay bit-identical.
+  - **Cheaper interim step:** Help tries many knob settings in a row. It could render up to 32 of them at once, one per channel of a single context.
+  - Until then, `npm test` reloads the page between batches of the Help-rescue check.
 
 - 🟡 **A sound-design pass** on gig targets and demo songs, so client sounds are genuinely good patches and not just correct ones.
 - 🟢 **Better drums** under demo songs; a bass line under lead songs; light ducking.

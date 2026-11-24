@@ -123,6 +123,16 @@ const MT = {
       {id:'foldAmt',label:'MOD AMT',min:0,max:7,step:0.01,def:0,fmt:v=>'+'+v.toFixed(2)+'×',req:'mod'},
       {id:'level',label:'LEVEL',min:0,max:1,step:0.01,def:0.7,fmt:fmtPct},
     ]},
+  comb: {name:'COMB', long:'Comb filter (a tuned resonator)', color:'var(--cyan)', cost:250,
+    ins:[{id:'in',kind:'audio',label:'IN'},{id:'cv',kind:'mod',label:'FREQ',req:'mod'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
+    params:[
+      {id:'sync',type:'choice',options:['free','note'],labels:['HZ','NOTE'],def:'free'},
+      {id:'freq',label:'FREQ',min:40,max:4000,scale:'log',def:220,fmt:fmtHz},
+      {id:'fb',label:'FDBK',min:-0.98,max:0.98,step:0.005,def:0.7,fmt:v=>(v>0?'+':'')+Math.round(v*100)+'%',bipolar:true},
+      {id:'tone',label:'TONE',min:500,max:16000,scale:'log',def:12000,fmt:fmtHz},
+      {id:'mix',label:'MIX',min:0,max:1,step:0.01,def:1,fmt:fmtPct},
+      {id:'modAmt',label:'MOD AMT',min:-3,max:3,step:0.01,def:0,fmt:v=>(v>0?'+':'')+v.toFixed(2)+' oct',bipolar:true,req:'mod'},
+    ]},
   lpg: {name:'LPG', long:'Low-pass gate (volume and brightness together)', color:'var(--olive)', cost:210,
     ins:[{id:'in',kind:'audio',label:'IN'},{id:'cv',kind:'mod',label:'CV'}], outs:[{id:'out',kind:'audio',label:'OUT'}],
     params:[{id:'open',label:'OPEN',min:0,max:1,step:0.01,def:0,fmt:fmtPct}]},
@@ -986,6 +996,88 @@ const LEVELS = [
       {id:'r',type:'reverb',p:{size:1.2,mix:0.2}}],
     cables:['o.out>f.in','f.out>g.in','g.out>r.in','r.out>out.in','u.out>f.cv','u.out>g.cv']},
   reply:`The kids are playing it like a xylophone. Best exhibit we've ever had.`},
+/* ---------------- COMB LAB ---------------- */
+{ id:'pipe', ch:'comb', title:'Tuned Pipe', concept:'Comb filter', client:'Gus Mendel', role:'Plumber with a noise-music side project',
+  unlock:[], palette:{noise:1,comb:1,osc:1,vca:1,env:1}, note:57, gate:1.0, dur:1.3,
+  brief:`I hit pipes for a living and for fun. Blow across a long pipe and the hiss turns into a note. I want that: pure hiss going in, a ringing, pitched pipe coming out. No oscillator.`,
+  manual:`<h4>The comb filter</h4>
+  <p>A <b>COMB</b> is a very short echo fed back into itself. When the echo time is one cycle of a note, every echo lines up with the last, and the comb <b>rings at that pitch</b> and all its harmonics.</p>
+  <ul><li>Patch NOISE into the COMB. Noise has every frequency; the comb keeps the ones that fit its pitch.</li><li><b>FREQ</b> is the pitch it rings at.</li><li><b>FDBK</b> is how long it rings. More feedback means a purer, more pipe-like note. Near 100% it rings forever.</li><li>TONE darkens the ringing a little each time around.</li></ul>
+  <div class="tip">Watch the spectrum: the comb turns flat noise into a row of evenly spaced teeth. That's where the name comes from.</div>`,
+  target:{mods:[{id:'n',type:'noise'},{id:'c',type:'comb',p:{freq:220,fb:0.94,tone:9000,mix:1}}], cables:['n.out>c.in','c.out>out.in']},
+  reply:`That's my pipe! You've got the whole basement singing.`},
+{ id:'hollow', ch:'comb', title:'Hollow Reed', concept:'Negative feedback', client:'Wren Abernathy', role:'Folk clarinetist, between clarinets',
+  unlock:[], palette:{noise:1,comb:1,vca:1,env:1,filter:1}, note:45, gate:1.2, dur:1.6,
+  brief:`My clarinet's in the shop and the tour starts Friday. A clarinet sounds hollow, woody and a bit breathy, and it speaks a touch softly at the start. Can a comb do that?`,
+  manual:`<h4>Comb minus: the hollow sound</h4>
+  <p>FDBK goes both ways. <b>Positive</b> feedback rings on every harmonic: bright and metallic. <b>Negative</b> feedback flips the echo each time, so only the <b>odd</b> harmonics survive.</p>
+  <ul><li>Odd harmonics only is the hollow sound of a clarinet or a square wave.</li><li>Flipping the echo also moves the pitch <b>an octave down</b> from FREQ.</li><li>An ENV on a VCA lets the note fade in softly and breathe out.</li><li>TONE takes the edge off for a woodier reed.</li></ul>
+  <div class="tip">Flip FDBK from + to − while the note plays and listen to it drop an octave and go hollow.</div>`,
+  target:{mods:[{id:'n',type:'noise'},{id:'c',type:'comb',p:{freq:220,fb:-0.92,tone:4000,mix:1}},{id:'v',type:'vca',p:{level:0.9}},{id:'e',type:'env',p:{a:0.06,d:0.2,s:0.8,r:0.25}}],
+    cables:['n.out>c.in','c.out>v.in','v.out>out.in','e.out>v.gain']},
+  reply:`Nobody at the gig noticed. One person asked what brand my clarinet was.`},
+{ id:'jet', ch:'comb', title:'Jet Stream', concept:'Flanging', client:'Captain Orla Finch', role:'Air show announcer',
+  unlock:['mod'], palette:{noise:1,comb:1,lfo:1,filter:1,env:1},
+  note:57, gate:2.4, dur:2.6,
+  brief:`I need a jet flying past for the air show intro. That whooshing roar that swirls up and down as the plane goes over. Big, airy, moving.`,
+  manual:`<h4>Flanging: a moving comb</h4>
+  <p>Mix the comb half and half with the dry sound and the comb's teeth become a row of <b>peaks and dips</b>. Move the tuning and they sweep up and down: the classic jet <b>whoosh</b>.</p>
+  <ul><li>MIX a little over half: enough comb for a strong whoosh, with some plain hiss left in.</li><li>Plenty of FDBK makes the swirl sharp and metallic.</li><li>An LFO into the comb's <b>FREQ</b> jack moves the tuning. MOD AMT is how many octaves it sweeps; a jet sweeps wide.</li><li>A slow LFO is a slow flyby.</li></ul>
+  <div class="tip">Noise makes the most obvious jet. Try a saw through the same comb later: that's a flanged synth.</div>`,
+  target:{mods:[{id:'n',type:'noise'},{id:'c',type:'comb',p:{freq:500,fb:0.9,tone:12000,mix:0.6,modAmt:2.5}},{id:'l',type:'lfo',p:{wave:'sine',rate:0.3}}],
+    cables:['n.out>c.in','c.out>out.in','l.out>c.cv']},
+  reply:`The crowd ducked. Actually ducked. Then they cheered.`},
+{ id:'tunnel', ch:'comb', challenge:true, tol:1.5, title:'Tunnel Chimes', concept:'Challenge', client:'Gus Mendel', role:'Plumber, now playing the city tunnels',
+  unlock:[], palette:{noise:1,comb:1,vca:1,env:2,reverb:1,osc:1}, note:69, gate:0.3, dur:2.0,
+  brief:`I got permission to play the old water tunnels. I want chimes: a sharp tick, then a bright, pure metal ring that follows whatever note I play, fading in that big echoey tunnel.`,
+  manual:`<h4>Challenge: ring a comb with a tick</h4>
+  <p>No parts list. Things to listen for:</p>
+  <ul><li>"A sharp tick": the shortest possible burst of something with every frequency in it.</li><li>"A pure metal ring": long, bright ringing, not hollow.</li><li>"Follows whatever note I play": the ringing pitch isn't fixed.</li><li>"That big echoey tunnel".</li></ul>
+  <div class="tip">A comb doesn't need a long sound going in. One short burst is enough to set it ringing, like striking a bar.</div>`,
+  target:{mods:[{id:'n',type:'noise'},{id:'v',type:'vca',p:{level:1}},{id:'e',type:'env',p:{a:0.001,d:0.02,s:0,r:0.02}},{id:'c',type:'comb',p:{sync:'note',fb:0.97,tone:6000,mix:1}},{id:'r',type:'reverb',p:{size:2.5,mix:0.3}}],
+    cables:['n.out>v.in','e.out>v.gain','v.out>c.in','c.out>r.in','r.out>out.in']},
+  reply:`The tunnel hums back after every note. People are calling it haunted. In a good way.`},
+/* ---------------- INDUSTRIAL ---------------- */
+{ id:'factory', ch:'industrial', tol:1.5, title:'Factory Floor', concept:'Distortion as tone', client:'Vesna Kralj', role:'Industrial techno producer',
+  unlock:['mod'], palette:{osc:1,drive:1,vca:1,env:2,filter:1}, note:33, gate:0.3, dur:0.9,
+  brief:`My kicks are too polite. I want a kick that sounds like a press stamping steel: the same thump, but crushed and gritty, buzzing with overtones.`,
+  manual:`<h4>Distortion as part of the sound</h4>
+  <p>Start from a kick: a sine with a fast pitch drop (an ENV into PITCH) and a short volume envelope. Then put <b>DRIVE</b> straight after the oscillator.</p>
+  <ul><li>DRIVE pushes the wave into soft clipping. A sine turns squarer and grows harmonics.</li><li>The harder you drive, the more it buzzes. LEVEL brings the volume back down.</li><li>Distort <i>before</i> the VCA, so the envelope still shapes the crushed sound.</li></ul>
+  <div class="tip">Flip DRIVE between 1 and its setting: same kick, completely different attitude.</div>`,
+  target:{mods:[{id:'o',type:'osc',p:{wave:'sine',pitchAmt:3600}},{id:'d',type:'drive',p:{drive:14,level:0.7}},{id:'v',type:'vca',p:{level:1}},{id:'e',type:'env',p:{a:0.001,d:0.45,s:0,r:0.1}},{id:'e2',type:'env',p:{a:0.001,d:0.06,s:0,r:0.05}}],
+    cables:['o.out>d.in','d.out>v.in','v.out>out.in','e.out>v.gain','e2.out>o.pitch']},
+  reply:`The warehouse floor moved. Security came over to check the speakers.`},
+{ id:'sheet-metal', ch:'industrial', tol:1.5, title:'Sheet Metal', concept:'Inharmonic clang', client:'Bram Ostrowski', role:'Scrapyard percussionist',
+  unlock:[], palette:{osc:2,ring:1,vca:1,env:1,filter:1}, note:57, gate:0.4, dur:1.2,
+  brief:`I play car doors and oil drums. My synth hits sound too musical, like a xylophone. Real metal clangs: harsh, out of tune with itself, gone in a second.`,
+  manual:`<h4>Why metal sounds like metal</h4>
+  <p>Strings and pipes have <b>harmonic</b> overtones, neatly lined up at 2×, 3×, 4× the note. Metal sheets have overtones scattered at odd, <b>inharmonic</b> places, so they clang instead of sing.</p>
+  <ul><li>A RING MOD multiplies two oscillators and outputs their <b>sum and difference</b> frequencies, which fall in inharmonic places.</li><li>Two square waves bring lots of harmonics to scramble.</li><li>Put the second oscillator an awkward interval away (a tritone, 6 semitones, is about as awkward as it gets) and an octave up.</li><li>A fast decay on a VCA makes it a hit.</li></ul>
+  <div class="tip">Try moving SEMI on the second oscillator: some intervals ring like bells, others clang like junk.</div>`,
+  target:{mods:[{id:'a',type:'osc',p:{wave:'square'}},{id:'b',type:'osc',p:{wave:'square',oct:1,semi:6}},{id:'r',type:'ring',p:{level:0.8}},{id:'v',type:'vca',p:{level:1}},{id:'e',type:'env',p:{a:0.001,d:0.5,s:0,r:0.3}}],
+    cables:['a.out>r.a','b.out>r.b','r.out>v.in','v.out>out.in','e.out>v.gain']},
+  reply:`I closed my eyes and I was back in the scrapyard. That's a compliment.`},
+{ id:'grinder', ch:'industrial', title:'Grinder', concept:'Stacking grit', client:'The Rust Choir', role:'Industrial noise collective',
+  unlock:['res'], palette:{osc:2,ring:1,drive:1,filter:1,vca:1}, note:33, gate:1.6, dur:1.8,
+  brief:`We need a drone for our opening: a grinding machine, low and angry, rough and beating against itself, but not so fizzy it hurts. Think angle grinder in a concrete room.`,
+  manual:`<h4>Stacking grit, then taming it</h4>
+  <p>Industrial tones are usually built in layers: something <b>dissonant</b>, then something <b>harsh</b>, then a filter to keep it bearable.</p>
+  <ul><li>Ring two oscillators a semitone and an octave apart: the near-miss makes a rough, beating grind.</li><li>DRIVE the result for more grit.</li><li>A low-pass FILTER at the end tames the fizz, so it's angry but not painful.</li><li>The order matters: drive first, then filter.</li></ul>
+  <div class="tip">Bypass the filter for a second and hear how much fizz it's removing.</div>`,
+  target:{mods:[{id:'a',type:'osc',p:{wave:'sawtooth'}},{id:'b',type:'osc',p:{wave:'square',oct:1,semi:1}},{id:'r',type:'ring',p:{level:0.9}},{id:'d',type:'drive',p:{drive:8,level:0.6}},{id:'f',type:'filter',p:{cutoff:1800,res:0.2}}],
+    cables:['a.out>r.a','b.out>r.b','r.out>d.in','d.out>f.in','f.out>out.in']},
+  reply:`Three people left during the opening. We've never been prouder.`},
+{ id:'machine-room', ch:'industrial', challenge:true, tol:3, title:'Machine Room', concept:'Challenge', client:'Vesna Kralj', role:'Industrial techno, the closing set',
+  unlock:['mod'], palette:{noise:1,comb:1,sh:1,drive:1,lfo:1,osc:1}, note:45, gate:2.0, dur:2.0,
+  brief:`For my closing set: a broken machine. Metallic, pitched hiss that keeps jumping to new random pitches at a steady clatter, and gritty, like it's about to break down.`,
+  manual:`<h4>Challenge: a machine that can't stay in tune</h4>
+  <p>No parts list. Things to listen for:</p>
+  <ul><li>"Metallic, pitched hiss": hiss that rings at a pitch.</li><li>"Jumping to new random pitches at a steady clatter": something keeps moving that pitch, in steps, not smoothly.</li><li>"Gritty, like it's about to break down".</li></ul>
+  <div class="tip">The thing that rings has a jack for moving its tuning.</div>`,
+  target:{mods:[{id:'n',type:'noise'},{id:'c',type:'comb',p:{freq:150,fb:0.9,tone:5000,mix:1,modAmt:1.5}},{id:'h',type:'sh',p:{rate:6}},{id:'d',type:'drive',p:{drive:14,level:0.6}}],
+    cables:['n.out>c.in','h.out>c.cv','c.out>d.in','d.out>out.in']},
+  reply:`The machine broke down perfectly. The crowd wouldn't let me leave.`},
 /* ---------------- BONUS ---------------- */
 { id:'even-keel', ch:'bonus', title:'Even Keel', concept:'Key tracking', client:'Rosalind Achebe', role:'Session keyboardist',
   unlock:['keytrk','res'], palette:{osc:1,filter:1,vca:1,env:1}, note:33, gate:0.4, dur:2.2,
@@ -1014,6 +1106,8 @@ const CHAPTERS = [
   {id:'fm', title:'FM Studio', short:'FM', blurb:'Oscillators modulating oscillators: bells, metal and glassy keys.'},
   {id:'fxrack', title:'Effects Rack', short:'EFFECTS', blurb:'Delay, reverb, chorus and drive: the space and grit around a sound.'},
   {id:'strings', title:'Strings & Plucks', short:'STRINGS', blurb:'Turn a click and a delay into a real-sounding string.'},
+  {id:'comb', title:'Comb Lab', short:'COMB', blurb:'A tiny echo fed back on itself: tuned pipes, hollow reeds and jet swooshes.'},
+  {id:'industrial', title:'Industrial', short:'INDUSTRIAL', blurb:'Grit, clang and broken machines: distortion, ring mod and combs as instruments.'},
   {id:'random', title:'Random & Generative', short:'RANDOM', blurb:'Sample & hold: controlled chaos that still repeats.'},
   {id:'seqlab', title:'Step Sequencer', short:'SEQUENCER', blurb:'Patterns that play themselves: steps, gates, retriggered envelopes and glide.'},
   {id:'repair', title:'Repair Shop', short:'REPAIR', blurb:'Broken patches come in. Diagnose them and get them working.'},
@@ -1194,6 +1288,14 @@ const SONG_GAIN={
   "bloom":-6.5,
   "bonk":3.5,
   "wooden-toy":-2.5,
+  "pipe":-2.5,
+  "hollow":4.5,
+  "jet":-2.5,
+  "tunnel":6,
+  "factory":3.5,
+  "sheet-metal":1.5,
+  "grinder":-2.5,
+  "machine-room":-5.5,
   "even-keel":1.5,
 };
 /* SONG_GAIN:end */
