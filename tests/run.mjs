@@ -495,6 +495,15 @@ try {
     const load=src=>new Promise(r=>{ const i=new Image(); i.onload=()=>r(i.naturalWidth>0); i.onerror=()=>r(false); i.src=src; });
     return !!l&&!!a&&await load(l.href)&&await load(a.href); })()`);
   ok(fav, 'the page has a favicon and a home-screen icon, and both load');
+  console.log('\nOffline render sharing');
+  const rs = await page.evaluate(`(async()=>{ let same=true;
+    for(const id of ['acid','pipe','warehouse','snare','even-keel']){ const L=LEVELS.find(l=>l.id===id), p=targetPatch(L), one=await renderPatch(p,L), many=await renderPatches([p,p],L);
+      for(const x of many) for(let i=0;i<one.length;i++) if(x[i]!==one[i]){ same=false; break; } }
+    const L=LEVELS.find(l=>l.id==='acid'), p=targetPatch(L); MINE_CACHE.clear(); const a=await renderMine(p,L), b=await renderMine(JSON.parse(JSON.stringify(p)),L);
+    const q=JSON.parse(JSON.stringify(p)); q.modules.find(m=>m.type==='filter').params.cutoff*=1.5; const c=await renderMine(q,L);
+    return {same, cached:a===b, fresh:c!==a}; })()`);
+  ok(rs.same, 'patches rendered together, one per channel (Help trials), are bit-identical to rendering each alone');
+  ok(rs.cached && rs.fresh, 'a patch that was already rendered reuses its analysis; a changed patch renders again');
   console.log('\nEven playback levels');
   const lv = JSON.parse(await page.evaluate(`(async()=>{ const stale=[], after=[];
     for(const L of LEVELS){ const m=await songLoudness(await renderSong(targetPatch(L),L,true)), want=loudnessGainDb(m), have=SONG_GAIN[L.id];

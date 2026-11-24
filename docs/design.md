@@ -218,6 +218,11 @@ Playtest 2026-11-23: the briefs should feel like a character asking for help. Ev
 - Props come from the client's first role: headphones (DJs, producers, promoters), a mic (singers, hosts, podcasts), a guitar neck, drumsticks, keys, a flute, shades (synthwave, acid), glasses (professors, doctors), a clerical collar or veil, a bow tie (orchestra, theatre), a patch cable (modular artists), a cap, closed eyes for the calm ones, and a robot head for robot acts.
 - Duos get one dimmed bandmate behind them; bands, crews and trios get two.
 
+## Offline render memory
+Chrome keeps every OfflineAudioContext that has loaded AudioWorklet code (about 0.5 MB each, plus its output buffer; details in ideas.md). To keep that down:
+- **Help's knob trials** render together in one context, one patch per channel (`renderPatches`, up to 32 per context). Each channel is bit-identical to rendering that patch alone, because everything is built before rendering starts.
+- **Match updates** remember the last 24 versions of the player's patch (`renderMine`, keyed by gig, modules, params and cables, not positions), so undo or moving a knob back needs no new render.
+
 ## Matching
 Offline render at 22.05 kHz, then: spectrogram distance (per-frame normalized, loudness-weighted, 1/36-oct bands) 50%, average-spectrum tone 20%, perceptual loudness envelope 30%. Score = exp(-d/K) per part, geometric mean. Per-level `tol` multiplies K, so above 1 is more forgiving and below 1 stricter. Movement-based gigs get more (vibrato, wobble, detune, chorus, Seasick = 3; fast LFO gigs Siren and Close Encounter, and the S&H gigs = 5; percussive, Temple Gong, Harp, Bonk and Wooden Toy = 1.5; sync gigs = 2, because sync timbre shifts sharply with ratio). The drawbar lessons get 0.7, so a harmonic that's clearly off fails. `tolShape` optionally sets a separate, stricter loudness-shape tolerance (1.2 on slow-movement pads/leads/FX), so a gig can't be passed by leaving out its volume envelope. Calibration: `index.html#selftest`, enforced by `npm test`.
 Calibrated outcomes: exact = 100; cutoff +0.2 oct ≈ 94; decay −9% ≈ 88; wrong waveform 10–35; 1 semitone off < 7.

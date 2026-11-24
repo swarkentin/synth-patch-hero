@@ -673,7 +673,7 @@ function saveDraft(){ if(S.L&&S.patch) store.set('draft2.'+S.L.id,S.patch); }
 async function runAnalyze(){
   if(!S.L) return; const seq=++aSeq, L=S.L;
   if(typeof OfflineAudioContext==='undefined'){ const h=$('#hints'); if(h) h.innerHTML='<li>This browser can\'t render audio offline, so matching is unavailable.</li>'; return; }
-  const xm=await renderPatch(S.patch,L), mine=analyze(xm);
+  const {x:xm,a:mine}=await renderMine(S.patch,L);
   if(!S.sandbox&&!L._tX){ const xt=await renderPatch(targetPatch(L),L); L._tX=xt; L._tA=analyze(xt); }
   if(seq!==aSeq||S.L!==L) return;
   S.mineX=xm; S.mine=mine; S.cmp=S.sandbox?null:levelCompare(L,L._tA,mine); if(S.cmp) noteScore(S.cmp.overall);

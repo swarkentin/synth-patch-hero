@@ -158,9 +158,10 @@ async function findKeyParam(){
       if(off) cands.push({m,d,tv,mv}); } }
   if(!cands.length) return null;
   if(!L._tA) L._tA=analyze(await renderPatch(targetPatch(L),L));
-  const base=levelCompare(L,L._tA,analyze(await renderPatch(S.patch,L))).overall;
-  for(const c of cands){ const old=c.m.params[c.d.id]; c.m.params[c.d.id]=c.tv;
-    c.gain=levelCompare(L,L._tA,analyze(await renderPatch(S.patch,L))).overall-base; c.m.params[c.d.id]=old; }
+  // One trial per knob, each a copy of the patch with that knob at the client's value, all rendered together (renderPatches).
+  const trials=cands.map(c=>{ const p=JSON.parse(JSON.stringify(S.patch)); p.modules.find(x=>x.id===c.m.id).params[c.d.id]=c.tv; return p; });
+  const [xb,...xs]=await renderPatches([S.patch,...trials],L), base=levelCompare(L,L._tA,analyze(xb)).overall;
+  cands.forEach((c,i)=>{ c.gain=levelCompare(L,L._tA,analyze(xs[i])).overall-base; });
   cands.sort((a,b)=>b.gain-a.gain);
   return cands[0];
 }

@@ -21,6 +21,31 @@ async function renderPatch(patch,L){
   const v=buildNotes(ctx,patch,oc.node,0,L); oc.close(L.dur); v.stop(L.dur);
   const buf=await ctx.startRendering(); return buf.getChannelData(0);
 }
+/* Render several patches of one gig in a single offline context, one patch per channel (up to 32 per context).
+   Chrome never frees an OfflineAudioContext that has loaded AudioWorklet code (see docs/ideas.md), so Help's knob trials, which render
+   the patch once per knob, share contexts instead of making one each. Everything is built before rendering starts, so each channel is
+   exactly what renderPatch would give. */
+async function renderPatches(patches,L){
+  const out=[], len=Math.ceil(L.dur*SR);
+  for(let i=0;i<patches.length;i+=32){
+    const group=patches.slice(i,i+32), ctx=new OfflineAudioContext(group.length,len,SR);
+    if(group.some(usesWorklet)) await ensureWorklets(ctx);
+    const mg=ctx.createChannelMerger(group.length); mg.connect(ctx.destination);
+    group.forEach((p,k)=>{ const ch=ctx.createGain(); ch.channelCount=1; ch.channelCountMode='explicit'; ch.connect(mg,0,k);
+      const oc=outChain(ctx,ch,0), v=buildNotes(ctx,p,oc.node,0,L); oc.close(L.dur); v.stop(L.dur); });
+    const buf=await ctx.startRendering(); for(let k=0;k<group.length;k++) out.push(buf.getChannelData(k));
+  }
+  return out;
+}
+/* The player's patch, rendered and analysed, remembered for the last few versions: undo, or turning a knob back, needs no new render. */
+const MINE_CACHE=new Map();
+function patchKey(patch,L){ return L.id+'|'+JSON.stringify([patch.modules.map(m=>[m.id,m.type,m.params]),patch.cables.map(c=>[c.from.m,c.from.p,c.to.m,c.to.p])]); }
+async function renderMine(patch,L){
+  const k=patchKey(patch,L), hit=MINE_CACHE.get(k); if(hit){ MINE_CACHE.delete(k); MINE_CACHE.set(k,hit); return hit; }
+  const x=await renderPatch(patch,L), r={x,a:analyze(x)}; MINE_CACHE.set(k,r);
+  while(MINE_CACHE.size>24) MINE_CACHE.delete(MINE_CACHE.keys().next().value);
+  return r;
+}
 const dB = p => 10*Math.log10(p+1e-14);
 function analyze(x){
   const nF=Math.max(1,Math.floor((x.length-FN)/HOP)+1);
