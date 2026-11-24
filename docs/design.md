@@ -202,6 +202,9 @@ Each gig card has a round **▶ preview** button that plays a short **demo song*
 
 **Quality checks per gig** (`npm test`): the reference patch scores 100%; an untouched rack scores under 80%; ids are unique; every theme ends in one challenge; every gig is open; NEXT points at each chapter's earliest unsolved gig, even when later gigs were solved out of order. When authoring, also check that removing any module from the reference patch (bypassing it, so the chain stays connected) scores under 90%, so a gig can't be passed by skipping its lesson, and that the knob a lesson teaches fails when it's clearly wrong.
 
+## Icon
+`favicon.svg` (an amber knob and a teal patch cable on the dark panel colour) for browser tabs, `apple-touch-icon.png` (180 px, rendered from the SVG) for phone home screens, and a `theme-color` matching the background.
+
 ## Client portraits
 Playtest 2026-11-23: the briefs should feel like a character asking for help. Every client has a 32×32 pixel-art portrait drawn in code (`js/portrait.js`, no image files), shown beside their name in the brief and on the Patch accepted screen. The brief and the reply sit in speech bubbles that point at the portrait.
 - The client's name seeds the look (skin, hair style and colour, shirt, background, expression), so a returning client looks the same every time.

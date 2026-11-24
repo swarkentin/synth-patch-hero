@@ -482,6 +482,10 @@ try {
     closeSide(); store.del('draft2.thin-walls'); showBoard(); return {fresh,closed,again}; })()`);
   ok(mb.fresh && mb.closed && mb.again, 'phone: the brief opens with every gig (even one already started), and Take the gig / Back to the rack goes to the rack');
 
+  const fav = await page.evaluate(`(async()=>{ const l=document.querySelector('link[rel=icon]'), a=document.querySelector('link[rel=apple-touch-icon]');
+    const load=src=>new Promise(r=>{ const i=new Image(); i.onload=()=>r(i.naturalWidth>0); i.onerror=()=>r(false); i.src=src; });
+    return !!l&&!!a&&await load(l.href)&&await load(a.href); })()`);
+  ok(fav, 'the page has a favicon and a home-screen icon, and both load');
   console.log('\nMIDI settings and tree previews');
   await page.open(URL, { width: 1280, height: 800 }); await page.waitFor("document.querySelector('.gig')");
   const md = await page.evaluate(`(async()=>{ const q=s=>document.querySelector(s), wait=ms=>new Promise(r=>setTimeout(r,ms));

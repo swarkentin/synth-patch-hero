@@ -40,4 +40,4 @@ Synth Patch Hero: a synth-patching puzzle game that teaches synthesis. Repo: htt
 Slot `S.slots-1` is reserved for OUTPUT.
 
 ## Commits
-Small, descriptive commits on `main` (or a branch + PR for larger changes). After pushing UI changes, republish the claude.ai artifact from these files: `index.html`, `css/style.css` and `js/*.js`, publishing each at the same path.
+Small, descriptive commits on `main` (or a branch + PR for larger changes). After pushing UI changes, republish the claude.ai artifact from these files: `index.html`, `favicon.svg`, `apple-touch-icon.png`, `css/style.css` and `js/*.js`, publishing each at the same path.
