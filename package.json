@@ -5,10 +5,13 @@
   "license": "MIT",
   "description": "A puzzle game for learning synthesis by building patches on a modular synth.",
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "node scripts/serve.mjs",
     "test": "node tests/run.mjs",
-    "screenshots": "node scripts/screenshots.mjs"
+    "screenshots": "node scripts/screenshots.mjs",
+    "loudness": "node scripts/loudness.mjs"
   }
 }

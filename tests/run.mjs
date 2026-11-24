@@ -293,7 +293,7 @@ try {
   ok(eng.sane && Math.abs(eng.self - 100) < 0.01, `Studio renders are clean and deterministic (reference scores ${eng.self.toFixed(1)})`);
   ok(eng.near > 75 && eng.near < 95 && eng.square < 60, `Acid Test on the ladder: cutoff +0.2 oct ${eng.near.toFixed(1)}, square ${eng.square.toFixed(1)}`);
   const full = await page.evaluate(`(async()=>{ const res={};
-    for(const id of ['acid','glass','warehouse']){ const L=LEVELS.find(l=>l.id===id); openLevel(LEVELS.indexOf(L)); const x=await renderSong(targetPatch(L),L), len=songLength(L,targetPatch(L)), w=Math.floor(SR/4), quiet=[];
+    for(const id of ['acid','glass','warehouse']){ const L=LEVELS.find(l=>l.id===id); openLevel(LEVELS.indexOf(L)); const x=await renderSong(targetPatch(L),L,true), len=songLength(L,targetPatch(L)), w=Math.floor(SR/4), quiet=[];
       for(let i=0;i+w<len*SR-w;i+=w){ let s=0; for(let j=i;j<i+w;j++) s+=x[j]*x[j]; if(Math.sqrt(s/w)<0.003) quiet.push((i/SR).toFixed(2)); } res[L.id]=quiet; }
     showBoard(); return res; })()`);
   ok(Object.values(full).every(q => !q.length), `long songs play all the way through (silent stretches: ${JSON.stringify(full)})`);
@@ -486,6 +486,15 @@ try {
     const load=src=>new Promise(r=>{ const i=new Image(); i.onload=()=>r(i.naturalWidth>0); i.onerror=()=>r(false); i.src=src; });
     return !!l&&!!a&&await load(l.href)&&await load(a.href); })()`);
   ok(fav, 'the page has a favicon and a home-screen icon, and both load');
+  console.log('\nEven playback levels');
+  const lv = JSON.parse(await page.evaluate(`(async()=>{ const stale=[], after=[];
+    for(const L of LEVELS){ const m=await songLoudness(await renderSong(targetPatch(L),L,true)), want=loudnessGainDb(m), have=SONG_GAIN[L.id];
+      if(have==null||Math.abs(have-want)>1) stale.push(L.id+' '+have+' vs '+want.toFixed(1));
+      after.push([L.id, m.k+(have||0), m.phone+(have||0)]); }
+    const loudPhone=after.filter(a=>a[2]>LOUD_TARGET.phone+1.5).map(a=>a[0]), loudK=after.filter(a=>a[1]>LOUD_TARGET.k+1.5).map(a=>a[0]);
+    return JSON.stringify({stale,loudPhone,loudK}); })()`));
+  ok(!lv.stale.length, 'SONG_GAIN is current for every gig (run npm run loudness after changing a song or a reference patch)' + (lv.stale.length ? ` (${lv.stale.slice(0, 6).join('; ')})` : ''));
+  ok(!lv.loudPhone.length && !lv.loudK.length, 'with levels applied, no demo song is louder than the common level, or piercing through a phone speaker' + (lv.loudPhone.length + lv.loudK.length ? ` (${[...lv.loudPhone, ...lv.loudK].join(', ')})` : ''));
   console.log('\nMIDI settings and tree previews');
   await page.open(URL, { width: 1280, height: 800 }); await page.waitFor("document.querySelector('.gig')");
   const md = await page.evaluate(`(async()=>{ const q=s=>document.querySelector(s), wait=ms=>new Promise(r=>setTimeout(r,ms));

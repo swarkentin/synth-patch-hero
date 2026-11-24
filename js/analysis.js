@@ -115,3 +115,19 @@ function makeHints(T,Y){
   if(Math.abs(dl)>0.08&&Math.abs(dl)>0.12*fT.length) h.push({t:`Length: yours ${dl>0?'rings longer':'dies away sooner'}.`});
   return h;
 }
+
+/* ---- Loudness of a demo song, as heard (used to even out playback levels; see SONG_GAIN in data.js) ----
+   k: overall loudness with a K-style weighting (rumble below 60 Hz ignored, highs count a bit more), gated like LUFS.
+   phone: loudness through a phone-speaker curve (no bass below ~350 Hz, the piercing 2–5 kHz range counted extra). */
+const LOUD_TARGET={k:-22, phone:-23, minDb:-15, maxDb:6};
+async function songLoudness(x){
+  const weigh=async chain=>{ const c=new OfflineAudioContext(1,x.length,SR), b=c.createBuffer(1,x.length,SR); b.copyToChannel(x,0); const s=c.createBufferSource(); s.buffer=b;
+    let n=s; for(const [type,f,g,q] of chain){ const bq=c.createBiquadFilter(); bq.type=type; bq.frequency.value=f; if(g!=null) bq.gain.value=g; if(q!=null) bq.Q.value=q; n.connect(bq); n=bq; }
+    n.connect(c.destination); s.start(); return (await c.startRendering()).getChannelData(0); };
+  const gated=y=>{ const w=Math.floor(SR*0.4), hop=Math.floor(w/4), ms=[]; for(let i=0;i+w<=y.length;i+=hop){ let a=0; for(let j=i;j<i+w;j++) a+=y[j]*y[j]; ms.push(a/w); }
+    const L=m=>-0.691+10*Math.log10(m+1e-12), mean=a=>a.reduce((p,q)=>p+q,0)/Math.max(1,a.length);
+    let g=ms.filter(m=>L(m)>-70); if(!g.length) return -99; const rel=L(mean(g))-10; g=g.filter(m=>L(m)>rel); return L(mean(g)); };
+  return { k:gated(await weigh([['highpass',60,null,0.5],['highshelf',1500,4]])), phone:gated(await weigh([['highpass',350,null,0.7],['peaking',3200,6,0.8]])) };
+}
+/* The playback level (dB) that brings a song to the common loudness and keeps it from being piercing on a phone. */
+function loudnessGainDb(m){ const T=LOUD_TARGET; return Math.max(T.minDb,Math.min(T.maxDb, T.k-m.k, T.phone-m.phone)); }

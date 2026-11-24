@@ -33,6 +33,8 @@ Synth Patch Hero: a synth-patching puzzle game that teaches synthesis. Repo: htt
 - `seq`: `[[semitones, start, gate], …]` for multi-note targets.
 - `studio:'ladder'`: use the 4-pole ladder low-pass (for squelchy, resonant gigs). Otherwise the 12 dB filter.
 
+After adding a gig, or changing a demo song or a gig's reference patch, run `npm run loudness` to update `SONG_GAIN` (playback levels); `npm test` checks it.
+
 `GEAR{}` and `GEAR_GUIDES{gigId:{gearId:{steps[], words[], prewired[], note}}}` hold the "On your box" guides for real instruments (format in the comment above them). Use names from the maker's manual, give positions as rough fractions, and keep the not-affiliated line.
 
 `CHAPTERS[]` entries: `id, title, short, blurb`, plus optional `level:'advanced'` (badge) or `bonus:true` (badge; exempt from the one-challenge-per-theme rule).

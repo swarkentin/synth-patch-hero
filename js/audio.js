@@ -342,7 +342,7 @@ function ac(){
 let oneShots=[];
 function playFixed(patch,L,which){
   const ctx=ac(); stopOneShots();
-  const t0=ctx.currentTime+0.03, oc=outChain(ctx,liveBus,t0);
+  const t0=ctx.currentTime+0.03, oc=outChain(ctx,liveBus,t0,gigGain(L));
   const v=buildNotes(ctx,patch,oc.node,t0,L);
   oc.close(t0+L.dur); v.stop(t0+L.dur+0.05);
   oneShots.push({v,oc,end:t0+L.dur});
@@ -353,7 +353,7 @@ const held={};
 function noteOn(key,note,vel=1){
   if(held[key]||!S.patch) return;
   const ctx=ac(); if(ctx.state!=='running'){ toast('Tap or click the page once to switch the sound on.'); }
-  const t0=ctx.currentTime+0.01; const oc=outChain(ctx,liveBus,t0,vel);
+  const t0=ctx.currentTime+0.01; const oc=outChain(ctx,liveBus,t0,vel*gigGain(S.L));
   const v=buildVoice(ctx,S.patch,oc.node,t0,note,null); held[key]={v,oc};
 }
 function noteOff(key){
@@ -482,10 +482,10 @@ const songBars=S_=>{ const g=S_.groove&&GROOVES[S_.groove], noteEnd=Math.max(...
 function songBpm(S_,patch){ const q=S_.followSeq&&patch.modules.find(m=>m.type==='seq'); return q?q.params.bpm:S_.bpm; }
 function songLength(L,patch){ const S_=songFor(L), beat=60/songBpm(S_,patch); return Math.max(songBars(S_)*4, Math.max(...S_.notes.map(n=>n[1]+n[2])))*beat; }
 /* Schedule a demo song on ctx. Returns {end, events, beat, stop(t)}. */
-function scheduleSong(ctx, dest, patch, L, t0){
-  const S_=songFor(L), beat=60/songBpm(S_,patch), voices=[], events=[], sw=(S_.swing||0)*beat/4; let end=0;
+function scheduleSong(ctx, dest, patch, L, t0, raw){
+  const S_=songFor(L), beat=60/songBpm(S_,patch), voices=[], events=[], sw=(S_.swing||0)*beat/4, gain=raw?1:gigGain(L); let end=0;
   const when=at=>t0+at*beat+(Math.round(at*4)%2?sw:0);
-  const play=(p,note,t,dur,vel,lvl=1)=>{ const oc=outChain(ctx,dest,t,vel*lvl), v=buildVoice(ctx,p,oc.node,t,note,dur), stopAt=t+dur+Math.min(v.maxR,2.5)+0.06;
+  const play=(p,note,t,dur,vel,lvl=1)=>{ const oc=outChain(ctx,dest,t,vel*lvl*gain), v=buildVoice(ctx,p,oc.node,t,note,dur), stopAt=t+dur+Math.min(v.maxR,2.5)+0.06;
     oc.close(stopAt); v.stop(stopAt+0.02); voices.push({oc,v,stopAt}); end=Math.max(end,stopAt); };
   S_.notes.forEach(([rel,at,len,vel])=>{ play(patch,L.note+rel,when(at),len*beat,vel); events.push({t:when(at)-t0,dur:len*beat,note:L.note+rel,beat:Math.floor(at+1e-6)}); });
   const g=S_.groove&&GROOVES[S_.groove];
@@ -503,10 +503,10 @@ function playSong(patch, L){
   return songNow.end-ctx.currentTime;
 }
 function stopSong(){ if(songNow&&AC) songNow.stop(AC.currentTime); songNow=null; }
-async function renderSong(patch, L){
+async function renderSong(patch, L, raw){
   const len=Math.ceil((songLength(L,patch)+3)*SR), ctx=new OfflineAudioContext(1,len,SR);
   if(usesWorklet(patch)) await ensureWorklets(ctx);
-  scheduleSong(ctx, ctx.destination, patch, L, 0.02);
+  scheduleSong(ctx, ctx.destination, patch, L, 0.02, raw);
   return (await ctx.startRendering()).getChannelData(0);
 }
 /* Offline render of the jingle (used by tests to check every gig's jingle is audible). */
