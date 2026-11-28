@@ -752,15 +752,28 @@ body.focus .takeGig{display:block}
 .wallet{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
 .wallet>div{padding:10px;border:1px solid var(--line2);border-radius:9px;background:var(--panel2)}
 .wallet small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;color:var(--faint)} .wallet b{font-family:var(--mono);font-size:18px;color:var(--amber)}
-.studioCard p{color:var(--dim);font-size:13px;line-height:1.5} .studioCard h4{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--faint);margin:14px 0 6px;font-weight:400}
-.shop{display:flex;flex-direction:column;gap:4px}
-.shopRow,.themeRow{display:grid;grid-template-columns:14px 1fr auto auto;gap:10px;align-items:center;padding:7px 8px;border:1px solid var(--line);border-radius:8px}
-.themeRow{grid-template-columns:52px 1fr auto} .themeRow.on{border-color:var(--amber)}
-.shopRow .sw{width:12px;height:12px;border-radius:3px}
-.shName b{display:block;font-family:var(--head);font-size:13.5px} .shName small{display:block;font-size:11px;color:var(--dim)}
-.shOwn{font-family:var(--mono);font-size:11px;color:var(--dim);min-width:26px;text-align:right}
-.shopRow .btn,.themeRow .btn{min-width:66px;padding:6px 8px;font-family:var(--mono);font-size:11.5px} .btn.dim{opacity:.45}
-.thSw{display:flex;gap:2px} .thSw i{width:16px;height:22px;border-radius:3px;border:1px solid rgba(255,255,255,.08)}
+.studioCard{height:min(660px,90dvh);display:flex;flex-direction:column;width:min(640px,100%)}
+.studioCard>.shHead,.studioCard>.wallet,.studioCard>.stTabs,.studioCard>.dataNote{flex:none}
+.studioCard .wallet{margin:10px 0}
+.stTabs{display:flex;gap:4px;border-bottom:1px solid var(--line2);margin-bottom:0}
+.stTabs button{flex:1;background:none;border:0;border-bottom:2px solid transparent;color:var(--dim);font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;padding:9px 6px;cursor:pointer;margin-bottom:-1px}
+.stTabs button[aria-selected=true]{color:var(--amber);border-bottom-color:var(--amber)}
+.stTabs i{font-style:normal;color:var(--faint);margin-left:4px}
+.studioGrid{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px;align-content:start;padding:10px 2px 6px}
+.studioGrid[hidden]{display:none}
+.studioGrid{scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+.gridNote{grid-column:1/-1;margin:0 0 2px;font-size:12.5px;line-height:1.45}
+.tile{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px;padding:10px 8px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.tile.have{border-color:var(--line2)} .tile.on{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber) inset}
+.tIcon{width:44px;height:52px;margin-bottom:3px}
+.tile b{font-family:var(--head);font-size:13.5px;line-height:1.15}
+.tile small{font-size:10.5px;color:var(--dim);line-height:1.3;min-height:2.6em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tile .btn{margin-top:auto;width:100%;padding:6px 8px;font-family:var(--mono);font-size:11.5px} .btn.dim{opacity:.45}
+.tOwn{position:absolute;top:6px;right:7px;font-family:var(--mono);font-size:10.5px;color:var(--amber)}
+.tUse{margin-top:auto;width:100%;padding:6px 0;font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.08em}
+.studioCard .dataNote{margin-top:8px}
+.cheatBox{display:flex;gap:6px;margin:0 0 8px;flex:none} .cheatBox input{flex:1;min-width:0;background:var(--panel2);border:1px solid var(--line2);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:16px;padding:7px 10px}
+@media (max-width:760px){ .studioCard{height:88dvh} .studioGrid{grid-template-columns:repeat(2,1fr)} }
 /* panel themes: they re-skin every module's faceplate */
 body[data-theme=midnight] .module{background:linear-gradient(#1f2127,#16181c);border-color:#2c3440} body[data-theme=midnight] .mhead{border-bottom-color:#2a313b}
 body[data-theme=walnut] .module{background:linear-gradient(#28231e,#1f1b17);border-color:#3a3029;border-left:6px solid #7a4f2c;border-right:6px solid #6b4426}

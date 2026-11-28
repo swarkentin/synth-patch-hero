@@ -21,8 +21,8 @@ const earPay=L=>basePay(L)*earMult(L);
 /* What a solved gig has paid so far. Gigs paid before pay depended on the mode count at the scope rate. */
 const paidFor=id=>{ const v=progress.solved[id]; if(!v) return 0; const L=LEVELS.find(l=>l.id===id); return v.pay!=null?v.pay:(L?basePay(L):0); };
 const earned=()=>Object.keys(progress.solved).reduce((s,id)=>s+paidFor(id),0);
-const studio=()=>Object.assign({owned:{},spent:0,themes:['dusty'],theme:'dusty'},store.get('studio',{}));
-const wallet=()=>earned()-studio().spent;
+const studio=()=>Object.assign({owned:{},spent:0,gift:0,themes:['dusty'],theme:'dusty'},store.get('studio',{}));
+const wallet=()=>earned()+(studio().gift||0)-studio().spent;
 const owned=t=>(STARTER[t]||0)+(studio().owned[t]||0);
 function studioPalette(){ const p={}; Object.keys(MT).forEach(t=>{ if(t==='out') return; const n=owned(t); if(n) p[t]=n; }); return p; }
 
@@ -85,22 +85,39 @@ function payGig(L){
 
 /* ---------- your studio: modules and themes ---------- */
 function applyTheme(){ const t=studio().theme; document.body.dataset.theme=t&&t!=='dusty'?t:''; }
-function openStudio(){
-  const sh=$('#sheet'); sh.hidden=false;
-  const render=()=>{ const st=studio(), w=wallet();
+/* small faceplate icons for the studio tiles */
+function modIcon(t){ const m=MT[t], nk=Math.min(4,(m.params||[]).length||1), nj=Math.min(4,(m.ins||[]).length+(m.outs||[]).length||1);
+  const knobs=Array.from({length:nk},(_,i)=>{ const x=nk===1?24:10+i*(28/(nk-1)); return `<circle cx="${x}" cy="27" r="4.2" fill="#14110f" stroke="#8a7a66" stroke-width="1"/><line x1="${x}" y1="27" x2="${x}" y2="23.4" stroke="#e9dcc6" stroke-width="1.2"/>`; }).join('');
+  const jacks=Array.from({length:nj},(_,i)=>{ const x=nj===1?24:10+i*(28/(nj-1)); return `<circle cx="${x}" cy="44" r="3" fill="#0b0908" stroke="#b7a88f" stroke-width="1"/>`; }).join('');
+  return `<svg class="tIcon" viewBox="0 0 48 56" aria-hidden="true"><rect x="2" y="2" width="44" height="52" rx="4" fill="#2b2520" stroke="#4a3f35"/><rect x="2" y="2" width="44" height="11" rx="4" style="fill:${m.color}"/><rect x="2" y="9" width="44" height="4" style="fill:${m.color}"/>${knobs}<line x1="6" y1="36" x2="42" y2="36" stroke="#3a312a"/>${jacks}</svg>`; }
+function themeIcon(th){ const [a,b,c]=th.sw;
+  return `<svg class="tIcon" viewBox="0 0 48 56" aria-hidden="true"><defs><linearGradient id="tg-${th.id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs>
+    <rect x="2" y="2" width="44" height="52" rx="4" fill="url(#tg-${th.id})" stroke="${c}" stroke-width="${th.id==='walnut'?4:1.2}"/><line x1="4" y1="13" x2="44" y2="13" stroke="${c}"/>
+    <circle cx="15" cy="26" r="4.5" fill="#14110f" stroke="#8a7a66"/><circle cx="33" cy="26" r="4.5" fill="#14110f" stroke="#8a7a66"/><circle cx="15" cy="43" r="3" fill="#0b0908" stroke="#b7a88f"/><circle cx="33" cy="43" r="3" fill="#0b0908" stroke="#b7a88f"/></svg>`; }
+let STUDIO_TAB='mods';
+function openStudio(tab){
+  const sh=$('#sheet'); sh.hidden=false; if(typeof tab==='string') STUDIO_TAB=tab;
+  const render=()=>{ const st=studio(), w=wallet(), keep=sh.querySelector('.studioGrid:not([hidden])')?.scrollTop||0;
     const mods=Object.keys(MT).filter(t=>t!=='out').sort((a,b)=>MT[a].cost-MT[b].cost).map(t=>{ const n=owned(t), can=w>=MT[t].cost&&n<MAX_OWN;
-      return `<div class="shopRow"><span class="sw" style="background:${MT[t].color}"></span><span class="shName"><b>${MT[t].name}</b><small>${MT[t].long}</small></span>
-        <span class="shOwn">${n?'×'+n:'—'}</span><button class="btn${can?'':' dim'}" data-buy="${t}" ${can?'':'disabled'}>${n>=MAX_OWN?'Full':money(MT[t].cost)}</button></div>`; }).join('');
+      return `<div class="tile${n?' have':''}" title="${MT[t].long}">${n?`<span class="tOwn">×${n}</span>`:''}${modIcon(t)}<b>${MT[t].name}</b><small>${MT[t].long}</small>
+        <button class="btn${can?'':' dim'}" data-buy="${t}" ${can?'':'disabled'}>${n>=MAX_OWN?'Full':money(MT[t].cost)}</button></div>`; }).join('');
     const themes=THEMES.map(th=>{ const have=st.themes.includes(th.id), on=st.theme===th.id, can=!have&&w>=th.price;
-      return `<div class="themeRow${on?' on':''}"><span class="thSw">${th.sw.map(c=>`<i style="background:${c}"></i>`).join('')}</span><span class="shName"><b>${th.name}</b><small>${th.blurb}</small></span>
-        ${on?'<span class="shOwn">IN USE</span>':have?`<button class="btn" data-use="${th.id}">Use</button>`:`<button class="btn${can?'':' dim'}" data-theme="${th.id}" ${can?'':'disabled'}>${money(th.price)}</button>`}</div>`; }).join('');
+      return `<div class="tile theme${on?' on':''}" title="${th.blurb}">${themeIcon(th)}<b>${th.name}</b><small>${th.blurb}</small>
+        ${on?'<span class="tUse">IN USE</span>':have?`<button class="btn" data-use="${th.id}">Use</button>`:`<button class="btn${can?'':' dim'}" data-theme="${th.id}" ${can?'':'disabled'}>${money(th.price)}</button>`}</div>`; }).join('');
+    const nOwn=Object.values(st.owned).reduce((a,b)=>a+b,0);
     sh.innerHTML=`<div class="sheetCard studioCard"><div class="shHead"><span class="shTitle">YOUR STUDIO</span><button class="btn primary" id="shDone">Done</button></div>
-      <div class="wallet"><div><small>WALLET</small><b>${money(w)}</b></div><div><small>EARNED</small><b>${money(earned())}</b></div><div><small>SPENT</small><b>${money(st.spent)}</b></div></div>
-      <p>Your rack in <b>Free Jam</b> holds the modules you own. You started with the dusty basement rack; every gig pays toward more. Playing by ear pays 2–3×.</p>
-      <h4>MODULES</h4><div class="shop">${mods}</div>
-      <h4>PANEL THEMES</h4><p class="dim">A new look for every module in the game.</p><div class="shop">${themes}</div>
+      <div class="wallet"><div id="walletTap"><small>WALLET</small><b>${money(w)}</b></div><div><small>EARNED</small><b>${money(earned())}</b></div><div><small>SPENT</small><b>${money(st.spent)}</b></div></div>
+      <div class="stTabs" role="tablist"><button role="tab" data-tab="mods" aria-selected="${STUDIO_TAB==='mods'}">Modules${nOwn?` <i>${nOwn}</i>`:''}</button><button role="tab" data-tab="themes" aria-selected="${STUDIO_TAB==='themes'}">Panel themes <i>${st.themes.length}/${THEMES.length}</i></button></div>
+      <div class="studioGrid" data-pane="mods" ${STUDIO_TAB==='mods'?'':'hidden'}><p class="dim gridNote">Your <b>Free Jam</b> rack holds the starter modules plus everything you buy here. Playing by ear pays 2–3×.</p>${mods}</div>
+      <div class="studioGrid" data-pane="themes" ${STUDIO_TAB==='themes'?'':'hidden'}><p class="dim gridNote">A new look for every module in the game.</p>${themes}</div>
       <small class="dataNote">Saved on this device only. Prices are roughly what the real modules cost new.</small></div>`;
+    const g=sh.querySelector('.studioGrid:not([hidden])'); if(g) g.scrollTop=keep;
     $('#shDone').onclick=close;
+    let taps=[]; $('#walletTap').onclick=()=>{ const n=Date.now(); taps=taps.filter(t=>n-t<2500).concat(n); if(taps.length<5||sh.querySelector('.cheatIn')) return; taps=[];
+      const f=document.createElement('form'); f.className='cheatBox'; f.innerHTML='<input class="cheatIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Got a code?"><button class="btn">OK</button>';
+      sh.querySelector('.wallet').after(f); const i=f.querySelector('input'); i.focus();
+      f.onsubmit=ev=>{ ev.preventDefault(); if(i.value.trim().toLowerCase().replace(/\s+/g,'')===CHEAT) moogMoney(); else { toast('Nothing happens.'); f.remove(); } }; };
+    sh.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ STUDIO_TAB=b.dataset.tab; sh.querySelector('.studioGrid:not([hidden])').scrollTop=0; render(); });
     sh.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{ const t=b.dataset.buy, s2=studio(); if(wallet()<MT[t].cost||owned(t)>=MAX_OWN) return;
       s2.owned[t]=(s2.owned[t]||0)+1; s2.spent+=MT[t].cost; store.set('studio',s2); Haptics.success&&Haptics.success(); toast(`Bought a ${MT[t].name} for your studio`); render(); });
     sh.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>{ const th=THEMES.find(x=>x.id===b.dataset.theme), s2=studio(); if(wallet()<th.price) return;
@@ -111,4 +128,13 @@ function openStudio(){
   sh.onclick=e=>{ if(e.target===sh) close(); };
   render();
 }
+/* Secret code: type MOOGMONEY anywhere (or tap the wallet five times on a phone) for enough money to buy everything left. */
+const CHEAT='moogmoney';
+function cheatCost(){ const st=studio(); let need=0; Object.keys(MT).forEach(t=>{ if(t!=='out') need+=(MAX_OWN-owned(t))*MT[t].cost; }); THEMES.forEach(th=>{ if(!st.themes.includes(th.id)) need+=th.price; }); return Math.max(0,need-wallet()); }
+function moogMoney(){ const add=cheatCost(), s2=studio(); s2.gift=(s2.gift||0)+add; store.set('studio',s2); Haptics.success&&Haptics.success();
+  toast(add?`MOOG MONEY! ${money(add)} in the wallet. Everything is affordable now.`:'MOOG MONEY! You already have enough for everything.');
+  if($('.studioCard')) openStudio(); else if(!$('#screenBoard').hidden) showBoard(); return add; }
+let cheatBuf='';
+document.addEventListener('keydown',e=>{ if(e.ctrlKey||e.metaKey||e.altKey||e.key.length!==1) return; const tg=e.target; if(tg&&(tg.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName))&&!tg.classList.contains('cheatIn')) return;
+  cheatBuf=(cheatBuf+e.key.toLowerCase()).slice(-CHEAT.length); if(cheatBuf===CHEAT){ cheatBuf=''; moogMoney(); } });
 applyTheme();

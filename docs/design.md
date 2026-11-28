@@ -44,6 +44,8 @@ Two ways to play every gig, and a reason to care about the money (`js/studio.js`
 - **Peeking:** switching to the scope during a by-ear attempt asks first, then that attempt pays the scope rate (`peek`). Switching back hides the graphs but the bonus stays lost until **Reset this rack**, which starts a fresh by-ear attempt. Help doesn't affect pay.
 - **Replays:** a gig pays once, but replaying it by ear tops the pay up to the by-ear rate. Gigs paid before this change count at the scope rate.
 - **Your studio** (board ledger → Your studio · shop, or Settings): the wallet is everything earned minus what you've spent.
+  - **A fixed-size panel** (playtest 2026-11-27: the themes scrolled off the bottom on desktop). The wallet stays on top; **Modules | Panel themes** are tabs; each tab is a grid of icon tiles that scrolls inside the panel. Module tiles show a mini faceplate in the module's colour; theme tiles show a mini module drawn in that theme.
+  - **Secret code:** typing `moogmoney` anywhere (or, on a phone, tapping the wallet five times and entering it) adds exactly enough money to buy everything left. It's stored as `gift` inside the `studio` key, so resetting the studio clears it.
   - **Modules** at their prices ($90–$380, up to 6 of each). Free Jam's rack is exactly what you own: it starts with the dusty basement rack from the story (OSC, FILTER, VCA, ENV).
   - **Panel themes** re-skin every module in the game: Dusty Basement (free), Midnight $400, Walnut Cheeks $600, Oxide Green $800, Neon Arcade $1,200. They stay dark, so knob labels keep their contrast.
 - The ledger shows Earned and Wallet; the old flat $85 per gig and the rent counter are gone.

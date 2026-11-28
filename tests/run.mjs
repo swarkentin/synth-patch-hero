@@ -519,15 +519,25 @@ try {
     progress.solved={}; const before=studioPalette(); const starter=JSON.stringify(before)===JSON.stringify({osc:1,filter:1,vca:1,env:1});
     progress.solved['acid']={match:95,pay:1000}; openStudio(); const btn=q('[data-buy="lfo"]'); btn.click(); const bought=owned('lfo')===1&&wallet()===1000-MT.lfo.cost;
     q('[data-theme="midnight"]').click(); const themed=document.body.dataset.theme==='midnight'&&studio().spent===MT.lfo.cost+400;
-    const broke=q('[data-theme="neon"]').disabled; q('#shDone').click();
+    const broke=q('[data-theme="neon"]').disabled;
+    // the panel is a fixed size: it fits the window and themes are one tab away, with every tile reachable
+    const card=q('.studioCard').getBoundingClientRect(); const fits=card.top>=0&&card.bottom<=innerHeight+1;
+    q('[data-tab="themes"]').click(); const pane=q('.studioGrid[data-pane="themes"]'); const tiles=pane.querySelectorAll('.tile'); tiles[tiles.length-1].scrollIntoView({block:'nearest'});
+    const last=tiles[tiles.length-1].getBoundingClientRect(), pr=pane.getBoundingClientRect(); const reach=!pane.hidden&&tiles.length===THEMES.length&&last.bottom<=pr.bottom+1&&last.top>=pr.top-1&&q('.studioCard').getBoundingClientRect().bottom<=innerHeight+1;
+    q('#shDone').click();
+    // the secret code: typed anywhere, or five taps on the wallet then the code box
+    [...'moogmoney'].forEach(k=>document.body.dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true}))); const rich=cheatCost()===0&&wallet()>=THEMES.find(t=>t.id==='neon').price;
+    openStudio(); const neonOk=!q('[data-theme="neon"]').disabled; for(let i=0;i<5;i++) q('#walletTap').click(); const box=!!q('.cheatIn'); q('#shDone').click();
     openLevel(-1); const jam=S.palette.lfo===1&&!S.palette.sync;
     progress.solved=JSON.parse(saved); store.del('studio'); store.del('peek'); store.del('draft2.'+id); store.set('mode','scope'); applyTheme(); showBoard();
-    return {asked,earOn,hintsQuiet,paidEar,confirmAsked,peekedNow,bonusGone,freshAgain,topUp,starter,bought,themed,broke,jam}; })()`);
+    return {asked,earOn,hintsQuiet,paidEar,confirmAsked,peekedNow,bonusGone,freshAgain,topUp,starter,bought,themed,broke,jam,fits,reach,rich,neonOk,box}; })()`);
   ok(ear.asked && ear.earOn, 'a first gig asks how to play; by ear hides the graphs but keeps the match %');
   ok(ear.hintsQuiet && ear.paidEar, 'by ear gives no sound hints, and Send pays the by-ear rate');
   ok(ear.confirmAsked && ear.peekedNow && ear.bonusGone && ear.freshAgain, 'switching to the scope asks first, then the attempt pays the scope rate until the rack is reset');
   ok(ear.topUp, 'replaying a scope-paid gig by ear tops the pay up to the by-ear rate');
   ok(ear.starter && ear.bought && ear.themed && ear.broke && ear.jam, 'Free Jam starts with the dusty rack; gig pay buys modules and panel themes, only with enough money');
+  ok(ear.rich && ear.neonOk && ear.box, 'typing the secret code (or tapping the wallet five times, for phones) fills the wallet');
+  ok(ear.fits && ear.reach, 'the studio panel fits the window, with modules and panel themes as tabs');
 
   console.log('\nOffline render sharing');
   const rs = await page.evaluate(`(async()=>{ let same=true;
