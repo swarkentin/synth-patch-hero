@@ -35,6 +35,19 @@ Feedback that drove it: too much scrolling between panels; you must always be ab
   - Positions are saved with the patch.
 - **Zoom/pan:** − / + / Fit buttons, Ctrl/⌘+scroll or trackpad pinch, two-finger pinch on touch, drag empty space to pan, keys `+ - 0`. The board auto-fits when a level opens and on resize, until the player zooms by hand.
 
+## By ear or with the scope; pay and your studio (playtest 2026-11-27)
+Two ways to play every gig, and a reason to care about the money (`js/studio.js`).
+- **By ear (hard):** the scope, loudness and spectrum graphs, the Spectrogram/Tone/Shape bars and the sound hints ("yours is brighter") are hidden. The match %, the missing-part and wiring hints, and Help stay. This is the one exception to "the compare panel is always visible", and it's the player's choice.
+- **With the scope (easy):** everything shows, as before.
+- **Choosing:** a player's first gig asks "How do you want to play?" (saved as `mode`). After that, a **BY EAR | SCOPE** switch sits in the Listen group under Note | Song (phones: a ◎ button in the toolbar), and Settings → How you match sets it too.
+- **Pay:** basics $120, theme gigs $160, challenges $220, advanced $200, advanced challenges $260, bonus $150. By ear pays 2×, or 3× for challenges and advanced gigs. Gig cards show the by-ear rate; the compare panel shows what this attempt pays.
+- **Peeking:** switching to the scope during a by-ear attempt asks first, then that attempt pays the scope rate (`peek`). Switching back hides the graphs but the bonus stays lost until **Reset this rack**, which starts a fresh by-ear attempt. Help doesn't affect pay.
+- **Replays:** a gig pays once, but replaying it by ear tops the pay up to the by-ear rate. Gigs paid before this change count at the scope rate.
+- **Your studio** (board ledger → Your studio · shop, or Settings): the wallet is everything earned minus what you've spent.
+  - **Modules** at their prices ($90–$380, up to 6 of each). Free Jam's rack is exactly what you own: it starts with the dusty basement rack from the story (OSC, FILTER, VCA, ENV).
+  - **Panel themes** re-skin every module in the game: Dusty Basement (free), Midnight $400, Walnut Cheeks $600, Oxide Green $800, Neon Arcade $1,200. They stay dark, so knob labels keep their contrast.
+- The ledger shows Earned and Wallet; the old flat $85 per gig and the rent counter are gone.
+
 ## Help ladder (js/help.js)
 Feedback that drove it: difficulty rises fast (especially the VCA lesson); players need hints and helpers, such as locking knobs with an explanation of what they do and why.
 - **Help button** (next to Send). Each press goes one step further, and nothing changes without the player confirming:
@@ -104,7 +117,8 @@ Playtest, 2026-11-22: it was unclear where and what session data is stored.
 - **What's stored:**
   - `progress`: paid gigs with cost and match %, `played` (the note was played), `helped`;
   - `draft2.<gig>`: each gig's rack in progress;
-  - preferences: `haptics`, `keysOpen`, `songMode`, `boardView`, `midiAuto`, `snapOn`, `gear` (instruments picked in My gear), `midiIn` and `midiCh` (the MIDI device and channel to listen to). (An old `engine` key from the A/B toggle is removed on load.)
+  - preferences: `haptics`, `keysOpen`, `songMode`, `boardView`, `midiAuto`, `snapOn`, `gear` (instruments picked in My gear), `midiIn` and `midiCh` (the MIDI device and channel to listen to).
+  - `mode` (by ear or with the scope), `peek` (gigs where you looked at the scope this attempt), `studio` (modules and panel themes you bought, money spent, the theme in use). `progress.solved[gig].pay` is what a gig has paid. (An old `engine` key from the A/B toggle is removed on load.)
 - **The panel** explains this in plain words, shows counts and size, and offers:
   - **Export:** a JSON file `{game, version, exported, data}`;
   - **Import:** replaces everything from such a file;

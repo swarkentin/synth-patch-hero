@@ -41,6 +41,8 @@ const BANDS = {
 const { page, close } = await launch();
 try {
   console.log('\nScoring calibration');
+  // Most checks play with the scope; the first-gig "how do you want to play?" sheet is tested on its own below.
+  await page.addInitScript(`try{ if(localStorage.getItem('sph.mode')===null) localStorage.setItem('sph.mode','"scope"'); }catch(_){}`);
   await page.open(URL + '#selftest');
   const res = await page.waitFor('window.__selftest', 180000);
   const byKey = Object.fromEntries(res.map(r => [`${r.id}|${r.change}`, r.score]));
@@ -179,13 +181,13 @@ try {
   const groups = await page.evaluate(`(async()=>{ openLevel(LEVELS.findIndex(l=>l.id==='acid')); const q=s=>document.querySelector(s), vis=e=>!!e&&getComputedStyle(e).display!=='none';
     const listen=q('.cmpTop .grp.listen'), score=q('.cmpTop .grp.score');
     const ok1=listen&&listen.contains(q('#pT'))&&listen.contains(q('#pY'))&&listen.contains(q('#playSeg'))&&score.contains(q('#btnSubmit'))&&score.contains(q('#btnHelp'))&&score.contains(q('#pct'));
-    const viewOnly=[...q('.viewGrp').children].every(b=>['gearBtn','songBtn','keysBtn','focusBtn'].includes(b.id))&&!q('#clearBtn')&&!vis(q('#songBtn'));
+    const viewOnly=[...q('.viewGrp').children].every(b=>['modeBtn','gearBtn','songBtn','keysBtn','focusBtn'].includes(b.id))&&!q('#clearBtn')&&!vis(q('#songBtn'))&&!vis(q('#modeBtn'));
     q('#playSeg [data-m=song]').click(); await new Promise(r=>setTimeout(r,40)); const segOn=S.songMode&&q('#playSeg [data-m=song]').classList.contains('on');
     q('#playSeg [data-m=note]').click(); await new Promise(r=>setTimeout(r,40)); const segOff=!S.songMode&&q('#playSeg [data-m=note]').classList.contains('on');
     setFocus(true); await new Promise(r=>setTimeout(r,100)); const fr=q('.cmpTop').getBoundingClientRect(), lr=listen.getBoundingClientRect(), sr=score.getBoundingClientRect();
     const focusRow=sr.left>=lr.right-1&&Math.abs((sr.top+sr.bottom)/2-(lr.top+lr.bottom)/2)<30; setFocus(false); showBoard(); return {ok1,viewOnly,segOn,segOff,focusRow}; })()`);
   ok(groups.ok1, 'the compare panel groups Listen (▶ Target, ▶ Yours, Note | Song) apart from Score (match, Send, Help)');
-  ok(groups.viewOnly, 'the toolbar\'s right side holds only view switches (Box, Keys, Focus); Reset lives in Settings');
+  ok(groups.viewOnly, 'the toolbar\'s right side holds only view switches (Box, Keys, Focus; Song and By ear on phones); Reset lives in Settings');
   ok(groups.segOn && groups.segOff, 'the Note | Song switch sets what ▶ plays');
   ok(groups.focusRow, 'in focus mode Listen and Score sit side by side in the compare bar');
   ok(modal.dots >= 4 && modal.playing && modal.stopped, `result screen plays the client's song on your patch (${modal.dots} note markers) and stops it when closed`);
@@ -495,6 +497,38 @@ try {
     const load=src=>new Promise(r=>{ const i=new Image(); i.onload=()=>r(i.naturalWidth>0); i.onerror=()=>r(false); i.src=src; });
     return !!l&&!!a&&await load(l.href)&&await load(a.href); })()`);
   ok(fav, 'the page has a favicon and a home-screen icon, and both load');
+  console.log('\nBy ear, pay and your studio');
+  await page.open(URL, { width: 1280, height: 800 }); await page.waitFor("document.querySelector('.gig')");
+  const ear = await page.evaluate(`(async()=>{ const q=s=>document.querySelector(s), wait=ms=>new Promise(r=>setTimeout(r,ms)), id='thin-walls', i=LEVELS.findIndex(l=>l.id===id), L=LEVELS[i];
+    const saved=JSON.stringify(progress.solved); delete progress.solved[id]; store.del('studio'); store.del('peek'); store.del('draft2.'+id);
+    store.del('mode'); openLevel(i); closeSide(); const asked=!q('#sheet').hidden&&!!q('.modeOpt[data-m=ear]');
+    q('.modeOpt[data-m=ear]').click(); await wait(100); const earOn=S.byEar&&q('#compare').classList.contains('byEar')&&getComputedStyle(q('#plots')).display==='none'&&!!q('#pct');
+    // solve by ear: pays the by-ear rate
+    const t=targetPatch(L); let k=0; t.modules.forEach(m=>{ m.slot=m.type==='out'?S.slots-1:k++; }); S.patch=t; renderRack(); scheduleAnalyze();
+    for(let n=0;n<80&&!(S.cmp&&S.cmp.overall>=PASS);n++) await wait(50);
+    const hintsQuiet=[...document.querySelectorAll('#hints li')].every(li=>!/bright|dark|loud|quiet|longer|shorter|fade|attack/i.test(li.textContent));
+    const w0=wallet(); submit(); await wait(50); const paidEar=progress.solved[id].pay===earPay(L)&&wallet()-w0===earPay(L)&&/by ear/.test(q('.paid').textContent);
+    q('#mStay').click(); stopJingle();
+    // peeking: switching to the scope asks first, then pays the scope rate until the rack is reset
+    delete progress.solved[id]; openLevel(i); closeSide(); setByEar(false); const confirmAsked=!q('#sheet').hidden&&!!q('#mpShow'); q('#mpShow').click(); await wait(50);
+    const peekedNow=peeked(id)&&!S.byEar; setByEar(true); const bonusGone=!earBonusLive()&&payGig(L).total===basePay(L);
+    resetRack(); const freshAgain=!peeked(id)&&earBonusLive();
+    // replaying by ear tops up a scope-rate gig
+    progress.solved[id]={match:95,pay:basePay(L)}; const top=payGig(L); const topUp=top.topUp&&top.paid===earPay(L)-basePay(L);
+    // studio: Free Jam uses what you own; buying needs the money
+    progress.solved={}; const before=studioPalette(); const starter=JSON.stringify(before)===JSON.stringify({osc:1,filter:1,vca:1,env:1});
+    progress.solved['acid']={match:95,pay:1000}; openStudio(); const btn=q('[data-buy="lfo"]'); btn.click(); const bought=owned('lfo')===1&&wallet()===1000-MT.lfo.cost;
+    q('[data-theme="midnight"]').click(); const themed=document.body.dataset.theme==='midnight'&&studio().spent===MT.lfo.cost+400;
+    const broke=q('[data-theme="neon"]').disabled; q('#shDone').click();
+    openLevel(-1); const jam=S.palette.lfo===1&&!S.palette.sync;
+    progress.solved=JSON.parse(saved); store.del('studio'); store.del('peek'); store.del('draft2.'+id); store.set('mode','scope'); applyTheme(); showBoard();
+    return {asked,earOn,hintsQuiet,paidEar,confirmAsked,peekedNow,bonusGone,freshAgain,topUp,starter,bought,themed,broke,jam}; })()`);
+  ok(ear.asked && ear.earOn, 'a first gig asks how to play; by ear hides the graphs but keeps the match %');
+  ok(ear.hintsQuiet && ear.paidEar, 'by ear gives no sound hints, and Send pays the by-ear rate');
+  ok(ear.confirmAsked && ear.peekedNow && ear.bonusGone && ear.freshAgain, 'switching to the scope asks first, then the attempt pays the scope rate until the rack is reset');
+  ok(ear.topUp, 'replaying a scope-paid gig by ear tops the pay up to the by-ear rate');
+  ok(ear.starter && ear.bought && ear.themed && ear.broke && ear.jam, 'Free Jam starts with the dusty rack; gig pay buys modules and panel themes, only with enough money');
+
   console.log('\nOffline render sharing');
   const rs = await page.evaluate(`(async()=>{ let same=true;
     for(const id of ['acid','pipe','warehouse','snare','even-keel']){ const L=LEVELS.find(l=>l.id===id), p=targetPatch(L), one=await renderPatch(p,L), many=await renderPatches([p,p],L);

@@ -1,7 +1,7 @@
 /* Synth Patch Hero · Gig board, level screen, slot board, knobs, cables, compare panel. */
 'use strict';
 /* iPhone: these become tap targets with a switch under the finger (see js/haptics.js). Must run before handlers are attached. */
-['#briefBtn','#gearBtn','#songBtn','#keysBtn','#focusBtn','#btnSettings','#btnHome','#kbClose'].forEach(sel=>Haptics.upgrade(document.querySelector(sel)));
+['#briefBtn','#modeBtn','#gearBtn','#songBtn','#keysBtn','#focusBtn','#btnSettings','#btnHome','#kbClose'].forEach(sel=>Haptics.upgrade(document.querySelector(sel)));
 /* =====================================================================
    BOARD
    ===================================================================== */
@@ -22,10 +22,11 @@ function showBoard(){
   $('#screenLevel').hidden=true; $('#screenBoard').hidden=false; $('#btnHome').hidden=true;
   $('#crumbs').textContent='Gig board'; document.body.classList.remove('inLevel'); if(S.focus) setFocus(false); closeSide(); S.slotMenu=null;
   const solved=Object.keys(progress.solved).length;
-  const earn = Object.values(progress.solved).length*85;
   $('#ledger').innerHTML=`<div class="row"><span>Gigs done</span><b>${solved} / ${LEVELS.length}</b></div>
-    <div class="row"><span>Earned</span><b>$${earn}</b></div><div class="row"><span>Rent due</span><b>$${Math.max(0,1100-earn)}</b></div>
-    <div class="row"><span>Next lesson</span><b>${(LEVELS.find(l=>!progress.solved[l.id])||{concept:'Mastery'}).concept}</b></div>`;
+    <div class="row"><span>Earned</span><b>${money(earned())}</b></div><div class="row"><span>Wallet</span><b>${money(wallet())}</b></div>
+    <div class="row"><span>Next lesson</span><b>${(LEVELS.find(l=>!progress.solved[l.id])||{concept:'Mastery'}).concept}</b></div>
+    <button class="btn studioBtn" id="studioBtn">Your studio · shop</button>`;
+  $('#studioBtn').onclick=openStudio;
   const g=$('#gigs'); g.innerHTML='';
   CHAPTERS.forEach(c=>{
     const done=c.levels.filter(i=>progress.solved[LEVELS[i].id]).length;
@@ -37,7 +38,7 @@ function showBoard(){
       let b=el('button',{class:'gig'+(sv?' solved':'')+(L.challenge?' challenge':'')+(i===nxt?' next':'')});
       b.innerHTML=`<div class="num">${c.short} ${k+1}${L.challenge?' · <span class="chal">CHALLENGE</span>':''}</div><div class="title">${L.title}</div>
         <div class="client">${L.client} · ${L.role}</div>
-        <div class="concept"><span class="tag">${L.concept}</span>${gearBadges(L)}${sv?`<span class="stamp">PAID · ${sv.usd?money(sv.cost)+' · ':''}${Math.round(sv.match)}%${progress.played&&progress.played[L.id]?' · ♪':''}${progress.helped&&progress.helped[L.id]?' · helped':''}</span>`:i===nxt?'<span class="nextTag">NEXT</span>':''}</div>`;
+        <div class="concept"><span class="tag">${L.concept}</span><span class="payTag" title="Pays ${money(basePay(L))} with the scope, ${money(earPay(L))} by ear">${money(earPay(L))} by ear</span>${gearBadges(L)}${sv?`<span class="stamp">PAID · ${sv.usd?money(sv.cost)+' · ':''}${Math.round(sv.match)}%${progress.played&&progress.played[L.id]?' · ♪':''}${progress.helped&&progress.helped[L.id]?' · helped':''}</span>`:i===nxt?'<span class="nextTag">NEXT</span>':''}</div>`;
       b=Haptics.upgrade(b); b.addEventListener('click',()=>{ stopPreview(); openLevel(i); });
       const w=el('div',{class:'gigWrap'}); w.dataset.done=sv?'1':''; w.dataset.gig=L.id; w.appendChild(b); w.appendChild(previewButton(L)); grid.appendChild(w);
     });
@@ -45,7 +46,7 @@ function showBoard(){
   });
   const jam=el('section',{class:'chapter'}); jam.dataset.ch='jam'; jam.innerHTML='<div class="chHead"><div><h2>After hours</h2><p>No clients, no rent. Just you and the rack.</p></div></div>';
   const jg=el('div',{class:'gigs'}); let j=el('button',{class:'gig jam'});
-  j.innerHTML=`<div class="num">SANDBOX</div><div class="title">Free Jam</div><div class="client">All modules, no target. Play it like an instrument.</div><div class="concept"><span class="tag">Sandbox</span></div>`;
+  j.innerHTML=`<div class="num">SANDBOX</div><div class="title">Free Jam</div><div class="client">Your own studio rack, no target: ${Object.values(studioPalette()).reduce((a,b)=>a+b,0)} modules. Buy more with gig pay.</div><div class="concept"><span class="tag">Sandbox</span></div>`;
   j=Haptics.upgrade(j); j.addEventListener('click',()=>openLevel(-1)); jg.appendChild(j); jam.appendChild(jg); g.appendChild(jam);
   g.appendChild(el('p',{class:'boardEmpty',id:'boardEmpty',hidden:''},'Nothing here with this filter. Every gig in this chapter is done!'));
   renderBoardNav(); applyBoardFilter();
@@ -162,7 +163,7 @@ function parCost(L){ const pre=(L.start||[]).reduce((s,x)=>s+MT[x.type].cost,0);
 function openLevel(i){ S.moving=null; pushRoute(i); try{ applyEngine(i<0?{studio:true}:LEVELS[i]); }catch(_){}
   S.sandbox=i<0; S.li=i; S.L=S.sandbox?SANDBOX:LEVELS[i];
   S.feats=S.sandbox?new Set(ALL_FEATURES):featuresFor(i);
-  S.palette=S.L.palette; S.slots=slotCount(S.L); S.mine=null; S.cmp=null; S.slotMenu=null;
+  S.palette=S.sandbox?studioPalette():S.L.palette; S.slots=slotCount(S.L); S.mine=null; S.cmp=null; S.slotMenu=null;
   const draft=store.get('draft2.'+S.L.id,null);
   idc=1;
   if(validDraft(draft)) S.patch=draft; else freshPatch();
@@ -180,6 +181,7 @@ function openLevel(i){ S.moving=null; pushRoute(i); try{ applyEngine(i<0?{studio
   if(MQ2.matches&&!S.focus) openSide(); else closeSide();
   resetStuck();
   gearOnLevel();
+  modeOnLevel();
   scheduleAnalyze();
 }
 function validDraft(d){
@@ -620,9 +622,9 @@ function renderCompare(){
   const c=$('#compare'), sb=S.sandbox; c.classList.remove('expanded');
   c.innerHTML=`<div class="cmpTop">
       <div class="grp listen" role="group" aria-label="Listen">${sb?'':'<button class="playBtn t" id="pT"><span class="dot"></span>▶ TARGET</button>'}<button class="playBtn y" id="pY"><span class="dot"></span>▶ ${sb?'PLAY':'YOURS'}</button>
-        <div class="seg" id="playSeg" role="group" aria-label="What ▶ plays"><button data-m="note" title="▶ plays one held note">NOTE</button><button data-m="song" title="▶ plays a short demo song (the same one you'll hear when you're paid)">♫ SONG</button></div></div>
+        <div class="seg" id="playSeg" role="group" aria-label="What ▶ plays"><button data-m="note" title="▶ plays one held note">NOTE</button><button data-m="song" title="▶ plays a short demo song (the same one you'll hear when you're paid)">♫ SONG</button></div>${sb?'':`<div class="seg modeSeg" id="modeSeg" role="group" aria-label="How you match"><button data-m="ear" title="By ear: graphs and sound hints hidden, pays 2–3×">BY EAR</button><button data-m="scope" title="Show the scope, loudness and spectrum, plus hints">SCOPE</button></div>`}</div>
       <div class="grp score" role="group" aria-label="Score">${sb?'<div class="pctBox"><small>FREE JAM</small></div>':`<div class="pctBox"><b id="pct">–</b><small id="pctSub">need ${PASS}%</small></div><button class="btn primary" id="btnSubmit" disabled>Send</button><button class="btn" id="btnHelp" title="Stuck? Get a hint, or let Help patch a module or lock a knob"><span class="lbl">Help</span><span class="ico">?</span></button>`}</div></div>
-    ${sb?'':`<div class="bar"><i id="barAll"></i><span class="thr" style="left:${PASS}%"></span></div>`}
+    ${sb?'':`<div class="bar"><i id="barAll"></i><span class="thr" style="left:${PASS}%"></span></div><div class="payInfo" id="payInfo"></div>`}
     <div class="cmpBody">
       ${sb?'':`<div class="subs"><div class="sub"><span>Spectrogram</span><div class="bar"><i id="barSpec"></i></div><span id="vSpec"></span></div>
         <div class="sub"><span>Tone</span><div class="bar"><i id="barTone"></i></div><span id="vTone"></span></div>
@@ -640,13 +642,15 @@ function renderCompare(){
   ['#pT','#pY','#btnHelp','#btnSubmit'].forEach(sel=>Haptics.upgrade(c.querySelector(sel)));
   c.querySelectorAll('#playSeg button').forEach(b0=>{ const b=Haptics.upgrade(b0); b.addEventListener('click',()=>setSongMode(b.dataset.m==='song',true)); }); syncSongUI();
   c.querySelectorAll('canvas.plot').forEach(cv=>{ try{ setupCanvas(cv); }catch(_){} });   // size graphs now, so the panel doesn't jump when the first analysis lands
+  c.querySelectorAll('#modeSeg button').forEach(b0=>{ const b=Haptics.upgrade(b0); b.addEventListener('click',()=>setByEar(b.dataset.m==='ear')); });
+  c.addEventListener('click',e=>{ if(e.target&&e.target.id==='payReset'){ e.preventDefault(); openSettings(); } });
   if(!sb){ $('#pT').onclick=()=>playTarget(); $('#btnSubmit').onclick=submit; $('#btnHelp').onclick=requestHelp;
     $('#hints').addEventListener('click',()=>{ if(S.mobile) toggleExpanded(); }); }
   $('#pY').onclick=()=>playYours();
   c.querySelectorAll('.plotTabs button').forEach(b=>b.addEventListener('click',()=>{
     if(b.dataset.v==='more'){ toggleExpanded(); return; }
     S.plotView=b.dataset.v; $('#plots').dataset.view=S.plotView; paintPlotTabs(); requestAnimationFrame(drawPlots); }));
-  paintPlotTabs();
+  paintPlotTabs(); if(typeof applyMode==='function') applyMode();
 }
 function toggleExpanded(){ const c=$('#compare'); c.classList.toggle('expanded'); const m=c.querySelector('[data-v=more]'); if(m) m.textContent=c.classList.contains('expanded')?'LESS ▴':'MORE ▾';
   requestAnimationFrame(()=>{ if(!S.userZoom) fitView(); }); }
@@ -694,7 +698,8 @@ function updateCompare(){
     else if(!ok&&miss.length){ const [t,n]=miss[0]; hs.push({part:1,t:`Missing part: this sound needs ${n>1?n+' more':'a'} ${MT[t].name}${n>1?'s':''}. Tap an empty slot to add ${n>1?'them':'one'}.`}); }
     const outFed=S.patch.cables.some(x=>x.to.m==='out');
     if(!outFed) hs.push({t:'Nothing reaches the OUTPUT yet. Patch an audio cable into its IN jack.'});
-    c.hints.forEach(h=>{ if(!(outFed===false&&/Silence/.test(h.t))) hs.push(h); });
+    if(S.byEar){ if(!hs.length) hs.push({t:ok?'Sounds like a match. Send it!':'By ear: flip between ▶ Target and ▶ Yours and listen for what differs.'}); }
+    else c.hints.forEach(h=>{ if(!(outFed===false&&/Silence/.test(h.t))) hs.push(h); });
     $('#hints').innerHTML=hs.map(h=>`<li class="${h.ok?'ok':''}${h.part?' miss':''}">${h.t}</li>`).join('');
     $('#btnSubmit').disabled=!ok;
   }
@@ -750,13 +755,16 @@ function submit(){
   const c=S.cmp; if(!c||c.overall<PASS) return;
   const L=S.L, cost=playerCost(S.patch), mods=S.patch.modules.filter(m=>m.type!=='out'&&!m.preset).length, cab=S.patch.cables.length;
   const prev=progress.solved[L.id];
-  const best={cost:prev&&prev.usd&&prev.cost!=null?Math.min(prev.cost,cost):cost, usd:1, cables:prev?Math.min(prev.cables,cab):cab, match:prev?Math.max(prev.match,c.overall):c.overall};
+  const pay=payGig(L);
+  const best={cost:prev&&prev.usd&&prev.cost!=null?Math.min(prev.cost,cost):cost, usd:1, cables:prev?Math.min(prev.cables,cab):cab, match:prev?Math.max(prev.match,c.overall):c.overall,
+    pay:pay.total, ear:(prev&&prev.ear)||pay.byEar};
   progress.solved[L.id]=best; saveProgress();
   const ch=chapterOf(S.li), k=ch.levels.indexOf(S.li), nextIdx=ch.levels[k+1], next=nextIdx!=null&&isUnlocked(nextIdx)?nextIdx:null;
   const chDone=ch.levels.every(i=>progress.solved[LEVELS[i].id]), opened=ch.id==='basics'&&chDone;
   const par=parCost(L), m=$('#modal'); m.hidden=false;
   m.innerHTML=`<div class="modalCard"><h2>Patch accepted</h2><div class="clientRow">${portraitImg(L,'portrait big')}<p class="lead">${L.client} · ${L.title}</p></div>${chDone&&next==null?`<p class="lead" style="color:var(--good)">${opened?'Basics complete! Every theme on the gig board is now open.':ch.title+' complete!'}</p>`:''}
     <blockquote class="says">${L.reply}</blockquote>
+    <div class="paid">${pay.paid>0?`<b>+${money(pay.paid)}</b> ${pay.topUp?`by-ear top-up (paid ${money(pay.total)} in all)`:pay.byEar?`paid by ear (${pay.mult}× the ${money(basePay(L))} rate)`:`paid · by ear it pays ${money(earPay(L))}`}`:`Already paid ${money(pay.total)}${pay.total<earPay(L)?` · by ear it pays ${money(earPay(L))}`:''}`} <span>Wallet ${money(wallet())}</span></div>
     <div class="resGrid">
       <div class="res"><b>${Math.floor(c.overall)}%</b><span>Match</span><em>best ${Math.floor(best.match)}%</em></div>
       <div class="res"><b>${money(cost)}</b><span>Cost</span><em>best ${money(best.cost)} / par ${money(par)}</em></div>
@@ -802,9 +810,10 @@ window.addEventListener('resize',()=>{ clearTimeout(rzT); rzT=setTimeout(()=>{ i
 $('#kbDn').onclick=()=>{ S.kbLo-=12; renderKeys(); };
 $('#kbUp').onclick=()=>{ S.kbLo+=12; renderKeys(); };
 $('#songBtn').onclick=()=>setSongMode(!S.songMode); syncSongUI();
+$('#modeBtn').onclick=()=>setByEar(!S.byEar);
 $('#keysBtn').onclick=()=>setKeysOpen(!S.keysOpen);
 $('#focusBtn').onclick=()=>setFocus(!S.focus);
-function resetRack(){ S.pick=null; showPatchbar(); freshPatch(); refreshRack(); scheduleAnalyze(); toast('Rack reset'); }
+function resetRack(){ S.pick=null; showPatchbar(); freshPatch(); refreshRack(); if(S.L&&!S.sandbox){ setPeek(S.L.id,false); applyMode(); } scheduleAnalyze(); toast(S.byEar?'Rack reset: a fresh by-ear attempt':'Rack reset'); }
 $('#kbClose').onclick=()=>setKeysOpen(false);
 /* ---------- settings sheet (⚙ in the top bar) ---------- */
 function openSettings(){
@@ -816,12 +825,15 @@ function openSettings(){
     ${row('Haptics',hapSub,Haptics.available?`<label class="nativeSw" title="Haptics on/off"><input type="checkbox" switch id="stHapSw" ${Haptics.enabled?'checked':''}></label>`:'')}
     ${inLevel?row('On-screen keyboard','Find the client\'s note and play your patch.',`<button class="btn tgl" id="stKeys">${S.keysOpen?'Shown':'Hidden'}</button>`):''}
     ${inLevel?row('Focus mode','Bigger board, compact compare bar.',`<button class="btn tgl" id="stFocus">${S.focus?'On':'Off'}</button>`):''}
-    ${inLevel?row('Reset this rack','Removes everything you added to this gig.','<button class="btn" id="stReset">Reset</button>'):''}
+    ${row('How you match',playMode()==='ear'?'By ear: no graphs or sound hints, 2–3× pay. Switch per gig in the compare panel.':'With the scope: graphs and hints, normal pay. Switch per gig in the compare panel.',`<div class="seg" id="stMode"><button data-m="ear" class="${playMode()==='ear'?'on':''}">By ear</button><button data-m="scope" class="${playMode()!=='ear'?'on':''}">Scope</button></div>`)}
+    ${row('Your studio',`Wallet ${money(wallet())}. Modules for Free Jam and panel themes.`,'<button class="btn" id="stStudio">Open</button>')}
+    ${inLevel?row('Reset this rack','Removes everything you added to this gig'+(S.byEar?' and starts a fresh by-ear attempt.':'.'),'<button class="btn" id="stReset">Reset</button>'):''}
     ${navigator.requestMIDIAccess||MIDI.state!=='unsupported'?row('MIDI',midiSummary(),'<button class="btn" id="stMidi">Set up</button>'):''}
     ${row('My gear',myGear().length?'On your box guides for: '+myGear().map(id=>GEAR[id].name).join(', ')+'.':'Got a synth or groovebox at home? Get guides for making each sound on it.','<button class="btn" id="stGear">Choose</button>')}
     ${row('Your data',dataSummary(),'<button class="btn" id="stData">Details</button>')}</div>`;
   const close=()=>{ sh.hidden=true; sh.innerHTML=''; };
-  $('#shDone').onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); }; $('#stData').onclick=openDataSheet; $('#stGear').onclick=openGearSheet; const sm=$('#stMidi'); if(sm) sm.onclick=()=>{ if(MIDI.state==='idle') connectMIDI(false); openMidiSheet(); };
+  $('#shDone').onclick=close; sh.onclick=e=>{ if(e.target===sh) close(); }; $('#stData').onclick=openDataSheet; $('#stGear').onclick=openGearSheet; $('#stStudio').onclick=openStudio;
+    document.querySelectorAll('#stMode button').forEach(b=>b.onclick=()=>{ store.set('mode',b.dataset.m); document.querySelectorAll('#stMode button').forEach(x=>x.classList.toggle('on',x===b)); if(S.L&&!S.sandbox&&!$('#screenLevel').hidden) setByEar(b.dataset.m==='ear'); }); const sm=$('#stMidi'); if(sm) sm.onclick=()=>{ if(MIDI.state==='idle') connectMIDI(false); openMidiSheet(); };
   // A real iOS switch: on iOS 18 the system itself ticks when it's flipped, so it doubles as a check that switch haptics work here.
   const hs=$('#stHapSw'); if(hs) hs.onchange=()=>{ Haptics.set(hs.checked); if(hs.checked) Haptics.select(); const fb=$('#btnHaptics'); if(fb&&fb.firstChild&&fb.firstChild.nodeType===3) fb.firstChild.nodeValue='Haptics: '+(Haptics.enabled?'on':'off'); };
   if(inLevel){
@@ -841,7 +853,7 @@ function dataInfo(){
 function dataSummary(){ const d=dataInfo(); return store.available()?`Saved only in this browser on this device: ${d.solved} gig${d.solved===1?'':'s'} paid, ${d.drafts} patch${d.drafts===1?'':'es'} in progress, ${d.kb.toFixed(1)} KB.`:'This browser isn\'t letting the game save anything (private mode or storage blocked), so progress lasts only until you close the page.'; }
 function openDataSheet(){
   const sh=$('#sheet'); sh.hidden=false; const d=dataInfo();
-  const PREF={haptics:'Haptics on/off',keysOpen:'On-screen keyboard shown',songMode:'♫ Song mode',boardView:'Gig board chapter and filter',midiAuto:'Reconnect MIDI automatically',snapOn:'Snap modules to boxes',gear:'My gear (for On your box guides)',midiIn:'MIDI device to listen to',midiCh:'MIDI channel to listen to'};
+  const PREF={haptics:'Haptics on/off',keysOpen:'On-screen keyboard shown',songMode:'♫ Song mode',boardView:'Gig board chapter and filter',midiAuto:'Reconnect MIDI automatically',snapOn:'Snap modules to boxes',gear:'My gear (for On your box guides)',mode:'How you match (by ear or with the scope)',peek:'Gigs where you looked at the scope this attempt',studio:'Your studio: modules and themes you bought',midiIn:'MIDI device to listen to',midiCh:'MIDI channel to listen to'};
   sh.innerHTML=`<div class="sheetCard dataCard"><div class="shHead"><span class="shTitle">YOUR DATA</span><button class="btn primary" id="shDone">Done</button></div>
     <p><b>Where it lives:</b> in this browser's local storage, on this device only. There are no accounts, nothing is uploaded, and there are no analytics or cookies.</p>
     <p><b>What that means:</b> another browser or device, a private window, or the other copy of the game (GitHub Pages vs. claude.ai) each keeps its own separate progress. Clearing this site's data in your browser settings erases it. Use Export to move it.</p>
