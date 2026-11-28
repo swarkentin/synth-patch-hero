@@ -518,7 +518,8 @@ try {
     // studio: Free Jam uses what you own; buying needs the money
     progress.solved={}; const before=studioPalette(); const starter=JSON.stringify(before)===JSON.stringify({osc:1,filter:1,vca:1,env:1});
     progress.solved['acid']={match:95,pay:1000}; openStudio(); const btn=q('[data-buy="lfo"]'); btn.click(); const bought=owned('lfo')===1&&wallet()===1000-MT.lfo.cost;
-    q('[data-theme="midnight"]').click(); const themed=document.body.dataset.theme==='midnight'&&studio().spent===MT.lfo.cost+400;
+    const bg0=getComputedStyle(q('.topbar')).backgroundImage;
+    q('[data-theme="midnight"]').click(); const themed=document.body.dataset.theme==='midnight'&&studio().spent===MT.lfo.cost+400&&getComputedStyle(q('.topbar')).backgroundImage!==bg0&&getComputedStyle(document.body).getPropertyValue('--panel').trim()==='#171a1f';
     const broke=q('[data-theme="neon"]').disabled;
     // the panel is a fixed size: it fits the window and themes are one tab away, with every tile reachable
     const card=q('.studioCard').getBoundingClientRect(); const fits=card.top>=0&&card.bottom<=innerHeight+1;
@@ -535,7 +536,7 @@ try {
   ok(ear.hintsQuiet && ear.paidEar, 'by ear gives no sound hints, and Send pays the by-ear rate');
   ok(ear.confirmAsked && ear.peekedNow && ear.bonusGone && ear.freshAgain, 'switching to the scope asks first, then the attempt pays the scope rate until the rack is reset');
   ok(ear.topUp, 'replaying a scope-paid gig by ear tops the pay up to the by-ear rate');
-  ok(ear.starter && ear.bought && ear.themed && ear.broke && ear.jam, 'Free Jam starts with the dusty rack; gig pay buys modules and panel themes, only with enough money');
+  ok(ear.starter && ear.bought && ear.themed && ear.broke && ear.jam, 'Free Jam starts with the dusty rack; gig pay buys modules and panel themes (which re-colour the whole interface), only with enough money');
   ok(ear.rich && ear.neonOk && ear.box, 'typing the secret code (or tapping the wallet five times, for phones) fills the wallet');
   ok(ear.fits && ear.reach, 'the studio panel fits the window, with modules and panel themes as tabs');
 

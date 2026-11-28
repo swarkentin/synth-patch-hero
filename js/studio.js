@@ -84,7 +84,8 @@ function payGig(L){
 }
 
 /* ---------- your studio: modules and themes ---------- */
-function applyTheme(){ const t=studio().theme; document.body.dataset.theme=t&&t!=='dusty'?t:''; }
+function applyTheme(){ const t=studio().theme; document.body.dataset.theme=t&&t!=='dusty'?t:'';
+  const m=document.querySelector('meta[name=theme-color]'); if(m) m.content=getComputedStyle(document.body).getPropertyValue('--top2').trim()||'#15110e'; }
 /* small faceplate icons for the studio tiles */
 function modIcon(t){ const m=MT[t], nk=Math.min(4,(m.params||[]).length||1), nj=Math.min(4,(m.ins||[]).length+(m.outs||[]).length||1);
   const knobs=Array.from({length:nk},(_,i)=>{ const x=nk===1?24:10+i*(28/(nk-1)); return `<circle cx="${x}" cy="27" r="4.2" fill="#14110f" stroke="#8a7a66" stroke-width="1"/><line x1="${x}" y1="27" x2="${x}" y2="23.4" stroke="#e9dcc6" stroke-width="1.2"/>`; }).join('');
